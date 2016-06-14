@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 
 import play.api.libs.json.{JsPath, Reads}
 import play.api.libs.functional.syntax._
-import uk.gov.hmrc.servicereleases.{FuturesCache, HttpClient, JavaDateTimeJsonFormatter}
+import uk.gov.hmrc.{FuturesCache, HttpClient, JavaDateTimeJsonFormatter}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicereleases.services
 
-import java.time._
+import play.api.libs.json.Json
+import uk.gov.hmrc.HttpClient
+import HttpClient._
 
-import play.api.libs.json._
+import scala.concurrent.Future
 
-object JavaDateTimeJsonFormatter {
+case class GithubUrl(name: String, url: String)
+case class Service(name: String, githubUrls: List[GithubUrl])
 
-  implicit val localDateTime = new Reads[LocalDateTime] {
-    override def reads(json: JsValue): JsResult[LocalDateTime] = json match {
-      case JsNumber(v) => JsSuccess(
-        LocalDateTime.ofEpochSecond(v.toLongExact, 0, ZoneOffset.UTC)
-      )
-      case v => JsError(s"invalid value for epoch second '$v'")
-    }
-  }
+trait ServiceDataSource {
+  def getAll(): Future[List[Service]]
+}
 
-  implicit val yearMonthWrite = new Writes[YearMonth] {
-    override def writes(o: YearMonth): JsValue = JsString(o.toString)
-  }
+class CatalogueConnector(catalogueApiBase: String) extends ServiceDataSource {
+  implicit val urlReads = Json.reads[GithubUrl]
+  implicit val reads = Json.reads[Service]
 
+  override def getAll() = get[List[Service]](s"$catalogueApiBase/services")
 }

@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc
 
-import play.Logger
-import play.api.Play.current
-import play.api.libs.json.{JsValue, Json, Reads}
-import play.api.libs.ws._
+import _root_.play.{api => playapi}
+import playapi.libs.ws.WS
+import playapi.Logger
+import playapi.libs.ws.WSResponse
+import playapi.libs.json.{JsValue, Json, Reads}
+import playapi.Play.current
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-
 
 object HttpClient {
 
