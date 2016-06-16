@@ -18,40 +18,45 @@ package uk.gov.hmrc.servicereleases.deployments
 
 import java.time.{LocalDateTime, ZoneOffset}
 
-import scala.collection.TraversableLike
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
 case class ServiceDeployment(version: String, releasedAt: LocalDateTime)
 
+
 trait ServiceDeploymentsService {
-  def getServiceDeployments(serviceName: String): Future[Iterable[ServiceDeployment]]
+  def getAll(): Future[Map[String, Seq[ServiceDeployment]]]
 }
 
 class DefaultServiceDeploymentsService(dataSource: DeploymentsDataSource) extends ServiceDeploymentsService {
 
-  def getServiceDeployments(serviceName: String): Future[Iterable[ServiceDeployment]] =
+  def getAll(): Future[Map[String, Seq[ServiceDeployment]]] =
     dataSource.getAll.map { deployments =>
         deployments
-          .filter { deployment => deployment.name == serviceName && isProductionDeployment(deployment) }
-          .projectToServiceDeployment()
-          .sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC))
+          .filter { deployment => isProductionDeployment(deployment) }
+          .groupBy(_.name)
+          .asServiceDeployments()
     }
 
   private def isProductionDeployment(deployment: Deployment): Boolean =
     deployment.environment.startsWith("production") || deployment.environment.startsWith("prod")
 
-  private class DeploymentSeqWrapper(deployments: Seq[Deployment]) {
-    def projectToServiceDeployment(): Seq[ServiceDeployment] =
+  private class DeploymentMapWrapper(deployments: Map[String, Seq[Deployment]]) {
+    def asServiceDeployments(): Map[String, Seq[ServiceDeployment]] =
+      deployments.map { case (serviceName, list) =>
+        serviceName ->
+          firstDeploymentForEachVersionIn(list).sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC)) }
+
+    private def firstDeploymentForEachVersionIn(deployments: Seq[Deployment]) =
       deployments.sortBy(_.firstSeen.toEpochSecond(ZoneOffset.UTC))
         .groupBy(_.version)
         .map { case (v, d) => ServiceDeployment(d.head.version, d.head.firstSeen) }
         .toSeq
-    }
+  }
 
-  private implicit def DeploymentTraversableWrapper(deployments: Seq[Deployment]) : DeploymentSeqWrapper =
-    new DeploymentSeqWrapper(deployments)
+  private implicit def DeploymentTraversableWrapper(deployments: Map[String, Seq[Deployment]]) : DeploymentMapWrapper =
+    new DeploymentMapWrapper(deployments)
+
 }
 
 

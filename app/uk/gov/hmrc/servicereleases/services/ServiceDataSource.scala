@@ -17,8 +17,7 @@
 package uk.gov.hmrc.servicereleases.services
 
 import play.api.libs.json.Json
-import uk.gov.hmrc.HttpClient
-import HttpClient._
+import uk.gov.hmrc.HttpClient._
 
 import scala.concurrent.Future
 

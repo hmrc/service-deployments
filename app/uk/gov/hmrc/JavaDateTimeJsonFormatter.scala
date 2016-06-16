@@ -21,7 +21,7 @@ import _root_.play.api.libs.json._
 
 object JavaDateTimeJsonFormatter {
 
-  implicit val localDateTime = new Reads[LocalDateTime] {
+  implicit val localDateTimeReads = new Reads[LocalDateTime] {
     override def reads(json: JsValue): JsResult[LocalDateTime] = json match {
       case JsNumber(v) => JsSuccess(
         LocalDateTime.ofEpochSecond(v.toLongExact, 0, ZoneOffset.UTC)

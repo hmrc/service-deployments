@@ -42,8 +42,9 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
           Deployment("production","some-other-ServiceName","1.0",now.minusDays(2)))
         ))
 
-      service.getServiceDeployments("some-serviceName").futureValue shouldBe List(
-        ServiceDeployment("1.0",now), ServiceDeployment("2.0",now))
+      val result = service.getAll().futureValue
+      result("some-serviceName") shouldBe Seq(ServiceDeployment("1.0",now), ServiceDeployment("2.0",now))
+      result("some-other-ServiceName") shouldBe Seq(ServiceDeployment("1.0", now.minusDays(2)))
     }
 
     "remove re releases and take the release with earliest date" in {
@@ -58,8 +59,9 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
         )
       ))
 
-      service.getServiceDeployments("some-serviceName").futureValue shouldBe List(
-        ServiceDeployment("1.0",twoDaysEarlier))
+      val result = service.getAll().futureValue
+      result("some-serviceName") shouldBe Seq(ServiceDeployment("1.0",twoDaysEarlier))
+      result("some-other-serviceName") shouldBe Seq(ServiceDeployment("1.0",twoDaysEarlier))
     }
 
     "releases should be sorted by date" in {
@@ -73,8 +75,11 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
         )
       ))
 
-      service.getServiceDeployments("some-serviceName").futureValue shouldBe List(
-        ServiceDeployment("1.0",twoDaysEarlier),ServiceDeployment("2.0",aHourEarlier), ServiceDeployment("3.0",now))
+      service.getAll().futureValue shouldBe Map(
+        "some-serviceName" -> Seq(
+          ServiceDeployment("1.0", twoDaysEarlier),
+          ServiceDeployment("2.0", aHourEarlier),
+          ServiceDeployment("3.0", now)))
     }
   }
 }

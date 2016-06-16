@@ -16,6 +16,50 @@
 
 package uk.gov.hmrc.servicereleases
 
-trait ReleasesRepository {
+import java.time.{LocalDateTime, ZoneId, ZoneOffset}
+import java.util.TimeZone
 
+import play.api.libs.json.{JsValue, Writes, _}
+import reactivemongo.api.{DB, ReadPreference}
+import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.mongo.ReactiveRepository
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+
+case class Release(name: String, version: String, creationDate: LocalDateTime, productionDate: LocalDateTime)
+
+object Release {
+  implicit val localDateTimeRead: Reads[LocalDateTime] =
+    (__ \ "$date").read[Long].map { dateTime => LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC) }
+
+  implicit val localDateTimeWrite: Writes[LocalDateTime] = new Writes[LocalDateTime] {
+    def writes(dateTime: LocalDateTime): JsValue = Json.obj(
+      "$date" -> dateTime.atOffset(ZoneOffset.UTC).toEpochSecond
+    )
+  }
+
+  val formats = Json.format[Release]
+}
+
+trait ReleasesRepository {
+  def getAll(): Future[Map[String, Seq[Release]]]
+  def add(release: Release): Future[Boolean]
+}
+
+class MongoReleasesRepository(mongo: () => DB)
+  extends ReactiveRepository[Release, BSONObjectID](
+    collectionName = "releases",
+    mongo = mongo,
+    domainFormat = ReactiveMongoFormats.mongoEntity(Release.formats)) with ReleasesRepository {
+
+  def add(release: Release): Future[Boolean] = {
+    insert(release) map {
+      case lastError if lastError.inError => throw lastError
+      case _ => true
+    }
+  }
+
+  override def getAll(): Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
 }

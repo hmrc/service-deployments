@@ -19,7 +19,7 @@ package uk.gov.hmrc.servicereleases.tags
 import java.time.LocalDateTime
 
 import play.api.Logger
-import uk.gov.hmrc.servicereleases.tags.RepoType.{Enterprise, Open}
+import RepoType.{Enterprise, Open}
 
 case class ServiceReleaseTag(name: String, createdAt: LocalDateTime)
 

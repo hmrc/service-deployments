@@ -38,10 +38,10 @@ class DefaultServiceRepositoriesServiceSpec extends WordSpec with Matchers with 
 
       when(dataSource.getAll()).thenReturn(Future.successful(data))
 
-      service.getAll().futureValue shouldBe List(
-        ServiceRepositories("service-frontend", List(
+      service.getAll().futureValue shouldBe Map(
+        "service-frontend" -> List(
           Repository("org1-org", "github"),
-          Repository("org2", "github-open"))))
+          Repository("org2", "github-open")))
     }
 
     "convert to serviceInfo when no gitenterprise url" in {
@@ -51,8 +51,8 @@ class DefaultServiceRepositoriesServiceSpec extends WordSpec with Matchers with 
 
       when(dataSource.getAll()).thenReturn(Future.successful(data))
 
-      service.getAll().futureValue shouldBe List(
-        ServiceRepositories("service-frontend", List(Repository("org2", "github-open"))))
+      service.getAll().futureValue shouldBe Map(
+        "service-frontend" -> List(Repository("org2", "github-open")))
     }
 
     "convert to serviceInfo when no git open url" in {
@@ -62,8 +62,8 @@ class DefaultServiceRepositoriesServiceSpec extends WordSpec with Matchers with 
 
       when(dataSource.getAll()).thenReturn(Future.successful(data))
 
-      service.getAll().futureValue shouldBe List(
-        ServiceRepositories("service-frontend", List(Repository("org1-org", "github"))))
+      service.getAll().futureValue shouldBe Map(
+        "service-frontend" -> List(Repository("org1-org", "github")))
     }
   }
 

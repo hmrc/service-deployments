@@ -19,20 +19,17 @@ package uk.gov.hmrc.servicereleases.services
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-case class ServiceRepositories(name: String, repositories: List[Repository])
 case class Repository(org: String, repoType: String)
 
 trait ServiceRepositoriesService {
-  def getAll(): Future[List[ServiceRepositories]]
+  def getAll(): Future[Map[String, Seq[Repository]]]
 }
 
 class DefaultServiceRepositoriesService(dataSource: ServiceDataSource) extends ServiceRepositoriesService {
-  override def getAll(): Future[List[ServiceRepositories]] =
+  override def getAll(): Future[Map[String, Seq[Repository]]] =
     dataSource.getAll().map { services =>
       services.map { service =>
-        ServiceRepositories(
-          service.name,
-          service.githubUrls.flatMap(u => toServiceRepo(service.name, u.name, u.url))) }}
+        service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.name, u.url)) } toMap }
 
   private def toServiceRepo(service: String, repoType: String, repoUrl: String) =
     extractOrg(repoUrl).map { org => Repository(org, repoType) }

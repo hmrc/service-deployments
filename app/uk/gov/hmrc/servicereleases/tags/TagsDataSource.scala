@@ -26,7 +26,7 @@ import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-case class Tag(name: String, createdAt: LocalDateTime)
+case class Tag(version: String, createdAt: LocalDateTime)
 
 object Tag {
   implicit def ghRepoReleasesToServiceReleaseTags(gr: List[GhRepoRelease]): List[Tag] = gr.map(Tag.apply)
