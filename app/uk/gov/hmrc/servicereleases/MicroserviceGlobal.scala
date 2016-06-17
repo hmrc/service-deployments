@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.servicereleases
 
+import java.util.concurrent.TimeUnit
+
 import com.kenshoo.play.metrics.MetricsFilter
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
@@ -27,6 +29,8 @@ import uk.gov.hmrc.play.graphite.GraphiteConfig
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.JsonErrorHandling
 import uk.gov.hmrc.play.microservice.bootstrap.Routing.RemovingOfTrailingSlashes
+
+import scala.concurrent.duration.FiniteDuration
 
 
 object ControllerConfiguration extends ControllerConfig {
@@ -55,4 +59,9 @@ object MicroserviceGlobal extends GlobalSettings
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
   override val loggingFilter = MicroserviceLoggingFilter
+
+  override def onStart(app: Application): Unit = {
+    if (ServiceReleasesConfig.schedulerEnabled)
+      Scheduler.start(FiniteDuration(1, TimeUnit.HOURS))
+  }
 }

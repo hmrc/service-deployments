@@ -44,13 +44,7 @@ trait TagsDataSource {
   def get(organisation: String, repoName: String): Future[List[Tag]]
 }
 
-class CachedTagsDataSource(tagsDataSource: TagsDataSource) extends TagsDataSource with FuturesCache[(String, String), List[Tag]] {
-  override def refreshTimeInMillis: Duration = 3 hours
-  override protected def cacheLoader: ((String, String)) => Future[List[Tag]] =
-    key => tagsDataSource.get(key._1, key._2)
 
-  def get(organisation: String, repoName: String) = cache.getUnchecked((organisation, repoName))
-}
 
 class GitHubConnector(gitHubClient: GithubApiClient) extends TagsDataSource {
   import BlockingIOExecutionContext.executionContext

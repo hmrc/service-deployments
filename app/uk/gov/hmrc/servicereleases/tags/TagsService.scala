@@ -21,9 +21,16 @@ import java.time.LocalDateTime
 import play.api.Logger
 import RepoType.{Enterprise, Open}
 
+import scala.concurrent.Future
+
 case class ServiceReleaseTag(name: String, createdAt: LocalDateTime)
 
-class TagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource) {
+trait TagsService {
+  def get(org: String, name: String, repoType: String): Future[List[Tag]]
+}
+
+class DefaultTagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource)
+  extends TagsService {
 
   def get(org: String, name: String, repoType: String) =
     RepoType.from(repoType) match {

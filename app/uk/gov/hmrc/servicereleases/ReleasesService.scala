@@ -27,35 +27,32 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait ReleasesService {
-
+  def updateModel(): Future[Iterable[Boolean]]
 }
 
 class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesService,
                               deploymentsService: ServiceDeploymentsService,
                               tagsService: TagsService,
-                              repository: ReleasesRepository) {
+                              repository: ReleasesRepository) extends ReleasesService {
 
-  def updateModel() = {
+  def updateModel() =
     for {
       serviceRepositoryDeployments <- getNewServiceRepositoryDeployments()
       tagDates <- getTagsDatesFor(serviceRepositoryDeployments.serviceName, serviceRepositoryDeployments.repositories)
       success <- storeRelease(serviceRepositoryDeployments, tagDates)
     } yield success
-  }
 
   private def getNewServiceRepositoryDeployments() =
-      FutureIterable(
-        for {
-          serviceRepositories <- serviceRepositoriesService.getAll()
-          knownDeployments <- deploymentsService.getAll()
-          knownReleases <- repository.getAll()
-        } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases)))
+    FutureIterable(
+      for {
+        serviceRepositories <- serviceRepositoriesService.getAll().map(_.take(10))
+        knownDeployments <- deploymentsService.getAll()
+        knownReleases <- repository.getAll()
+      } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases)))
 
   private def getTagsDatesFor(serviceName: String, repositories: Seq[Repository]) =
-    Future.sequence(repositories.map { r =>
-      tagsService.get(r.org, serviceName, r.repoType)
-    }).map { tags =>
-      tags.flatten.map { t => t.version -> t.createdAt } toMap }
+    Future.sequence(repositories.map { r => tagsService.get(r.org, serviceName, r.repoType)})
+      .map(_.flatten.map { t => t.version -> t.createdAt } toMap)
 
   private def storeRelease(service: Service, tagDates: Map[String, LocalDateTime]) =
     FutureIterable(
@@ -70,8 +67,8 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
       serviceRepositories match {
         case (serviceName, repositories) =>
-          new Service(serviceName, repositories, knownDeployments(serviceName)
-            .filterNot(kd => knownReleases(serviceName).exists(kr => kr.version == kd.version)))
+          new Service(serviceName, repositories, knownDeployments.getOrElse(serviceName, Seq())
+            .filterNot(kd => knownReleases.getOrElse(serviceName, Seq()).exists(kr => kr.version == kd.version)))
       }
   }
 }

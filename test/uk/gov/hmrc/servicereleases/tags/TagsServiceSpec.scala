@@ -30,7 +30,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with Scal
   trait SetUp {
     val gitEnterpriseTagDataSource = mock[TagsDataSource]
     val gitOpenTagDataSource = mock[TagsDataSource]
-    val compositeTagsSource = new TagsService(gitEnterpriseTagDataSource, gitOpenTagDataSource)
+    val compositeTagsSource = new DefaultTagsService(gitEnterpriseTagDataSource, gitOpenTagDataSource)
   }
 
   "getAll" should {

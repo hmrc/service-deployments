@@ -31,19 +31,12 @@ trait DeploymentsDataSource {
   def getAll: Future[List[Deployment]]
 }
 
-class CachedDeploymentsDataSource(dataSource: DeploymentsDataSource) extends DeploymentsDataSource with FuturesCache[String, List[Deployment]] {
-  override val refreshTimeInMillis: FiniteDuration = 3 hours
-
-  def getAll: Future[List[Deployment]] = cache.getUnchecked("appReleases")
-  def cacheLoader: (String) => Future[List[Deployment]] = _ => dataSource.getAll
-}
-
 class ReleasesApiConnector(releasesApiBase: String) extends DeploymentsDataSource {
   import JavaDateTimeJsonFormatter._
 
   implicit val reads: Reads[Deployment] = (
-    (JsPath \ "an").read[String] and
     (JsPath \ "env").read[String] and
+    (JsPath \ "an").read[String] and
     (JsPath \ "ver").read[String] and
     (JsPath \ "fs").read[LocalDateTime]
   )(Deployment.apply _)

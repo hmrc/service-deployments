@@ -4,30 +4,56 @@ import java.time.LocalDateTime
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.mockito.{Matchers => MockitoMatchers}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import uk.gov.hmrc.servicereleases.deployments.{ServiceDeployment, ServiceDeploymentsService}
 import uk.gov.hmrc.servicereleases.services.{Repository, ServiceRepositoriesService}
 import uk.gov.hmrc.servicereleases.tags.{Tag, TagsService}
 
 import scala.concurrent.Future
 
-class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures {
+class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfterEach {
   val servicesService = mock[ServiceRepositoriesService]
   val deploymentsService = mock[ServiceDeploymentsService]
   val tagsService = mock[TagsService]
   val repository = mock[ReleasesRepository]
 
-  "updateModel" should {
+  override def beforeEach() = {
+    reset(servicesService)
+    reset(deploymentsService)
+    reset(tagsService)
+    reset(repository)
+  }
 
+  "updateModel" should {
     val service = new DefaultReleasesService(servicesService, deploymentsService, tagsService, repository)
 
     "Add any new releases for known services to the mongo repository" in {
       val testData = new TestData()
         .withKnownVersions("1.0.0", "2.0.0").withNewVersions("3.0.0").forService("service")
         .withKnownVersions("1.0.0").withNewVersions("1.1.0").forService("another")
+        .setup()
+
+      val result = service.updateModel().futureValue
+
+      testData.verifyReleasesAddedToRepository()
+    }
+
+    "Add new releases when a service has never been seen before" in {
+      val testData = new TestData()
+        .withKnownVersions().withNewVersions("1.0.0").forService("service")
+        .setup()
+
+      val result = service.updateModel().futureValue
+
+      testData.verifyReleasesAddedToRepository()
+    }
+
+    "Cope with a scenario where there are no deployments at all for a service" in {
+      val testData = new TestData()
+        .withKnownVersions().withNewVersions().forService("service")
+        .withKnownVersions().withNewVersions().forService("another")
         .setup()
 
       val result = service.updateModel().futureValue
@@ -95,15 +121,25 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
         serviceData.map { sd => sd.serviceName -> List(Repository("hmrc", "github")) } toMap ))
 
       when(deploymentsService.getAll()).thenReturn(Future.successful(
-        serviceData.map { sd => sd.serviceName -> buildDeploymentsData(sd) } toMap))
+        serviceData
+          .map { sd => sd.serviceName -> buildDeploymentsData(sd) }
+          .filter { case (_, sd) => sd.nonEmpty }
+          .toMap
+      ))
 
-      when(repository.getAll()).thenReturn(Future.successful(
-        serviceData.map { sd => sd.serviceName -> sd.knownVersions.map { v => Release(sd.serviceName, v, now, now) } } toMap ))
+      when(repository.getAll()).thenReturn(Future.successful(serviceData
+        .map { sd => sd.serviceName -> sd.knownVersions.map { v => Release(sd.serviceName, v, now, now) } }
+        .filter { case (_, r) => r.nonEmpty }
+        .toMap
+      ))
 
       when(repository.add(any())).thenReturn(Future.successful(true))
 
       this
     }
+
+    def withNoDeployments() =
+      when(deploymentsService.getAll()).thenReturn(Future.successful(Map[String, Seq[ServiceDeployment]]()))
 
     private def buildDeploymentsData(sd: ServiceTestData): Seq[ServiceDeployment] = {
       sd.knownVersions.map { v => ServiceDeployment(v, now) } ++
@@ -111,8 +147,9 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
     }
 
     def verifyReleasesAddedToRepository() =
-      serviceData.foreach { case sd =>
+    serviceData.foreach { case sd =>
         sd.expected.foreach { case (v, t, p) => verify(repository).add(Release(sd.serviceName, v, t, p)) } }
   }
 
 }
+
