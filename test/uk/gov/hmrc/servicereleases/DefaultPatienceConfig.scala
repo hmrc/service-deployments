@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.servicereleases
 
-class SchedulerIntegrationSpec {
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Millis, Seconds, Span}
 
-
-
+trait DefaultPatienceConfig {
+  self : ScalaFutures =>
+  implicit override val patienceConfig = PatienceConfig(timeout = Span(5, Seconds), interval = Span(5, Millis))
 }

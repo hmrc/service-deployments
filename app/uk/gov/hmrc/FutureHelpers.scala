@@ -58,6 +58,9 @@ object FutureHelpers {
         fn
       })
     }
+
+    def filter[B](fn: A => Boolean)(implicit ec: ExecutionContext): Future[Iterable[A]] =
+      futureList.map(_.filter(fn))
   }
 
   def continueOnError[A](f: Future[A]) =

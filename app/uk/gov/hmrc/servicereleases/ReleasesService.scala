@@ -41,39 +41,44 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
     for {
       service <- getNewServiceRepositoryDeployments()
       _ <- log(service)
-      maybeTagDates <- tryGetTagsDatesFor(service)
+      maybeTagDates <- tryGetTagDatesFor(service)
       success <- processNewReleases(service, maybeTagDates)
     } yield success
 
   private def getNewServiceRepositoryDeployments() =
     FutureIterable(
       for {
-        serviceRepositories <- serviceRepositoriesService.getAll()
         knownDeployments <- deploymentsService.getAll()
         knownReleases <- repository.getAll()
-      } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases)))
+        serviceRepositories <- serviceRepositoriesService.getAll()
+      } yield serviceRepositories
+        .map(Service(_, knownDeployments, knownReleases)))
 
-  private def tryGetTagsDatesFor(service: Service) =
-    FutureIterable(service.repositories.map { r => tagsService.get(r.org, service.serviceName, r.repoType) })
-      .map { results =>
-        combineResultsOrFailIfAnyTryDoesNotSucceed(results)
+  private def tryGetTagDatesFor(service: Service) =
+    getTagsForNewDeployments(service).map { results =>
+      combineResultsOrFailIfAnyTryDoesNotSucceed(results)
           .map(_.flatten)
-          .map(createMapFromTags) }
+          .map(convertTagsToMap) }
 
-  private def createMapFromTags(tags: Iterable[Tag]) =
-    tags.map { x => x.version -> x.createdAt } toMap
+  private def getTagsForNewDeployments(service: Service) =
+    FutureIterable(service.newDeployments match {
+      case Nil => Seq()
+      case _ => service.repositories.map { r => tagsService.get(r.org, service.serviceName, r.repoType) }})
 
   private def combineResultsOrFailIfAnyTryDoesNotSucceed[T](xs : Iterable[Try[T]]) : Try[Iterable[T]] =
     (Try(Seq[T]()) /: xs) { (a, b) => a flatMap (c => b map (d => c :+ d)) }
 
+  private def convertTagsToMap(tags: Iterable[Tag]) =
+    tags.map { x => x.version -> x.createdAt } toMap
+
   private def processNewReleases(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]) =
     maybeTagDates match {
-      case Success(td) => storeReleases(service, td)
+      case Success(td) => createReleasesFromNewDeploymentsAndTags(service, td)
       case Failure(ex) =>
         Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}")
         FutureIterable(Seq(Future.successful(false))) }
 
-  private def storeReleases(service: Service, tagDates: Map[String, LocalDateTime]) =
+  private def createReleasesFromNewDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]) =
     FutureIterable(
       service.newDeployments.map { nd =>
         tagDates.get(nd.version) match {
