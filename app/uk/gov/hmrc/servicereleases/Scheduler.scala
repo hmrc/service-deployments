@@ -19,42 +19,68 @@ package uk.gov.hmrc.servicereleases
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
+import org.joda.time.Duration
 import play.Logger
 import play.libs.Akka
 import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.gitclient.Git
 import uk.gov.hmrc.githubclient.GithubApiClient
+import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import uk.gov.hmrc.servicereleases.deployments.{DefaultServiceDeploymentsService, ReleasesApiConnector}
 import uk.gov.hmrc.servicereleases.services.{CatalogueConnector, DefaultServiceRepositoriesService}
 import uk.gov.hmrc.servicereleases.tags.{DefaultTagsService, GitConnector, GitHubConnector}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success}
 
-trait Scheduler {
+sealed trait JobResult
+case class Error(message: String) extends JobResult {
+  Logger.error(message)
+}
+case class Warn(message: String) extends JobResult {
+  Logger.warn(message)
+}
+case class Info(message: String) extends JobResult {
+  Logger.info(message)
+}
+
+trait Scheduler extends LockKeeper with MongoDbConnection {
   def akkaSystem: ActorSystem
   def releasesService: ReleasesService
+
+  override def repo: LockRepository = LockMongoRepository(db)
+  override def lockId: String = "service-releases-scheduled-job"
+  override val forceLockReleaseAfter: Duration = Duration.standardMinutes(15)
 
   def start(interval: FiniteDuration): Unit = {
     Logger.info(s"Initialising mongo update every $interval")
 
     akkaSystem.scheduler.schedule(FiniteDuration(1, TimeUnit.SECONDS), interval) {
+      run
+    }
+  }
+
+  def run: Future[JobResult] = {
+    tryLock {
       Logger.info(s"Starting mongo update")
 
-      releasesService.updateModel().onComplete {
-        case Success(result) =>
-          val total = result.toList.length
-          val failureCount = result.count(r => !r)
-          Logger.info(s"Added ${total - failureCount} new releases and encountered $failureCount failures")
-        case Failure(result) =>
-          Logger.error(s"Something went wrong during the mongo update: ${result.getMessage}")
+      releasesService.updateModel().map { result =>
+        val total = result.toList.length
+        val failureCount = result.count(r => !r)
+        Info(s"Added ${total - failureCount} new releases and encountered $failureCount failures")
+      }.recover { case ex =>
+        Error(s"Something went wrong during the mongo update: ${ex.getMessage}")
+      }
+    } map { resultOrLocked =>
+      resultOrLocked getOrElse {
+        Warn("Failed to obtain lock. Another process may have it.")
       }
     }
   }
 }
 
-object Scheduler extends Scheduler with MongoDbConnection {
+object Scheduler extends Scheduler {
   import ServiceReleasesConfig._
 
   val akkaSystem = Akka.system()

@@ -38,6 +38,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "play-json-logger" % playJsonLoggerVersion,
     "uk.gov.hmrc" %% "git-client" % "0.6.0",
     "uk.gov.hmrc" %% "github-client" % "1.3.0",
+    "uk.gov.hmrc" %% "mongo-lock" % "3.3.0",
     "uk.gov.hmrc" %% "domain" % domainVersion
   )
 

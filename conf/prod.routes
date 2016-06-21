@@ -1,5 +1,6 @@
 # Add all the application routes to the app.routes file
 ->         /                                    health.Routes
 
+GET        /api/releases/update                 uk.gov.hmrc.servicereleases.ReleasesController.update
 GET        /api/releases/:serviceName           uk.gov.hmrc.servicereleases.ReleasesController.forService(serviceName)
 GET        /admin/metrics                       com.kenshoo.play.metrics.MetricsController.metrics

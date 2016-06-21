@@ -36,4 +36,12 @@ object ReleasesController extends BaseController with MongoDbConnection  {
       case None => NotFound
     }
   }
+
+  def update() = Action.async { implicit request =>
+    Scheduler.run.map {
+      case Info(message) => Ok(message)
+      case Warn(message) => Ok(message)
+      case Error(message) => InternalServerError(message)
+    }
+  }
 }
