@@ -18,8 +18,18 @@ package uk.gov.hmrc
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 object FutureHelpers {
+
+  implicit class FutureExtender[A](f: Future[A]) {
+    def andAlso(fn: A => Unit): Future[A] = {
+      f.flatMap { r =>
+        fn(r)
+        f
+      }
+    }
+  }
 
   implicit class FutureOfBoolean(f: Future[Boolean]) {
     def &&(f1: => Future[Boolean]): Future[Boolean] = f.flatMap { bv =>
@@ -50,4 +60,6 @@ object FutureHelpers {
     }
   }
 
+  def continueOnError[A](f: Future[A]) =
+    f.map(Success(_)).recover { case x => Failure(x) }
 }

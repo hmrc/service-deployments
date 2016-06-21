@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.servicereleases.services
 
+import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.HttpClient._
 
@@ -28,9 +29,9 @@ trait ServiceDataSource {
   def getAll(): Future[List[Service]]
 }
 
-class CatalogueConnector(catalogueApiBase: String) extends ServiceDataSource {
+class CatalogueConnector(apiBase: String) extends ServiceDataSource {
   implicit val urlReads = Json.reads[GithubUrl]
   implicit val reads = Json.reads[Service]
 
-  override def getAll() = get[List[Service]](s"$catalogueApiBase/services")
+  override def getAll() = get[List[Service]](s"$apiBase/services", HeaderNames.ACCEPT -> "application/vnd.servicedetails.hal+json")
 }

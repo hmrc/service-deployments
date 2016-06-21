@@ -19,14 +19,16 @@ package uk.gov.hmrc.servicereleases.tags
 import java.time.LocalDateTime
 
 import play.api.Logger
-import RepoType.{Enterprise, Open}
 
 import scala.concurrent.Future
+import scala.util.Try
+import RepoType.{Enterprise, Open}
+import uk.gov.hmrc.FutureHelpers._
 
 case class ServiceReleaseTag(name: String, createdAt: LocalDateTime)
 
 trait TagsService {
-  def get(org: String, name: String, repoType: String): Future[List[Tag]]
+  def get(org: String, name: String, repoType: String): Future[Try[List[Tag]]]
 }
 
 class DefaultTagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource)
@@ -36,10 +38,10 @@ class DefaultTagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagD
     RepoType.from(repoType) match {
       case Enterprise =>
         Logger.debug(s"$name org : $org get Enterprise Repo release tags")
-        gitEnterpriseTagDataSource.get(org, name)
+        continueOnError(gitEnterpriseTagDataSource.get(org, name))
 
       case Open =>
         Logger.debug(s"$name org : $org get Open Repo release tags")
-        gitOpenTagDataSource.get(org, name)
+        continueOnError(gitOpenTagDataSource.get(org, name))
     }
 }

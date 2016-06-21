@@ -12,6 +12,7 @@ import uk.gov.hmrc.servicereleases.services.{Repository, ServiceRepositoriesServ
 import uk.gov.hmrc.servicereleases.tags.{Tag, TagsService}
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfterEach {
   val servicesService = mock[ServiceRepositoriesService]
@@ -61,6 +62,17 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
       testData.verifyReleasesAddedToRepository()
     }
 
+    "Ignore new releases for services if we fail to fetch the tags" in {
+      val testData = new TestData()
+        .withKnownVersions("1.0.0", "2.0.0").withNewVersions("3.0.0").forService("service")
+        .withKnownVersions("1.0.0").withNewVersions("1.1.0").forService("another", withTagFailure = true)
+        .setup()
+
+      val result = service.updateModel().futureValue
+
+      testData.verifyReleasesAddedToRepository()
+    }
+
     "Not do anything if there are no new releases" in {
       new TestData()
         .withKnownVersions("1.0.0", "2.0.0").forService("service")
@@ -69,11 +81,13 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       val result = service.updateModel().futureValue
 
+      verify(tagsService, never).get(any(), any(), any())
       verify(repository, never).add(any())
     }
   }
 
   private class TestData() {
+
     private case class ServiceTestData(serviceName: String,
                                expected: Seq[(String, LocalDateTime, LocalDateTime)],
                                knownVersions: Seq[String],
@@ -96,16 +110,22 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
       this
     }
 
-    def forService(name: String = RandomData.string(8)) = {
-      expected = unknownVersions.map { v =>
-        val date = RandomData.date()
-        (v, date, date.plusHours(1))
-      }
+    def forService(name: String = RandomData.string(8), withTagFailure: Boolean = false) = {
 
-      when(tagsService.get("hmrc", name, "github"))
-        .thenReturn(Future.successful(
-          (knownVersions.map { v => Tag(v, now) } ++
-            expected.map { case (v, t, p) => Tag(v, t) }).toList ))
+      if (withTagFailure)
+        when(tagsService.get("hmrc", name, "github")).thenReturn(
+          Future.successful(Failure(new RuntimeException("Ooooarrrg"))))
+      else {
+        expected = unknownVersions.map { v =>
+          val date = RandomData.date()
+          (v, date, date.plusHours(1))
+        }
+
+        when(tagsService.get("hmrc", name, "github"))
+          .thenReturn(Future.successful(
+            Success((knownVersions.map { v => Tag(v, now) } ++
+              expected.map { case (v, t, p) => Tag(v, t) }).toList)))
+      }
 
       serviceData = serviceData :+ ServiceTestData(name, expected, knownVersions, unknownVersions)
 
@@ -115,6 +135,32 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       this
     }
+
+
+//    def forService(name: String = RandomData.string(8), withTagFailure: Boolean = false) = {
+//      if (withTagFailure)
+//        when(tagsService.get("hmrc", name, "github")).thenReturn(
+//          Future.successful(Failure(new RuntimeException("Ooorraaaggg"))))
+//      else {
+//        when(tagsService.get("hmrc", name, "github"))
+//          .thenReturn(Future.successful(
+//            Success((knownVersions.map { v => Tag(v, now) } ++
+//              expected.map { case (v, t, p) => Tag(v, t) }).toList )))
+//
+//        expected = unknownVersions.map { v =>
+//          val date = RandomData.date()
+//          (v, date, date.plusHours(1))
+//        }
+//      }
+//
+//      serviceData = serviceData :+ ServiceTestData(name, expected, knownVersions, unknownVersions)
+//
+//      expected = Seq()
+//      knownVersions = List()
+//      unknownVersions = List()
+//
+//      this
+//    }
 
     def setup() = {
       when(servicesService.getAll()).thenReturn(Future.successful(
@@ -147,7 +193,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
     }
 
     def verifyReleasesAddedToRepository() =
-    serviceData.foreach { case sd =>
+      serviceData.foreach { case sd =>
         sd.expected.foreach { case (v, t, p) => verify(repository).add(Release(sd.serviceName, v, t, p)) } }
   }
 

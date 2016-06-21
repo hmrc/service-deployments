@@ -22,8 +22,8 @@ object RepoType {
 
   def from(st: String): RepoType = {
     st match {
-      case "github" => Enterprise
-      case "github-open" => Open
+      case "GitHub Enterprise" => Enterprise
+      case "GitHub.com" => Open
       case _ => throw new RuntimeException(s"Unknown repo type $st")
     }
   }

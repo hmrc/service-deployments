@@ -20,8 +20,9 @@ import java.time.{LocalDateTime, ZoneId, ZoneOffset}
 import java.util.TimeZone
 
 import play.api.libs.json.{JsValue, Writes, _}
+import reactivemongo.api.collections.bson.BSONQueryBuilder
 import reactivemongo.api.{DB, ReadPreference}
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -44,15 +45,16 @@ object Release {
 }
 
 trait ReleasesRepository {
-  def getAll(): Future[Map[String, Seq[Release]]]
   def add(release: Release): Future[Boolean]
+  def getAll(): Future[Map[String, Seq[Release]]]
+  def getForService(serviceName: String): Future[Option[Seq[Release]]]
 }
 
 class MongoReleasesRepository(mongo: () => DB)
   extends ReactiveRepository[Release, BSONObjectID](
     collectionName = "releases",
     mongo = mongo,
-    domainFormat = ReactiveMongoFormats.mongoEntity(Release.formats)) with ReleasesRepository {
+    domainFormat = Release.formats) with ReleasesRepository {
 
   def add(release: Release): Future[Boolean] = {
     insert(release) map {
@@ -62,4 +64,11 @@ class MongoReleasesRepository(mongo: () => DB)
   }
 
   override def getAll(): Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
+
+  def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
+    find("name" -> BSONDocument("$eq" -> serviceName)) map {
+      case Nil => None
+      case data => Some(data)
+    }
+  }
 }

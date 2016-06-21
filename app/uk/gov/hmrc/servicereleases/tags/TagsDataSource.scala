@@ -44,8 +44,6 @@ trait TagsDataSource {
   def get(organisation: String, repoName: String): Future[List[Tag]]
 }
 
-
-
 class GitHubConnector(gitHubClient: GithubApiClient) extends TagsDataSource {
   import BlockingIOExecutionContext.executionContext
 

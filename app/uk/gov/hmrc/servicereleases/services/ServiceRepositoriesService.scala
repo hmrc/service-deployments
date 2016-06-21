@@ -16,8 +16,11 @@
 
 package uk.gov.hmrc.servicereleases.services
 
+import play.api.Logger
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.FutureHelpers._
 
 case class Repository(org: String, repoType: String)
 
@@ -29,7 +32,9 @@ class DefaultServiceRepositoriesService(dataSource: ServiceDataSource) extends S
   override def getAll(): Future[Map[String, Seq[Repository]]] =
     dataSource.getAll().map { services =>
       services.map { service =>
-        service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.name, u.url)) } toMap }
+        service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.name, u.url))
+      } toMap
+    } andAlso (result => Logger.info(s"Found ${result.count(_ => true)} services"))
 
   private def toServiceRepo(service: String, repoType: String, repoUrl: String) =
     extractOrg(repoUrl).map { org => Repository(org, repoType) }

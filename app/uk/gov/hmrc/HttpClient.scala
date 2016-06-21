@@ -29,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 
 object HttpClient {
 
-  def get[T](url: String, header: List[(String, String)] = List())(implicit r: Reads[T]): Future[T] =
+  def get[T](url: String, header: (String, String)*)(implicit r: Reads[T]): Future[T] =
     getResponseBody(url, header).map { rsp =>
       Try {
         Json.parse(rsp).as[T]
@@ -53,20 +53,20 @@ object HttpClient {
       }
     }
 
-  private def getResponseBody(url: String, header: List[(String, String)] = List()): Future[String] =
+  private def getResponseBody(url: String, header: Seq[(String, String)] = List()): Future[String] =
     withErrorHandling("GET", url)(header) {
       case s if s.status >= 200 && s.status < 300 => s.body
       case res =>
         throw new RuntimeException(s"Unexpected response status : ${res.status}  calling url : $url response body : ${res.body}")
     }
 
-  private def withErrorHandling[T](method: String, url: String, body: Option[JsValue] = None)(headers: List[(String, String)])(f: WSResponse => T)(implicit ec: ExecutionContext): Future[T] =
+  private def withErrorHandling[T](method: String, url: String, body: Option[JsValue] = None)(headers: Seq[(String, String)])(f: WSResponse => T)(implicit ec: ExecutionContext): Future[T] =
     buildCall(method, url, body, headers).execute().transform(
       f,
       _ => throw new RuntimeException(s"Error connecting  $url")
     )
 
-  private def buildCall(method: String, url: String, body: Option[JsValue] = None, headers: List[(String, String)] = List()) = {
+  private def buildCall(method: String, url: String, body: Option[JsValue] = None, headers: Seq[(String, String)] = List()) = {
     val req = WS.client.url(url)
       .withMethod(method)
       .withHeaders(headers: _*)

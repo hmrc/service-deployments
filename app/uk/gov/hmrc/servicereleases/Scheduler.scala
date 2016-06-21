@@ -30,6 +30,7 @@ import uk.gov.hmrc.servicereleases.tags.{DefaultTagsService, GitConnector, GitHu
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success}
 
 trait Scheduler {
   def akkaSystem: ActorSystem
@@ -37,9 +38,17 @@ trait Scheduler {
 
   def start(interval: FiniteDuration): Unit = {
     Logger.info(s"Initialising mongo update every $interval")
+
     akkaSystem.scheduler.schedule(FiniteDuration(1, TimeUnit.SECONDS), interval) {
-      releasesService.updateModel().onComplete { result =>
-        Logger.debug(s"Job result: ${result.isFailure}")
+      Logger.info(s"Starting mongo update")
+
+      releasesService.updateModel().onComplete {
+        case Success(result) =>
+          val total = result.toList.length
+          val failureCount = result.count(r => !r)
+          Logger.info(s"Added ${total - failureCount} new releases and encountered $failureCount failures")
+        case Failure(result) =>
+          Logger.error(s"Something went wrong during the mongo update: ${result.getMessage}")
       }
     }
   }

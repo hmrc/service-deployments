@@ -30,6 +30,12 @@ object JavaDateTimeJsonFormatter {
     }
   }
 
+  implicit val localDateTimeWrites = new Writes[LocalDateTime] {
+    override def writes(o: LocalDateTime): JsValue = {
+      JsNumber(o.toEpochSecond(ZoneOffset.UTC))
+    }
+  }
+
   implicit val yearMonthWrite = new Writes[YearMonth] {
     override def writes(o: YearMonth): JsValue = JsString(o.toString)
   }
