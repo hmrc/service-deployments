@@ -29,7 +29,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-case class Release(name: String, version: String, creationDate: LocalDateTime, productionDate: LocalDateTime)
+case class Release(name: String, version: String, creationDate: Option[LocalDateTime], productionDate: LocalDateTime)
 
 object Release {
   implicit val localDateTimeRead: Reads[LocalDateTime] =

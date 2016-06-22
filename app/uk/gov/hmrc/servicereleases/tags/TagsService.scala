@@ -28,7 +28,7 @@ import uk.gov.hmrc.FutureHelpers._
 case class ServiceReleaseTag(name: String, createdAt: LocalDateTime)
 
 trait TagsService {
-  def get(org: String, name: String, repoType: String): Future[Try[List[Tag]]]
+  def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]]
 }
 
 class DefaultTagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource)

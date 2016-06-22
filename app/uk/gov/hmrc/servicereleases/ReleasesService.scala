@@ -83,11 +83,10 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
       service.newDeployments.map { nd =>
         tagDates.get(nd.version) match {
           case Some(td) =>
-            repository.add(Release(service.serviceName, nd.version, tagDates(nd.version), nd.releasedAt))
+            repository.add(Release(service.serviceName, nd.version, Some(tagDates(nd.version)), nd.releasedAt))
           case None =>
             Logger.warn(s"Unable to locate git tag for ${service.serviceName} ${nd.version}")
-            Future.successful(false) }})
-
+            repository.add(Release(service.serviceName, nd.version, None, nd.releasedAt)) }})
 
   private case class Service(serviceName: String, repositories: Seq[Repository], newDeployments: Seq[ServiceDeployment])
   private object Service {
