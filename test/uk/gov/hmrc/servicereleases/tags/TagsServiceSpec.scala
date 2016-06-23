@@ -40,7 +40,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with Scal
     val org = "org"
 
     "use enterprise data source if RepoType is Enterprise" in new SetUp {
-      val repoType = "GitHub Enterprise"
+      val repoType = "github-enterprise"
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
       when(gitEnterpriseTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
 
@@ -49,7 +49,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with Scal
     }
 
     "use open data source if RepoType is Open" in new SetUp {
-      val repoType = "GitHub.com"
+      val repoType = "github-com"
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
 
@@ -58,7 +58,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with Scal
     }
 
     "should fail gracefull by setting the Try to Failure state rather than the future" in new SetUp {
-      val repoType = "GitHub.com"
+      val repoType = "github-com"
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
       val ex =  new RuntimeException("Bleeuurgh")
 
