@@ -16,13 +16,18 @@
 
 package uk.gov.hmrc.servicereleases
 
-import play.api.libs.json.{Json, Writes}
+import java.time.LocalDateTime
+
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.functional.syntax._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
-
 import play.api.libs.concurrent.Execution.Implicits._
-
 import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.servicereleases.deployments.{Deployment, DeploymentsDataSource, ReleasesApiConnector}
+
+import scala.concurrent.Future
+import scala.io.Source
 
 object ReleasesController extends BaseController with MongoDbConnection  {
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
@@ -39,6 +44,28 @@ object ReleasesController extends BaseController with MongoDbConnection  {
 
   def update() = Action.async { implicit request =>
     Scheduler.run.map {
+      case Info(message) => Ok(message)
+      case Warn(message) => Ok(message)
+      case Error(message) => InternalServerError(message)
+    }
+  }
+
+  def importRaw() = Action.async(parse.temporaryFile) { request =>
+    implicit val reads: Reads[Deployment] = (
+      (JsPath \ "env").read[String] and
+        (JsPath \ "an").read[String] and
+        (JsPath \ "ver").read[String] and
+        (JsPath \ "fs").read[LocalDateTime]
+      )(Deployment.apply _)
+
+    val source = Source.fromFile(request.body.file, "UTF-8")
+    val jsons = for (line <- source.getLines()) yield Json.fromJson[Deployment](Json.parse(line))
+
+    val scheduler = new Scheduler with DefaultSchedulerDependencies {
+        val deploymentsDataSource = new DeploymentsDataSource {
+          def getAll: Future[List[Deployment]] = Future.successful(jsons.map(_.get).toList) }}
+
+    scheduler.run.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message) => InternalServerError(message)

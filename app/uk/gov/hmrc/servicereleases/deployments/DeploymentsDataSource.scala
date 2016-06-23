@@ -18,12 +18,11 @@ package uk.gov.hmrc.servicereleases.deployments
 
 import java.time.LocalDateTime
 
-import play.api.libs.json.{JsPath, Reads}
 import play.api.libs.functional.syntax._
-import uk.gov.hmrc.{FuturesCache, HttpClient, JavaDateTimeJsonFormatter}
+import play.api.libs.json.{JsPath, Reads}
+import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 case class Deployment(environment: String, name: String, version: String, firstSeen: LocalDateTime)
 

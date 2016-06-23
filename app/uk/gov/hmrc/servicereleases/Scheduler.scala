@@ -26,7 +26,7 @@ import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.gitclient.Git
 import uk.gov.hmrc.githubclient.GithubApiClient
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.servicereleases.deployments.{DefaultServiceDeploymentsService, ReleasesApiConnector}
+import uk.gov.hmrc.servicereleases.deployments.{DefaultServiceDeploymentsService, DeploymentsDataSource, ReleasesApiConnector}
 import uk.gov.hmrc.servicereleases.services.{CatalogueConnector, DefaultServiceRepositoriesService}
 import uk.gov.hmrc.servicereleases.tags.{DefaultTagsService, GitConnector, GitHubConnector}
 
@@ -45,12 +45,35 @@ case class Info(message: String) extends JobResult {
   Logger.info(message)
 }
 
-trait Scheduler extends LockKeeper with MongoDbConnection {
+trait DefaultSchedulerDependencies extends MongoDbConnection  {
+  import ServiceReleasesConfig._
+
+  def deploymentsDataSource: DeploymentsDataSource
+
+  private val enterpriseDataSource = new GitConnector(
+    Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true),
+    GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken))
+
+  private val openDataSource = new GitHubConnector(GithubApiClient(gitOpenApiUrl, gitOpenToken))
+
+  val akkaSystem = Akka.system()
+  lazy val releasesService = new DefaultReleasesService(
+    new DefaultServiceRepositoriesService(new CatalogueConnector(catalogueBaseUrl)),
+    new DefaultServiceDeploymentsService(deploymentsDataSource),
+    new DefaultTagsService(enterpriseDataSource, openDataSource),
+    new MongoReleasesRepository(db))
+}
+
+trait Scheduler extends LockKeeper {
+  self: MongoDbConnection  =>
+
   def akkaSystem: ActorSystem
+  def deploymentsDataSource: DeploymentsDataSource
   def releasesService: ReleasesService
 
   override def repo: LockRepository = LockMongoRepository(db)
   override def lockId: String = "service-releases-scheduled-job"
+
   override val forceLockReleaseAfter: Duration = Duration.standardMinutes(15)
 
   def start(interval: FiniteDuration): Unit = {
@@ -80,21 +103,8 @@ trait Scheduler extends LockKeeper with MongoDbConnection {
   }
 }
 
-object Scheduler extends Scheduler {
+object Scheduler extends Scheduler with DefaultSchedulerDependencies {
   import ServiceReleasesConfig._
 
-  val akkaSystem = Akka.system()
-
-  val enterpriseDataSource = new GitConnector(
-    Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true),
-    GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken))
-
-  val openDataSource = new GitHubConnector(GithubApiClient(gitOpenApiUrl, gitOpenToken))
-
-  val releasesService = new DefaultReleasesService(
-    new DefaultServiceRepositoriesService(new CatalogueConnector(catalogueBaseUrl)),
-    new DefaultServiceDeploymentsService(new ReleasesApiConnector(releasesApiBase)),
-    new DefaultTagsService(enterpriseDataSource, openDataSource),
-    new MongoReleasesRepository(db)
-  )
+  override val deploymentsDataSource = new ReleasesApiConnector(releasesApiBase)
 }

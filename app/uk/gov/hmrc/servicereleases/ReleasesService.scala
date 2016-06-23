@@ -75,7 +75,7 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
     maybeTagDates match {
       case Success(td) => createReleasesFromNewDeploymentsAndTags(service, td)
       case Failure(ex) =>
-        Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}")
+        Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}", ex)
         FutureIterable(Seq(Future.successful(false))) }
 
   private def createReleasesFromNewDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]) =
