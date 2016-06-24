@@ -62,18 +62,10 @@ class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient) exten
         tagsWithReleaseDate(withoutCreatedAt, organisation, repoName).map(serviceRelease ++ _)}
 
   private def tagsWithReleaseDate(gitTags: List[GitTag], organisation: String, repoName: String): Future[List[Tag]] =
-    if (gitTags.nonEmpty) {
-      Logger.warn(s"$repoName invalid git Tags total : ${gitTags.size} getting git releases")
-
+    if (gitTags.nonEmpty)
       for (rs <- githubApiClient.getReleases(organisation, repoName))
-      yield {
-        val releaseTags = gitTags.flatMap { gitTag => rs.find(_.tagName == gitTag.name).map(Tag.apply) }
-
-        Logger.info(s"$repoName tags from git releases total : ${releaseTags.size}")
-        releaseTags
-      }
-
-    } else Future.successful(Nil)
+      yield gitTags.flatMap { gitTag => rs.find(_.tagName == gitTag.name).map(Tag.apply) }
+    else Future.successful(Nil)
 }
 
 
