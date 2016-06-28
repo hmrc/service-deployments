@@ -33,12 +33,10 @@ case class Release(name: String, version: String, creationDate: Option[LocalDate
 
 object Release {
   implicit val localDateTimeRead: Reads[LocalDateTime] =
-    (__ \ "$date").read[Long].map { dateTime => LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC) }
+    __.read[Long].map { dateTime => LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC) }
 
   implicit val localDateTimeWrite: Writes[LocalDateTime] = new Writes[LocalDateTime] {
-    def writes(dateTime: LocalDateTime): JsValue = Json.obj(
-      "$date" -> dateTime.atOffset(ZoneOffset.UTC).toEpochSecond
-    )
+    def writes(dateTime: LocalDateTime): JsValue = JsNumber(value = dateTime.atOffset(ZoneOffset.UTC).toEpochSecond)
   }
 
   val formats = Json.format[Release]

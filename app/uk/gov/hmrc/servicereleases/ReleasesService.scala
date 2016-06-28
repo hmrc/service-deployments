@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.servicereleases
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneOffset}
 
 import play.api.Logger
 import uk.gov.hmrc.FutureHelpers._
@@ -58,17 +58,18 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
     getTagsForNewDeployments(service).map { results =>
       combineResultsOrFailIfAnyTryDoesNotSucceed(results)
           .map(_.flatten)
+          .map(_.sortBy(- _.createdAt.toEpochSecond(ZoneOffset.UTC)))
           .map(convertTagsToMap) }
 
   private def getTagsForNewDeployments(service: Service) =
-    FutureIterable(service.newDeployments match {
+    Future.sequence(service.newDeployments match {
       case Nil => Seq()
       case _ => service.repositories.map { r => tagsService.get(r.org, service.serviceName, r.repoType) }})
 
-  private def combineResultsOrFailIfAnyTryDoesNotSucceed[T](xs : Iterable[Try[T]]) : Try[Iterable[T]] =
+  private def combineResultsOrFailIfAnyTryDoesNotSucceed[T](xs : Seq[Try[T]]) : Try[Seq[T]] =
     (Try(Seq[T]()) /: xs) { (a, b) => a flatMap (c => b map (d => c :+ d)) }
 
-  private def convertTagsToMap(tags: Iterable[Tag]) =
+  private def convertTagsToMap(tags: Seq[Tag]) =
     tags.map { x => x.version -> x.createdAt } toMap
 
   private def processNewReleases(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]) =

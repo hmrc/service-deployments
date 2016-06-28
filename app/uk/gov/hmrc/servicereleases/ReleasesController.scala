@@ -71,4 +71,10 @@ object ReleasesController extends BaseController with MongoDbConnection  {
       case Error(message) => InternalServerError(message)
     }
   }
+
+  def clear() = Action.async { implicit request =>
+    releasesRepository.removeAll() map { r =>
+      Ok((!r.hasErrors).toString)
+    }
+  }
 }
