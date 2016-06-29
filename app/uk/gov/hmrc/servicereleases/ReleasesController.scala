@@ -18,13 +18,13 @@ package uk.gov.hmrc.servicereleases
 
 import java.time.LocalDateTime
 
-import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
-import play.api.libs.concurrent.Execution.Implicits._
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.servicereleases.deployments.{Deployment, DeploymentsDataSource, ReleasesApiConnector}
+import uk.gov.hmrc.servicereleases.deployments.{Deployment, DeploymentsDataSource}
 
 import scala.concurrent.Future
 import scala.io.Source

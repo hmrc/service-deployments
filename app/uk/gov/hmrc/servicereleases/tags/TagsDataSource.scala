@@ -18,13 +18,12 @@ package uk.gov.hmrc.servicereleases.tags
 
 import java.time.{LocalDateTime, ZoneId}
 
-import play.api.Logger
-import uk.gov.hmrc.{BlockingIOExecutionContext, FuturesCache}
+import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
 
 case class Tag(version: String, createdAt: LocalDateTime)
 
@@ -44,28 +43,38 @@ trait TagsDataSource {
   def get(organisation: String, repoName: String): Future[List[Tag]]
 }
 
-class GitHubConnector(gitHubClient: GithubApiClient) extends TagsDataSource {
+class GitHubConnector(gitHubClient: GithubApiClient, identifier: String) extends TagsDataSource {
   import BlockingIOExecutionContext.executionContext
 
   def get(organisation: String, repoName: String) =
-    gitHubClient.getReleases(organisation, repoName).map(identity(_))
+    withTimerAndCounter(s"git.api.$identifier") {
+      gitHubClient.getReleases(organisation, repoName).map(identity(_))
+    }
 }
 
-class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient) extends TagsDataSource {
+class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, identifier: String) extends TagsDataSource {
   import BlockingIOExecutionContext.executionContext
 
   def get(organisation: String, repoName: String) =
-    gitClient.getGitRepoTags(repoName, organisation).flatMap { x =>
-        val (withCreatedAt, withoutCreatedAt) = x.partition(_.createdAt.isDefined)
-        val serviceRelease: List[Tag] = withCreatedAt
+    getRepoTags(organisation, repoName).flatMap { x =>
+      val (withCreatedAt, withoutCreatedAt) = x.partition(_.createdAt.isDefined)
+      val serviceRelease: List[Tag] = withCreatedAt
 
-        tagsWithReleaseDate(withoutCreatedAt, organisation, repoName).map(serviceRelease ++ _)}
+      tagsWithReleaseDate(withoutCreatedAt, organisation, repoName).map(serviceRelease ++ _) }
 
   private def tagsWithReleaseDate(gitTags: List[GitTag], organisation: String, repoName: String): Future[List[Tag]] =
     if (gitTags.nonEmpty)
-      for (rs <- githubApiClient.getReleases(organisation, repoName))
-      yield gitTags.flatMap { gitTag => rs.find(_.tagName == gitTag.name).map(Tag.apply) }
+      for (rs <- getApiTags(organisation, repoName))
+        yield gitTags.flatMap { gitTag => rs.find(_.tagName == gitTag.name).map(Tag.apply) }
     else Future.successful(Nil)
+
+  private def getRepoTags(organisation: String, repoName: String) =
+    withTimerAndCounter(s"git.clone.$identifier") {
+      gitClient.getGitRepoTags (repoName, organisation) }
+
+  private def getApiTags(organisation: String, repoName: String) =
+    withTimerAndCounter(s"git.api.$identifier") {
+      githubApiClient.getReleases(organisation, repoName) }
 }
 
 

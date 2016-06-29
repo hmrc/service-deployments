@@ -16,18 +16,15 @@
 
 package uk.gov.hmrc.servicereleases
 
-import java.time.{LocalDateTime, ZoneId, ZoneOffset}
-import java.util.TimeZone
+import java.time.{LocalDateTime, ZoneOffset}
 
 import play.api.libs.json.{JsValue, Writes, _}
-import reactivemongo.api.collections.bson.BSONQueryBuilder
-import reactivemongo.api.{DB, ReadPreference}
+import reactivemongo.api.DB
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-
-import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 case class Release(name: String, version: String, creationDate: Option[LocalDateTime], productionDate: LocalDateTime)
 
@@ -55,18 +52,22 @@ class MongoReleasesRepository(mongo: () => DB)
     domainFormat = Release.formats) with ReleasesRepository {
 
   def add(release: Release): Future[Boolean] = {
-    insert(release) map {
-      case lastError if lastError.inError => throw lastError
-      case _ => true
+    withTimerAndCounter("mongo.write") {
+      insert(release) map {
+        case lastError if lastError.inError => throw lastError
+        case _ => true
+      }
     }
   }
 
   override def getAll(): Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
 
   def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
-    find("name" -> BSONDocument("$eq" -> serviceName)) map {
-      case Nil => None
-      case data => Some(data)
+    withTimerAndCounter("mongo.read") {
+      find("name" -> BSONDocument("$eq" -> serviceName)) map {
+        case Nil => None
+        case data => Some(data)
+      }
     }
   }
 }

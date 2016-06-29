@@ -19,6 +19,7 @@ package uk.gov.hmrc.servicereleases
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
+import com.kenshoo.play.metrics.MetricsRegistry._
 import org.joda.time.Duration
 import play.Logger
 import play.libs.Akka
@@ -52,9 +53,12 @@ trait DefaultSchedulerDependencies extends MongoDbConnection  {
 
   private val enterpriseDataSource = new GitConnector(
     Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true),
-    GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken))
+    GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken),
+    "enterprise")
 
-  private val openDataSource = new GitHubConnector(GithubApiClient(gitOpenApiUrl, gitOpenToken))
+  private val openDataSource = new GitHubConnector(
+    GithubApiClient(gitOpenApiUrl, gitOpenToken),
+    "open")
 
   val akkaSystem = Akka.system()
   lazy val releasesService = new DefaultReleasesService(
@@ -91,7 +95,12 @@ trait Scheduler extends LockKeeper {
       releasesService.updateModel().map { result =>
         val total = result.toList.length
         val failureCount = result.count(r => !r)
-        Info(s"Added ${total - failureCount} new releases and encountered $failureCount failures")
+        val successCount = total - failureCount
+
+        defaultRegistry.counter("scheduler.success").inc(successCount)
+        defaultRegistry.counter("scheduler.failure").inc(failureCount)
+
+        Info(s"Added $successCount new releases and encountered $failureCount failures")
       }.recover { case ex =>
         Error(s"Something went wrong during the mongo update: ${ex.getMessage}")
       }
