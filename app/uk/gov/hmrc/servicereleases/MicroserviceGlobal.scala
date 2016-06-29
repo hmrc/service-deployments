@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 import com.kenshoo.play.metrics.MetricsFilter
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
-import play.api.mvc.EssentialFilter
+import play.api.mvc.{EssentialAction, EssentialFilter, Filters}
 import play.api.{Application, Configuration, GlobalSettings, Play}
 import uk.gov.hmrc.play.config.{ControllerConfig, RunMode}
 import uk.gov.hmrc.play.filters.{NoCacheFilter, RecoveryFilter}
@@ -63,5 +63,11 @@ object MicroserviceGlobal extends GlobalSettings
   override def onStart(app: Application): Unit = {
     if (ServiceReleasesConfig.schedulerEnabled)
       Scheduler.start(FiniteDuration(1, TimeUnit.HOURS))
+
+    super.onStart(app)
+  }
+
+  override def doFilter(a: EssentialAction): EssentialAction = {
+    Filters(super.doFilter(a), microserviceFilters: _*)
   }
 }
