@@ -23,6 +23,8 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import play.api.test.FakeApplication
+import play.api.test.Helpers._
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 
@@ -31,11 +33,11 @@ import scala.concurrent.Future
 
 class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures {
   private val githubApiClient = mock[GithubApiClient]
-  private val connector = new GitHubConnector(githubApiClient)
+  private val connector = new GitHubConnector(githubApiClient, "")
 
   "getServiceRepoReleaseTags" should {
 
-    "get repo release tags from git hub releases" in {
+    "get repo release tags from git hub releases" in running(FakeApplication()) {
       val now: LocalDateTime = LocalDateTime.now()
       val releases = List(
         GhRepoRelease(123, "releases/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))

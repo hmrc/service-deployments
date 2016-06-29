@@ -23,6 +23,8 @@ import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import play.api.test.FakeApplication
+import play.api.test.Helpers._
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
@@ -33,11 +35,11 @@ import scala.concurrent.Future
 class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures {
   val gitClient = mock[GitClient]
   val gitHubClient = mock[GithubApiClient]
-  val connector = new GitConnector(gitClient, gitHubClient)
+  val connector = new GitConnector(gitClient, gitHubClient, "")
 
   "getGitRepoTags" should {
 
-    "return tags form gitClient with normalized tag name (i.e just the numbers)" in {
+    "return tags form gitClient with normalized tag name (i.e just the numbers)" in running(FakeApplication()) {
       val now = ZonedDateTime.now()
       val repoName = "repoName"
       val org = "HMRC"
@@ -54,7 +56,7 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
         Tag("someRandomtagName", now.toLocalDateTime))
     }
 
-    "try to lookup tag dates from the github releases if tag date is missing and only return tags which have dates" in {
+    "try to lookup tag dates from the github releases if tag date is missing and only return tags which have dates" in running(FakeApplication()) {
       val now = ZonedDateTime.now()
       val repoName = "repoName"
       val org = "HMRC"
