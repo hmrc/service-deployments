@@ -33,5 +33,5 @@ class CatalogueConnector(apiBase: String) extends ServiceDataSource {
   implicit val urlReads = Json.reads[GithubUrl]
   implicit val reads = Json.reads[Service]
 
-  override def getAll() = get[List[Service]](s"$apiBase/services", HeaderNames.ACCEPT -> "application/vnd.servicedetails.hal+json")
+  override def getAll() = get[List[Service]](s"$apiBase/services?details=true")
 }
