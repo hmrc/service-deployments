@@ -20,13 +20,14 @@ import java.time.{LocalDateTime, ZoneOffset}
 
 import play.api.libs.json.{JsValue, Writes, _}
 import reactivemongo.api.DB
+import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-case class Release(name: String, version: String, creationDate: Option[LocalDateTime], productionDate: LocalDateTime)
+case class Release(name: String, version: String, creationDate: Option[LocalDateTime], productionDate: LocalDateTime, leadTime: Option[Long] = None)
 
 object Release {
   implicit val localDateTimeRead: Reads[LocalDateTime] =
@@ -41,7 +42,9 @@ object Release {
 
 trait ReleasesRepository {
   def add(release: Release): Future[Boolean]
+
   def getAll(): Future[Map[String, Seq[Release]]]
+
   def getForService(serviceName: String): Future[Option[Seq[Release]]]
 }
 
@@ -50,6 +53,15 @@ class MongoReleasesRepository(mongo: () => DB)
     collectionName = "releases",
     mongo = mongo,
     domainFormat = Release.formats) with ReleasesRepository {
+
+
+  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
+    Future.sequence(
+      Seq(
+        collection.indexesManager.ensure(Index(Seq("productionDate" -> IndexType.Descending), name = Some("productionDateIdx"))),
+        collection.indexesManager.ensure(Index(Seq("name" -> IndexType.Hashed), name = Some("nameIdx")))
+      )
+    )
 
   def add(release: Release): Future[Boolean] = {
     withTimerAndCounter("mongo.write") {

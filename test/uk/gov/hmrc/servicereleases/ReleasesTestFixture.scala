@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.servicereleases
 
-import java.time.LocalDateTime
+import java.io.Serializable
+import java.time.{ZoneId, LocalDate, LocalDateTime}
+import java.time.format.DateTimeFormatter
 
 import org.mockito.Mockito._
 import uk.gov.hmrc.servicereleases.deployments.{ServiceDeployment, ServiceDeploymentsService}
@@ -30,45 +32,62 @@ case class ServiceTestFixture(serviceName: String,
                               tags: Try[Seq[Tag]],
                               releases: Seq[Release],
                               deployments: Seq[ServiceDeployment],
-                              versionDates: Map[String, LocalDateTime],
                               verifyReleaseWasAddedToMongo: (String) => Unit,
-                              verifyReleaseWasAddedToMongoWithBlankCreatedDate: (String) => Unit)
+                              verifyReleaseWasAddedToMongoWithBlankCreatedDate: (String) => Unit,
+                              verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval: ((String, Option[Long])) => Unit
+                               )
 
 object ServiceTestFixture {
   def configureMocks(servicesService: ServiceRepositoriesService,
-                     deploymentsService : ServiceDeploymentsService,
+                     deploymentsService: ServiceDeploymentsService,
                      tagsService: TagsService,
                      repository: ReleasesRepository)
                     (fixturesToBuild: ((String) => ReleasesTestFixture) => Seq[ReleasesTestFixture]) = {
 
     def build(fixture: ReleasesTestFixture) = {
-      val versionDates = (fixture.releaseData ++ fixture.deploymentsData ++ fixture.tagsData.getOrElse(Seq()))
-        .distinct.map(_ -> RandomData.date()).toMap
+      val defaultVersionDates = (fixture.releaseData ++ fixture.deploymentsData.keys ++ fixture.tagsData.map(_.keys).getOrElse(Seq())).distinct.map(_ -> RandomData.date()).toMap
+
+      val tagsDataWithDefaultDates: Try[Map[String, LocalDateTime]] = fixture.tagsData.map { tagsData=>
+        tagsData.foldLeft(Map.empty[String, LocalDateTime]){case (m, (v, dOpt)) =>
+            m + (v -> dOpt.getOrElse(defaultVersionDates(v)))
+        }
+      }
+
+      val deploymentsDataWithDefaultDates = fixture.deploymentsData.foldLeft(Map.empty[String, LocalDateTime]){case (m, (v, dOpt)) =>
+          m + (v -> dOpt.getOrElse(defaultVersionDates(v).plusHours(1)))
+      }
+
 
       ServiceTestFixture(
         fixture.serviceName,
-        tags = fixture.tagsData.map(_.map { v => Tag(v, versionDates(v)) }),
-        releases = fixture.releaseData.map { v => Release(fixture.serviceName, v, Some(versionDates(v)), versionDates(v).plusHours(1)) },
-        deployments = fixture.deploymentsData.map { v => ServiceDeployment(v, versionDates(v).plusHours(1)) },
-        versionDates,
-        verifyReleaseWasAddedToMongo(fixture, versionDates),
-        verifyReleaseWasAddedToMongoWithBlankCreatedDate(fixture, versionDates))
+        tags = tagsDataWithDefaultDates.map(x => x.map { case (v, d) => Tag(v, d) }.toSeq),
+        releases = fixture.releaseData.map { v => Release(fixture.serviceName, v, tagsDataWithDefaultDates.getOrElse(Map()).get(v), deploymentsDataWithDefaultDates(v)) },
+        deployments = deploymentsDataWithDefaultDates.map { case (v, d) => ServiceDeployment(v, d) }.toSeq,
+        verifyReleaseWasAddedToMongo(fixture, tagsDataWithDefaultDates.getOrElse(Map()), deploymentsDataWithDefaultDates),
+        verifyReleaseWasAddedToMongoWithBlankCreatedDate(fixture, deploymentsDataWithDefaultDates),
+        verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval(fixture, tagsDataWithDefaultDates.getOrElse(Map()), deploymentsDataWithDefaultDates)
+      )
     }
 
-    def verifyReleaseWasAddedToMongo(fixture: ReleasesTestFixture, versionDates: Map[String, LocalDateTime])(version: String): Unit = {
-      val date = versionDates(version)
-      verify(repository).add(Release(fixture.serviceName, version, Some(date), date.plusHours(1)))
+    def verifyReleaseWasAddedToMongo(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
+      verify(repository).add(Release(fixture.serviceName, version, tagDates.get(version), deploymentDates(version), Some(0)))
     }
 
-    def verifyReleaseWasAddedToMongoWithBlankCreatedDate(fixture: ReleasesTestFixture, versionDates: Map[String, LocalDateTime])(version: String): Unit = {
-      val date = versionDates(version)
-      verify(repository).add(Release(fixture.serviceName, version, None, date.plusHours(1)))
+    def verifyReleaseWasAddedToMongoWithBlankCreatedDate(fixture: ReleasesTestFixture, deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
+      val date = deploymentDates(version)
+      verify(repository).add(Release(fixture.serviceName, version, None, date, None))
+    }
+
+    def verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionLeadInterval: (String, Option[Long])): Unit = {
+
+      val (version, leadInterval) = versionLeadInterval
+      verify(repository).add(Release(fixture.serviceName, version, tagDates.get(version), deploymentDates(version), leadInterval))
     }
 
     val fixtures = fixturesToBuild(ReleasesTestFixture.apply).map(build)
 
     when(servicesService.getAll()).thenReturn(Future.successful(
-      fixtures.map { sd => sd.serviceName -> List(Repository("hmrc", "github")) } toMap ))
+      fixtures.map { sd => sd.serviceName -> List(Repository("hmrc", "github")) } toMap))
 
     when(deploymentsService.getAll()).thenReturn(Future.successful(
       fixtures
@@ -85,10 +104,13 @@ object ServiceTestFixture {
     ))
 
     fixtures.foreach { f =>
-      when(tagsService.get("hmrc", f.serviceName, "github")).thenReturn(Future.successful(f.tags)) }
+      when(tagsService.get("hmrc", f.serviceName, "github")).thenReturn(Future.successful(f.tags))
+    }
 
     fixtures.map { f => f.serviceName -> f } toMap
   }
+
+
 }
 
 object ReleasesTestFixture {
@@ -96,9 +118,10 @@ object ReleasesTestFixture {
 }
 
 class ReleasesTestFixture(val serviceName: String = RandomData.string(8)) {
+
   var releaseData: Seq[String] = Seq()
-  var deploymentsData: Seq[String] = Seq()
-  var tagsData: Try[Seq[String]] = Success(Seq())
+  var deploymentsData: Map[String, Option[LocalDateTime]] = Map()
+  var tagsData: Try[Map[String, Option[LocalDateTime]]] = Success(Map())
 
   def repositoryKnowsAbout(versions: String*) = {
     releaseData = versions
@@ -106,12 +129,24 @@ class ReleasesTestFixture(val serviceName: String = RandomData.string(8)) {
   }
 
   def deploymentsKnowsAbout(versions: String*) = {
-    deploymentsData = versions
+    deploymentsData = deploymentsData ++ versions.map((_, None))
+    this
+  }
+
+  def deploymentsKnowsAbout(versions: Map[String, String]) = {
+    require(versions.values.forall(_.nonEmpty), "date cannot be empty")
+    deploymentsData = deploymentsData ++ versions.mapValues(x => Some(toLocalDateTime(x))).toSeq
     this
   }
 
   def tagsServiceKnowsAbout(versions: String*) = {
-    tagsData = Success(versions)
+    tagsData = tagsData.map(_ ++ versions.map((_, None)))
+    this
+  }
+
+  def tagsServiceKnowsAbout(versions: Map[String, String]) = {
+
+    tagsData = tagsData.map(_ ++ versions.mapValues(x => Some(toLocalDateTime(x))).toSeq)
     this
   }
 
@@ -119,4 +154,6 @@ class ReleasesTestFixture(val serviceName: String = RandomData.string(8)) {
     tagsData = Failure(new RuntimeException(message))
     this
   }
+
+  private def toLocalDateTime(dateS: String) = LocalDate.parse(dateS, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay()
 }

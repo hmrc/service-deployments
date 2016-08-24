@@ -40,6 +40,7 @@ class DefaultServiceRepositoriesService(dataSource: ServiceDataSource) extends S
     extractOrg(repoUrl).map { org => Repository(org, repoType) }
 
   val org = "^.*://.*(?<!/)/(.*)/.*(?<!/)$".r
+
   private def extractOrg(url: String) = url match {
     case org(o) => Some(o)
     case _ => None
