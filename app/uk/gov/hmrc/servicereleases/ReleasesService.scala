@@ -42,12 +42,12 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
       service <- getNewServiceRepositoryDeployments
       _ <- log(service)
       maybeTagDates <- tryGetTagDatesFor(service)
-      success <- processNewReleases(service, maybeTagDates)
+      success <- processReleases(service, maybeTagDates)
     } yield success
 
   private def getNewServiceRepositoryDeployments = {
     val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] = deploymentsService.getAll()
-    val allKnownReleasesF: Future[Map[String, Seq[Release]]] = repository.getAll()
+    val allKnownReleasesF: Future[Map[String, Seq[Release]]] = repository.getAll
     val allServiceRepositoriesF: Future[Map[String, Seq[Repository]]] = serviceRepositoriesService.getAll()
 
     FutureIterable(
@@ -70,7 +70,7 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
     }
 
   private def getTagsForNewDeployments(service: Service) =
-    Future.sequence(service.newDeployments match {
+    Future.sequence(service.deploymentsRequiringUpdates match {
       case Nil => Seq()
       case _ => service.repositories.map { r => tagsService.get(r.org, service.serviceName, r.repoType) }
     })
@@ -81,7 +81,7 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
   private def convertTagsToMap(tags: Seq[Tag]) =
     tags.map { x => x.version -> x.createdAt } toMap
 
-  private def processNewReleases(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]) =
+  private def processReleases(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]) =
     maybeTagDates match {
       case Success(td) => createReleasesFromNewDeploymentsAndTags(service, td)
       case Failure(ex) =>
@@ -89,15 +89,20 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
         FutureIterable(Seq(Future.successful(false)))
     }
 
-  private def createReleasesFromNewDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]) =
+  private def createReleasesFromNewDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] =
     FutureIterable(
-      service.newDeployments.map { nd =>
+      service.deploymentsRequiringUpdates.map { nd =>
         tagDates.get(nd.version) match {
           case Some(td) =>
-            repository.add(Release(service.serviceName, nd.version, Some(td), nd.releasedAt, Some(daysBetween(td,nd.releasedAt))))
+            service.knownReleases.find(_.version == nd.version).fold {
+              repository.add(Release(service.serviceName, nd.version, Some(td), nd.releasedAt, 1, Some(daysBetween(td, nd.releasedAt))))
+            } { kr =>
+              repository.update(kr.copy(leadTime = Some(daysBetween(td, nd.releasedAt))))
+            }
+
           case None =>
             Logger.warn(s"Unable to locate git tag for ${service.serviceName} ${nd.version}")
-            repository.add(Release(service.serviceName, nd.version, None, nd.releasedAt))
+            repository.add(Release(service.serviceName, nd.version, None, nd.releasedAt, 1))
         }
       })
 
@@ -106,7 +111,14 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
     Math.round(Duration.between(before, after).toHours / 24d)
   }
 
-  private case class Service(serviceName: String, repositories: Seq[Repository], newDeployments: Seq[ServiceDeployment])
+  private case class Service(serviceName: String, repositories: Seq[Repository], deployments: Seq[ServiceDeployment], knownReleases: Seq[Release]) {
+
+    lazy val deploymentsRequiringUpdates = deployments.filter(kd => isNewDeployment(kd) || isMissingLeadTimeInterval(kd))
+
+    def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownReleases.exists(kr => kr.version == deployment.version)
+
+    def isMissingLeadTimeInterval(deployment: ServiceDeployment): Boolean = knownReleases.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
+  }
 
   private object Service {
     def apply(serviceRepositories: (String, Seq[Repository]),
@@ -118,8 +130,8 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
           new Service(
             serviceName,
             repositories,
-            knownDeployments.getOrElse(serviceName, Seq())
-              .filterNot(kd => knownReleases.getOrElse(serviceName, Seq()).exists(kr => kr.version == kd.version))
+            knownDeployments.getOrElse(serviceName, Seq()),
+            knownReleases.getOrElse(serviceName, Seq())
           )
       }
   }
@@ -127,7 +139,7 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
   private def log(serviceRepositoryDeployments: Service): Future[Unit] = {
     Logger.debug(s"Checking new deployments for service: ${serviceRepositoryDeployments.serviceName}")
 
-    serviceRepositoryDeployments.newDeployments.foreach {
+    serviceRepositoryDeployments.deployments.foreach {
       d => Logger.debug(
         s"Found unknown release ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.releasedAt}")
     }

@@ -24,10 +24,14 @@ import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Release(name: String, version: String, creationDate: Option[LocalDateTime], productionDate: LocalDateTime, leadTime: Option[Long] = None)
+case class Release(name: String, version: String,
+                   creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
+                   releaseInterval: Long = 1, leadTime: Option[Long] = None,
+                   _id: Option[BSONObjectID] = None)
 
 object Release {
   implicit val localDateTimeRead: Reads[LocalDateTime] =
@@ -37,13 +41,17 @@ object Release {
     def writes(dateTime: LocalDateTime): JsValue = JsNumber(value = dateTime.atOffset(ZoneOffset.UTC).toEpochSecond)
   }
 
+  implicit val bsonIdFormat = ReactiveMongoFormats.objectIdFormats
+
   val formats = Json.format[Release]
 }
 
 trait ReleasesRepository {
   def add(release: Release): Future[Boolean]
 
-  def getAll(): Future[Map[String, Seq[Release]]]
+  def update(release: Release): Future[Boolean]
+
+  def getAll: Future[Map[String, Seq[Release]]]
 
   def getForService(serviceName: String): Future[Option[Seq[Release]]]
 }
@@ -72,7 +80,20 @@ class MongoReleasesRepository(mongo: () => DB)
     }
   }
 
-  override def getAll(): Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
+  def update(release: Release): Future[Boolean] = {
+    require(release._id.isDefined, "id must be defined")
+    withTimerAndCounter("mongo.update") {
+      collection.update(
+        selector = Json.obj("_id" -> Json.toJson(release._id.get)(ReactiveMongoFormats.objectIdWrite)),
+        update = Release.formats.writes(release)
+      ).map {
+        case lastError if lastError.inError => throw lastError
+        case _ => true
+      }
+    }
+  }
+
+  override def getAll: Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
 
   def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
     withTimerAndCounter("mongo.read") {
