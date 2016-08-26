@@ -17,9 +17,11 @@
 package uk.gov.hmrc.servicereleases
 
 import java.time.{Duration, LocalDateTime, ZoneOffset}
+import java.util.ServiceConfigurationError
 
 import play.api.Logger
 import uk.gov.hmrc.FutureHelpers._
+import uk.gov.hmrc.servicereleases.ReleaseOperation.{Update, Add}
 import uk.gov.hmrc.servicereleases.deployments.{ServiceDeployment, ServiceDeploymentsService}
 import uk.gov.hmrc.servicereleases.services.{Repository, ServiceRepositoriesService}
 import uk.gov.hmrc.servicereleases.tags.{Tag, TagsService}
@@ -89,52 +91,17 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
         FutureIterable(Seq(Future.successful(false)))
     }
 
-  private def createReleasesFromNewDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] =
+  private def createReleasesFromNewDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] = {
+
     FutureIterable(
-      service.deploymentsRequiringUpdates.map { nd =>
-        tagDates.get(nd.version) match {
-          case Some(td) =>
-            service.knownReleases.find(_.version == nd.version).fold {
-              repository.add(Release(service.serviceName, nd.version, Some(td), nd.releasedAt, 1, Some(daysBetween(td, nd.releasedAt))))
-            } { kr =>
-              repository.update(kr.copy(leadTime = Some(daysBetween(td, nd.releasedAt))))
-            }
-
-          case None =>
-            Logger.warn(s"Unable to locate git tag for ${service.serviceName} ${nd.version}")
-            repository.add(Release(service.serviceName, nd.version, None, nd.releasedAt, 1))
-        }
-      })
-
-  private def daysBetween(before: LocalDateTime, after: LocalDateTime): Long = {
-
-    Math.round(Duration.between(before, after).toHours / 24d)
-  }
-
-  private case class Service(serviceName: String, repositories: Seq[Repository], deployments: Seq[ServiceDeployment], knownReleases: Seq[Release]) {
-
-    lazy val deploymentsRequiringUpdates = deployments.filter(kd => isNewDeployment(kd) || isMissingLeadTimeInterval(kd))
-
-    def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownReleases.exists(kr => kr.version == deployment.version)
-
-    def isMissingLeadTimeInterval(deployment: ServiceDeployment): Boolean = knownReleases.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
-  }
-
-  private object Service {
-    def apply(serviceRepositories: (String, Seq[Repository]),
-              knownDeployments: Map[String, Seq[ServiceDeployment]],
-              knownReleases: Map[String, Seq[Release]]): Service =
-
-      serviceRepositories match {
-        case (serviceName, repositories) =>
-          new Service(
-            serviceName,
-            repositories,
-            knownDeployments.getOrElse(serviceName, Seq()),
-            knownReleases.getOrElse(serviceName, Seq())
-          )
+      new ReleaseAndOperation(service, tagDates).get.map {
+        case (Add, r) => repository.add(r)
+        case (Update, r) => repository.update(r)
       }
+    )
+
   }
+
 
   private def log(serviceRepositoryDeployments: Service): Future[Unit] = {
     Logger.debug(s"Checking new deployments for service: ${serviceRepositoryDeployments.serviceName}")
@@ -146,4 +113,66 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
     Future.successful(Unit)
   }
+
 }
+
+case class Service(serviceName: String, repositories: Seq[Repository], deployments: Seq[ServiceDeployment], knownReleases: Seq[Release]) {
+
+  lazy val deploymentsRequiringUpdates = deployments.filter(kd => isNewDeployment(kd) || isMissingLeadTimeInterval(kd))
+
+  lazy val deploymentsSortedByReleasedAt = deployments.sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC))
+
+  def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownReleases.exists(kr => kr.version == deployment.version)
+
+  def isMissingLeadTimeInterval(deployment: ServiceDeployment): Boolean = knownReleases.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
+}
+
+object Service {
+  def apply(serviceRepositories: (String, Seq[Repository]),
+            knownDeployments: Map[String, Seq[ServiceDeployment]],
+            knownReleases: Map[String, Seq[Release]]): Service =
+
+    serviceRepositories match {
+      case (serviceName, repositories) =>
+        new Service(
+          serviceName,
+          repositories,
+          knownDeployments.getOrElse(serviceName, Seq()),
+          knownReleases.getOrElse(serviceName, Seq())
+        )
+    }
+}
+
+object ReleaseOperation extends Enumeration {
+  val Add, Update = Value
+}
+
+class ReleaseAndOperation(service: Service, tagDates: Map[String, LocalDateTime]) {
+
+
+  def get: Seq[(ReleaseOperation.Value, Release)] = {
+    service.deploymentsRequiringUpdates.map { nd =>
+      val tagDate = tagDates.get(nd.version)
+      service.knownReleases.find(_.version == nd.version).fold {
+        (Add, Release(service.serviceName, nd.version, tagDate, nd.releasedAt, releaseInterval(nd.version), leadTime(nd, tagDate)))
+      } { kr =>
+        (Update, kr.copy(leadTime = leadTime(nd, tagDate), releaseInterval = releaseInterval(nd.version)))
+      }
+    }
+  }
+
+  def releaseInterval(version: String): Option[Long] = {
+
+    (service.deploymentsSortedByReleasedAt, service.deploymentsSortedByReleasedAt drop 1).zipped.map { case (d1, d2) =>
+      (d2.version, daysBetween(d1.releasedAt, d2.releasedAt))
+    }.find(_._1 == version).map(_._2)
+  }
+
+  def leadTime(nd: ServiceDeployment, tagDate: Option[LocalDateTime]): Option[Long] = {
+    tagDate.map(daysBetween(_, nd.releasedAt))
+  }
+
+  private def daysBetween(before: LocalDateTime, after: LocalDateTime): Long = Math.round(Duration.between(before, after).toHours / 24d)
+
+}
+

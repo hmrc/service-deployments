@@ -35,13 +35,12 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
     await(mongoReleasesRepository.drop)
   }
 
-  println(databaseName)
 
   "add" should {
 
     "be able to insert a new record and update it as well" in {
       val now: LocalDateTime = LocalDateTime.now()
-      await(mongoReleasesRepository.add(Release("test", "v", None, now, 1)))
+      await(mongoReleasesRepository.add(Release("test", "v", None, now, Some(1))))
       val all = await(mongoReleasesRepository.getAll)
 
       all.values.flatten.size shouldBe 1
@@ -53,14 +52,13 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
       savedRelease.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe now.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
       savedRelease.leadTime shouldBe None
 
-
     }
   }
 
   "update" should {
     "update already existing release" in {
       val now: LocalDateTime = LocalDateTime.now()
-      await(mongoReleasesRepository.add(Release("test", "v", None, now, 1)))
+      await(mongoReleasesRepository.add(Release("test", "v", None, now)))
 
       val all = await(mongoReleasesRepository.getAll)
 

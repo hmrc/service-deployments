@@ -41,7 +41,7 @@ object ReleasesController extends BaseController with MongoDbConnection  {
       (__ \ "version").write[String] and
       (__ \ "creationDate").writeNullable[LocalDateTime] and
       (__ \ "productionDate").write[LocalDateTime] and
-      (__ \ "releaseInterval").write[Long] and
+      (__ \ "releaseInterval").writeNullable[Long] and
       (__ \ "leadTime").writeNullable[Long] and
       (__ \ "_id").writeNullable[BSONObjectID].contramap((_: Option[BSONObjectID]) => None)
     ) (unlift(Release.unapply))

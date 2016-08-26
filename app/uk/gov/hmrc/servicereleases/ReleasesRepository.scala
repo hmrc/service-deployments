@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class Release(name: String, version: String,
                    creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
-                   releaseInterval: Long = 1, leadTime: Option[Long] = None,
+                   releaseInterval: Option[Long] = None, leadTime: Option[Long] = None,
                    _id: Option[BSONObjectID] = None)
 
 object Release {
@@ -44,6 +44,7 @@ object Release {
   implicit val bsonIdFormat = ReactiveMongoFormats.objectIdFormats
 
   val formats = Json.format[Release]
+
 }
 
 trait ReleasesRepository {
