@@ -41,13 +41,13 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
   def updateModel() =
     for {
-      service <- getNewServiceRepositoryDeployments
+      service <- getServiceRepositoryDeployments
       _ <- log(service)
       maybeTagDates <- tryGetTagDatesFor(service)
       success <- processReleases(service, maybeTagDates)
     } yield success
 
-  private def getNewServiceRepositoryDeployments = {
+  private def getServiceRepositoryDeployments = {
     val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] = deploymentsService.getAll()
     val allKnownReleasesF: Future[Map[String, Seq[Release]]] = repository.getAll
     val allServiceRepositoriesF: Future[Map[String, Seq[Repository]]] = serviceRepositoriesService.getAll()
@@ -64,14 +64,14 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
   }
 
   private def tryGetTagDatesFor(service: Service) =
-    getTagsForNewDeployments(service).map { results =>
+    getTagsForService(service).map { results =>
       combineResultsOrFailIfAnyTryDoesNotSucceed(results)
         .map(_.flatten)
         .map(_.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
         .map(convertTagsToMap)
     }
 
-  private def getTagsForNewDeployments(service: Service) =
+  private def getTagsForService(service: Service) =
     Future.sequence(service.deploymentsRequiringUpdates match {
       case Nil => Seq()
       case _ => service.repositories.map { r => tagsService.get(r.org, service.serviceName, r.repoType) }
@@ -85,13 +85,13 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
   private def processReleases(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]) =
     maybeTagDates match {
-      case Success(td) => createReleasesFromNewDeploymentsAndTags(service, td)
+      case Success(td) => createOrUpdateReleasesFromDeploymentsAndTags(service, td)
       case Failure(ex) =>
         Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}", ex)
         FutureIterable(Seq(Future.successful(false)))
     }
 
-  private def createReleasesFromNewDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] = {
+  private def createOrUpdateReleasesFromDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] = {
 
     FutureIterable(
       new ReleaseAndOperation(service, tagDates).get.map {
@@ -118,9 +118,18 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
 case class Service(serviceName: String, repositories: Seq[Repository], deployments: Seq[ServiceDeployment], knownReleases: Seq[Release]) {
 
+  import uk.gov.hmrc.JavaDateTimeHelper._
+
   lazy val deploymentsRequiringUpdates = deployments.filter(kd => isNewDeployment(kd) || isMissingLeadTimeInterval(kd))
 
   lazy val deploymentsSortedByReleasedAt = deployments.sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC))
+
+  private lazy val serviceReleaseIntervals: Seq[(String, Long)] =
+    (deploymentsSortedByReleasedAt, deploymentsSortedByReleasedAt drop 1).zipped.map { case (d1, d2) =>
+      (d2.version, daysBetween(d1.releasedAt, d2.releasedAt))
+    }
+
+  def releaseInterval(version: String): Option[Long] = serviceReleaseIntervals.find(_._1 == version).map(_._2)
 
   def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownReleases.exists(kr => kr.version == deployment.version)
 
@@ -149,30 +158,24 @@ object ReleaseOperation extends Enumeration {
 
 class ReleaseAndOperation(service: Service, tagDates: Map[String, LocalDateTime]) {
 
+  import uk.gov.hmrc.JavaDateTimeHelper._
 
   def get: Seq[(ReleaseOperation.Value, Release)] = {
+
     service.deploymentsRequiringUpdates.map { nd =>
       val tagDate = tagDates.get(nd.version)
       service.knownReleases.find(_.version == nd.version).fold {
-        (Add, Release(service.serviceName, nd.version, tagDate, nd.releasedAt, releaseInterval(nd.version), leadTime(nd, tagDate)))
+        (Add, Release(service.serviceName, nd.version, tagDate, nd.releasedAt, service.releaseInterval(nd.version), leadTime(nd, tagDate)))
       } { kr =>
-        (Update, kr.copy(leadTime = leadTime(nd, tagDate), releaseInterval = releaseInterval(nd.version)))
+        (Update, kr.copy(leadTime = leadTime(nd, tagDate), releaseInterval = service.releaseInterval(nd.version)))
       }
     }
-  }
-
-  def releaseInterval(version: String): Option[Long] = {
-
-    (service.deploymentsSortedByReleasedAt, service.deploymentsSortedByReleasedAt drop 1).zipped.map { case (d1, d2) =>
-      (d2.version, daysBetween(d1.releasedAt, d2.releasedAt))
-    }.find(_._1 == version).map(_._2)
+    
   }
 
   def leadTime(nd: ServiceDeployment, tagDate: Option[LocalDateTime]): Option[Long] = {
     tagDate.map(daysBetween(_, nd.releasedAt))
   }
-
-  private def daysBetween(before: LocalDateTime, after: LocalDateTime): Long = Math.round(Duration.between(before, after).toHours / 24d)
 
 }
 
