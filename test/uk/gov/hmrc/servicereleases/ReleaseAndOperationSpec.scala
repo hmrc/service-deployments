@@ -32,20 +32,6 @@ class ReleaseAndOperationSpec extends WordSpec with Matchers with LoneElement{
   val `29 August` = LocalDateTime.of(2016, 8, 29, 0, 0)
   val `30 August` = LocalDateTime.of(2016, 8, 30, 0, 0)
 
-  //  service.deploymentsRequiringUpdates.map { nd =>
-  //    tagDates.get(nd.version) match {
-  //      case Some(td) =>
-  //        service.knownReleases.find(_.version == nd.version).fold {
-  //          repository.add(Release(service.serviceName, nd.version, Some(td), nd.releasedAt, None, Some(daysBetween(td, nd.releasedAt))))
-  //        } { kr =>
-  //          repository.update(kr.copy(leadTime = Some(daysBetween(td, nd.releasedAt))))
-  //        }
-  //
-  //      case None =>
-  //        Logger.warn(s"Unable to locate git tag for ${service.serviceName} ${nd.version}")
-  //        repository.add(Release(service.serviceName, nd.version, None, nd.releasedAt, None))
-  //    }
-  //  }
 
   "get" should {
     "return releases with operation as add for new releases" in {

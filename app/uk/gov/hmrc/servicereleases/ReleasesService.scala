@@ -131,9 +131,9 @@ case class Service(serviceName: String, repositories: Seq[Repository], deploymen
 
   def releaseInterval(version: String): Option[Long] = serviceReleaseIntervals.find(_._1 == version).map(_._2)
 
-  def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownReleases.exists(kr => kr.version == deployment.version)
+  private def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownReleases.exists(kr => kr.version == deployment.version)
 
-  def isMissingLeadTimeInterval(deployment: ServiceDeployment): Boolean = knownReleases.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
+  private def isMissingLeadTimeInterval(deployment: ServiceDeployment): Boolean = knownReleases.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
 }
 
 object Service {

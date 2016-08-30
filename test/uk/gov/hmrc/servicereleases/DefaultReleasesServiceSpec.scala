@@ -176,7 +176,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       val testData = configureMocks(forService => Seq(
         forService("service")
-          .repositoryKnowsAbout(Map("0.1.0" -> "04-02-2016", "1.0.0" -> "06-02-2016"))
+          .repositoryKnowsAbout(Map("1.0.0" -> "06-02-2016", "0.1.0" -> "04-02-2016"))
           .deploymentsKnowsAbout(Map("0.1.0" -> "04-02-2016", "1.0.0" -> "06-02-2016"))
           .tagsServiceKnowsAbout("0.1.0", "1.0.0")
       ))
