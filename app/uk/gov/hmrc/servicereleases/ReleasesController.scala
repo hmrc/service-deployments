@@ -25,31 +25,45 @@ import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
 
 import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.servicereleases.Release
 import uk.gov.hmrc.servicereleases.deployments.{Deployment, DeploymentsDataSource}
 
 import scala.concurrent.Future
 import scala.io.Source
 
-object ReleasesController extends BaseController with MongoDbConnection  {
-  import uk.gov.hmrc.JavaDateTimeJsonFormatter._
-  import reactivemongo.bson.BSONObjectID
-  implicit val bsonIdFormat = reactivemongo.json.BSONFormats.BSONObjectIDFormat
 
-  implicit def writes: Writes[Release] =  (
-    (__ \ "name").write[String] and
-      (__ \ "version").write[String] and
-      (__ \ "creationDate").writeNullable[LocalDateTime] and
-      (__ \ "productionDate").write[LocalDateTime] and
-      (__ \ "interval").writeNullable[Long] and
-      (__ \ "leadTime").writeNullable[Long] and
-      (__ \ "_id").writeNullable[BSONObjectID].contramap((_: Option[BSONObjectID]) => None)
-    ) (unlift(Release.unapply))
+case class ReleaseResult(name: String, version: String,
+                         creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
+                         interval: Option[Long], leadTime: Option[Long])
+
+object ReleaseResult {
+
+  import uk.gov.hmrc.JavaDateTimeJsonFormatter._
+
+  implicit val formats = Json.format[ReleaseResult]
+
+  def fromRelease(release: Release): ReleaseResult = {
+    ReleaseResult(
+      release.name,
+      release.version,
+      release.creationDate,
+      release.productionDate,
+      release.interval,
+      release.leadTime
+    )
+  }
+
+}
+
+object ReleasesController extends BaseController with MongoDbConnection {
+
+  import uk.gov.hmrc.JavaDateTimeJsonFormatter._
 
   val releasesRepository = new MongoReleasesRepository(db)
 
   def forService(serviceName: String) = Action.async { implicit request =>
     releasesRepository.getForService(serviceName).map {
-      case Some(data) => Ok(Json.toJson(data))
+      case Some(data) => Ok(Json.toJson(data.map(ReleaseResult.fromRelease)))
       case None => NotFound
     }
   }
@@ -74,8 +88,10 @@ object ReleasesController extends BaseController with MongoDbConnection  {
     val jsons = for (line <- source.getLines()) yield Json.fromJson[Deployment](Json.parse(line))
 
     val scheduler = new Scheduler with DefaultSchedulerDependencies {
-        val deploymentsDataSource = new DeploymentsDataSource {
-          def getAll: Future[List[Deployment]] = Future.successful(jsons.map(_.get).toList) }}
+      val deploymentsDataSource = new DeploymentsDataSource {
+        def getAll: Future[List[Deployment]] = Future.successful(jsons.map(_.get).toList)
+      }
+    }
 
     scheduler.run.map {
       case Info(message) => Ok(message)
