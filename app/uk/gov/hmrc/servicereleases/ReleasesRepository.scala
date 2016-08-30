@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class Release(name: String, version: String,
                    creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
-                   releaseInterval: Option[Long] = None, leadTime: Option[Long] = None,
+                   interval: Option[Long] = None, leadTime: Option[Long] = None,
                    _id: Option[BSONObjectID] = None)
 
 object Release {

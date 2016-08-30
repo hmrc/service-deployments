@@ -139,7 +139,7 @@ object ServiceTestFixture {
 
       verify(repository, atLeastOnce()).add(releaseCaptur.capture())
 
-      assert(releaseCaptur.getAllValues.toList.find(_.version == version).exists(_.releaseInterval == releaseInterval), s"release : $version was not added to mongo With releaseInterval : $releaseInterval")
+      assert(releaseCaptur.getAllValues.toList.find(_.version == version).exists(_.interval == releaseInterval), s"release : $version was not added to mongo With releaseInterval : $releaseInterval")
     }
 
 
@@ -164,7 +164,7 @@ object ServiceTestFixture {
       verify(repository, atLeastOnce()).update(releaseCaptur.capture())
 
       val release: Option[Release] = releaseCaptur.getAllValues.toList.find(_.version == version)
-      assert(release.exists(_.releaseInterval == releaseInterval), s"release : $version was not updated to mongo With releaseInterval : $releaseInterval")
+      assert(release.exists(_.interval == releaseInterval), s"release : $version was not updated to mongo With releaseInterval : $releaseInterval")
       assert(release.exists(_._id == Some(knownReleaseObjectId)), s"release : $version was not updated to mongo With _id : $knownReleaseObjectId")
     }
 

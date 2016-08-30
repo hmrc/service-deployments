@@ -167,7 +167,7 @@ class ReleaseAndOperation(service: Service, tagDates: Map[String, LocalDateTime]
       service.knownReleases.find(_.version == nd.version).fold {
         (Add, Release(service.serviceName, nd.version, tagDate, nd.releasedAt, service.releaseInterval(nd.version), leadTime(nd, tagDate)))
       } { kr =>
-        (Update, kr.copy(leadTime = leadTime(nd, tagDate), releaseInterval = service.releaseInterval(nd.version)))
+        (Update, kr.copy(leadTime = leadTime(nd, tagDate), interval = service.releaseInterval(nd.version)))
       }
     }
     
