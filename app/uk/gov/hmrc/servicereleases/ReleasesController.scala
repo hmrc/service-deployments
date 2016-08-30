@@ -20,9 +20,10 @@ import java.time.LocalDateTime
 
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, Reads, Writes}
+import play.api.libs.json._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
+
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.servicereleases.deployments.{Deployment, DeploymentsDataSource}
 
@@ -31,7 +32,18 @@ import scala.io.Source
 
 object ReleasesController extends BaseController with MongoDbConnection  {
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
-  implicit def writes: Writes[Release] = Json.writes[Release]
+  import reactivemongo.bson.BSONObjectID
+  implicit val bsonIdFormat = reactivemongo.json.BSONFormats.BSONObjectIDFormat
+
+  implicit def writes: Writes[Release] =  (
+    (__ \ "name").write[String] and
+      (__ \ "version").write[String] and
+      (__ \ "creationDate").writeNullable[LocalDateTime] and
+      (__ \ "productionDate").write[LocalDateTime] and
+      (__ \ "interval").writeNullable[Long] and
+      (__ \ "leadTime").writeNullable[Long] and
+      (__ \ "_id").writeNullable[BSONObjectID].contramap((_: Option[BSONObjectID]) => None)
+    ) (unlift(Release.unapply))
 
   val releasesRepository = new MongoReleasesRepository(db)
 

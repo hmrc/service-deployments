@@ -19,6 +19,8 @@ import java.time._
 
 import _root_.play.api.libs.json._
 
+
+
 object JavaDateTimeJsonFormatter {
 
   implicit val localDateTimeReads = new Reads[LocalDateTime] {
