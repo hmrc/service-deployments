@@ -55,7 +55,7 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % "1.5.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % "1.5.0" % scope
+        "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope
       )
     }.test
   }
