@@ -100,7 +100,7 @@ trait Scheduler extends LockKeeper {
         defaultRegistry.counter("scheduler.success").inc(successCount)
         defaultRegistry.counter("scheduler.failure").inc(failureCount)
 
-        Info(s"Added $successCount new releases and encountered $failureCount failures")
+        Info(s"Added/updated $successCount releases and encountered $failureCount failures")
       }.recover { case ex =>
         Error(s"Something went wrong during the mongo update: ${ex.getMessage}")
       }

@@ -82,7 +82,7 @@ class MongoReleasesRepository(mongo: () => DB)
   }
 
   def update(release: Release): Future[Boolean] = {
-    require(release._id.isDefined, "id must be defined")
+    require(release._id.isDefined, "_id must be defined")
     withTimerAndCounter("mongo.update") {
       collection.update(
         selector = Json.obj("_id" -> Json.toJson(release._id.get)(ReactiveMongoFormats.objectIdWrite)),

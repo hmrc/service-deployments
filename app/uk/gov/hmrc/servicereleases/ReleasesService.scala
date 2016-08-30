@@ -95,8 +95,12 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
     FutureIterable(
       new ReleaseAndOperation(service, tagDates).get.map {
-        case (Add, r) => repository.add(r)
-        case (Update, r) => repository.update(r)
+        case (Add, r) =>
+          Logger.info(s"Adding release : ${r.version} for service ${r.name}")
+          repository.add(r)
+        case (Update, r) =>
+          Logger.info(s"Updating release : ${r.version} for service ${r.name}")
+          repository.update(r)
       }
     )
 
@@ -104,11 +108,14 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
 
   private def log(serviceRepositoryDeployments: Service): Future[Unit] = {
-    Logger.debug(s"Checking new deployments for service: ${serviceRepositoryDeployments.serviceName}")
+    Logger.debug(s"Checking deployments for service: ${serviceRepositoryDeployments.serviceName}")
+    Logger.debug(s"total deployments for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.deployments.size}")
+    Logger.debug(s"total known releases for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.knownReleases.size}")
+    Logger.debug(s"total deploymentsRequiringUpdates for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.deploymentsRequiringUpdates.size}")
 
-    serviceRepositoryDeployments.deployments.foreach {
+    serviceRepositoryDeployments.deploymentsRequiringUpdates.foreach {
       d => Logger.debug(
-        s"Found unknown release ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.releasedAt}")
+        s"release ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.releasedAt} needs update")
     }
 
     Future.successful(Unit)
@@ -170,7 +177,7 @@ class ReleaseAndOperation(service: Service, tagDates: Map[String, LocalDateTime]
         (Update, kr.copy(leadTime = leadTime(nd, tagDate), interval = service.releaseInterval(nd.version)))
       }
     }
-    
+
   }
 
   def leadTime(nd: ServiceDeployment, tagDate: Option[LocalDateTime]): Option[Long] = {
