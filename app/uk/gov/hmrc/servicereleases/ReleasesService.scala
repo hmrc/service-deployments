@@ -127,9 +127,10 @@ case class Service(serviceName: String, repositories: Seq[Repository], deploymen
 
   import uk.gov.hmrc.JavaDateTimeHelper._
 
-  lazy val deploymentsRequiringUpdates = deployments.filter(kd => isNewDeployment(kd) || isMissingLeadTime(kd))
+  lazy val deploymentsRequiringUpdates =
+    deployments.filter(kd => isNewDeployment(kd)) ++ knownReleases.filter(x => x.leadTime.isEmpty).map(x => ServiceDeployment(x.version, x.productionDate))
 
-  lazy val deploymentsSortedByReleasedAt = deployments.sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC))
+  private lazy val deploymentsSortedByReleasedAt = deployments.sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC))
 
   private lazy val serviceReleaseIntervals: Seq[(String, Long)] =
     (deploymentsSortedByReleasedAt, deploymentsSortedByReleasedAt drop 1).zipped.map { case (d1, d2) =>

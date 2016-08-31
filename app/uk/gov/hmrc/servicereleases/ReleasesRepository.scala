@@ -99,12 +99,9 @@ class MongoReleasesRepository(mongo: () => DB)
   def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
 
     withTimerAndCounter("mongo.read") {
-      collection
-        .find(BSONDocument("name" -> BSONDocument("$eq" -> serviceName)))
-        .sort(Json.obj("productionDate" -> -1))
-        .cursor[Release].collect[List]() map {
+      find("name" -> BSONDocument("$eq" -> serviceName)) map {
         case Nil => None
-        case data => Some(data)
+        case data => Some(data.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)
       }
     }
   }

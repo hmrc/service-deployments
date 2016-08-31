@@ -58,15 +58,15 @@ class ServiceSpec extends WordSpec with Matchers {
     "return if deployment is known and is missing lead time" in {
 
       val deploymemts = Seq(
-        ServiceDeployment("1.0.0", `28 August`),
         ServiceDeployment("0.1.0", `26 August`),
         ServiceDeployment("0.0.1", `23 August`),
         ServiceDeployment("2.0.0",`30 August`)
       )
 
-      val service = Service("name", Seq(), deployments = deploymemts, Seq(Release("name", "1.0.0", None, LocalDateTime.now(), Some(1), None)))
+      val oldReleaseDate: LocalDateTime = LocalDateTime.now().minusDays(60)
+      val service = Service("name", Seq(), deployments = deploymemts, Seq(Release("name", "1.0.0", None, oldReleaseDate, Some(1), None)))
 
-      service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", `28 August`))
+      service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", oldReleaseDate))
 
     }
   }
