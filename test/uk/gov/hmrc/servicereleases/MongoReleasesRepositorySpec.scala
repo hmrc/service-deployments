@@ -36,6 +36,26 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
   }
 
 
+  "getForService" should {
+    "return releases for a service sorted in descending order of productionDate" in {
+      val now: LocalDateTime = LocalDateTime.now()
+
+      await(mongoReleasesRepository.add(Release("randomService", "vSomeOther1", None, now, Some(1))))
+      await(mongoReleasesRepository.add(Release("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
+      await(mongoReleasesRepository.add(Release("test", "v2", None, productionDate = now.minusDays(6), interval = Some(1))))
+      await(mongoReleasesRepository.add(Release("test", "v3", None, productionDate = now.minusDays(5), Some(1))))
+      await(mongoReleasesRepository.add(Release("test", "v4", None, productionDate = now.minusDays(2), Some(1))))
+
+      val releases: Option[Seq[Release]] = await(mongoReleasesRepository.getForService("test"))
+
+      releases.get.size shouldBe 4
+
+      releases.get.map(_.version) shouldBe List("v4", "v3", "v2", "v1")
+
+    }
+  }
+
+
   "add" should {
 
     "be able to insert a new record and update it as well" in {

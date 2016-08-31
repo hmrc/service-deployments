@@ -97,8 +97,12 @@ class MongoReleasesRepository(mongo: () => DB)
   override def getAll: Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
 
   def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
+
     withTimerAndCounter("mongo.read") {
-      find("name" -> BSONDocument("$eq" -> serviceName)) map {
+      collection
+        .find(BSONDocument("name" -> BSONDocument("$eq" -> serviceName)))
+        .sort(Json.obj("productionDate" -> -1))
+        .cursor[Release].collect[List]() map {
         case Nil => None
         case data => Some(data)
       }

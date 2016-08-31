@@ -127,7 +127,7 @@ case class Service(serviceName: String, repositories: Seq[Repository], deploymen
 
   import uk.gov.hmrc.JavaDateTimeHelper._
 
-  lazy val deploymentsRequiringUpdates = deployments.filter(kd => isNewDeployment(kd) || isMissingLeadTimeInterval(kd))
+  lazy val deploymentsRequiringUpdates = deployments.filter(kd => isNewDeployment(kd) || isMissingLeadTime(kd))
 
   lazy val deploymentsSortedByReleasedAt = deployments.sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC))
 
@@ -140,7 +140,8 @@ case class Service(serviceName: String, repositories: Seq[Repository], deploymen
 
   private def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownReleases.exists(kr => kr.version == deployment.version)
 
-  private def isMissingLeadTimeInterval(deployment: ServiceDeployment): Boolean = knownReleases.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
+  private def isMissingLeadTime(deployment: ServiceDeployment): Boolean = knownReleases.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
+
 }
 
 object Service {
