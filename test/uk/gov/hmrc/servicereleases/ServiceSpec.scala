@@ -23,6 +23,7 @@ import uk.gov.hmrc.servicereleases.deployments.ServiceDeployment
 
 class ServiceSpec extends WordSpec with Matchers {
 
+  val `31 July` = LocalDateTime.of(2016, 7, 31, 0, 0)
   val `23 August` = LocalDateTime.of(2016, 8, 23, 0, 0)
   val `26 August` = LocalDateTime.of(2016, 8, 26, 0, 0)
   val `27 August` = LocalDateTime.of(2016, 8, 27, 0, 0)
@@ -50,6 +51,21 @@ class ServiceSpec extends WordSpec with Matchers {
       service.releaseInterval("2.0.0") shouldBe Some(2)
 
     }
+    "return release interval for a old release not in deployments but known to us" in {
+
+      val deploymemts = Seq(
+        ServiceDeployment("0.1.0", `26 August`),
+        ServiceDeployment("0.0.1", `23 August`),
+        ServiceDeployment("2.0.0",`30 August`)
+      )
+
+      val service = Service("name", Seq(), deployments = deploymemts, Seq(Release("name", "1.0.0", None, `31 July`, Some(1), None)))
+
+      service.releaseInterval("0.0.1") should be(Some(23))
+
+    }
+
+
   }
 
 
@@ -69,6 +85,24 @@ class ServiceSpec extends WordSpec with Matchers {
       service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", oldReleaseDate))
 
     }
+
+    "not contain duplicate deployments if already known and known deployment should take prefrence" in {
+
+      val deploymemts = Seq(
+        ServiceDeployment("0.1.0", `26 August`),
+        ServiceDeployment("0.0.1", `23 August`),
+        ServiceDeployment("2.0.0",`30 August`)
+      )
+
+      val oldReleaseDate: LocalDateTime = LocalDateTime.now().minusDays(60)
+      val service = Service("name", Seq(), deployments = deploymemts, Seq(Release("name", "0.1.0", None, oldReleaseDate, Some(1), None)))
+
+      service.deploymentsRequiringUpdates.size shouldBe 3
+
+      service.deploymentsRequiringUpdates should contain(ServiceDeployment("0.1.0", oldReleaseDate))
+
+    }
+
   }
 
 

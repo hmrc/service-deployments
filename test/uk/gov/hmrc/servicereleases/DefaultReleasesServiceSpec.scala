@@ -187,6 +187,24 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
       testData("service").verifyCorrectReleaseIntervalWasUpdatedOnTheRelease("1.0.0" -> Some(2))
     }
 
+    "update missing release interval for existing releases which we already know about but are not known to deployment (old releases)" in {
+
+
+      val testData = configureMocks(forService => Seq(
+        forService("service")
+          .repositoryKnowsAbout(Map("0.1.0" -> "04-02-2016", "0.1.1" -> "06-02-2016"))
+          .deploymentsKnowsAbout(Map("1.1.1" -> "09-02-2016"))
+          .tagsServiceKnowsAbout("0.1.0", "1.0.0")
+      ))
+
+      service.updateModel().futureValue
+
+      testData("service").verifyCorrectReleaseIntervalWasUpdatedOnTheRelease("0.1.0" -> None)
+      testData("service").verifyCorrectReleaseIntervalWasUpdatedOnTheRelease("0.1.1" -> Some(2))
+      testData("service").verifyReleaseWasAddedToMongoWithCorrectReleaseInterval("1.1.1" -> Some(3))
+    }
+
+
 
     "update missing leadtime interval for existing releases which we already know about and add new releases" in {
 
@@ -201,6 +219,21 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheRelease("0.1.0" -> Some(4))
       testData("service").verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval("1.0.0" -> Some(5))
+    }
+
+
+    "update missing leadtime interval for existing releases which we already know about and are not returned by deployment" in {
+
+      val testData = configureMocks(forService => Seq(
+        forService("service")
+          .repositoryKnowsAboutReleaseWithLeadTime(Map("0.1.0" -> ("04-02-2016", None)))
+          .deploymentsKnowsAbout()
+          .tagsServiceKnowsAbout(Map("0.1.0" -> "31-01-2016"))
+      ))
+
+      service.updateModel().futureValue
+
+      testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheRelease("0.1.0" -> Some(4))
     }
 
     "Not do anything if there are no new releases and all existing releases have the lead time interval" in {
