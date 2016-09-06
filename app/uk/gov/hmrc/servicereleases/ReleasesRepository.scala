@@ -20,6 +20,7 @@ import java.time.{LocalDateTime, ZoneOffset}
 
 import play.api.libs.json.{JsValue, Writes, _}
 import reactivemongo.api.DB
+import reactivemongo.api.collections.bson.BSONQueryBuilder
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -52,9 +53,13 @@ trait ReleasesRepository {
 
   def update(release: Release): Future[Boolean]
 
-  def getAll: Future[Map[String, Seq[Release]]]
+  def allServiceReleases: Future[Map[String, Seq[Release]]]
+
+  def getAllReleases: Future[Seq[Release]]
 
   def getForService(serviceName: String): Future[Option[Seq[Release]]]
+
+  def clearAllData: Future[Boolean]
 }
 
 class MongoReleasesRepository(mongo: () => DB)
@@ -94,7 +99,7 @@ class MongoReleasesRepository(mongo: () => DB)
     }
   }
 
-  override def getAll: Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
+  override def allServiceReleases: Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
 
   def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
 
@@ -105,4 +110,12 @@ class MongoReleasesRepository(mongo: () => DB)
       }
     }
   }
+
+  def clearAllData = super.removeAll().map(!_.hasErrors)
+
+  def getAllReleases: Future[Seq[Release]] = collection
+    .find(BSONDocument.empty)
+    .sort(Json.obj("productionDate" -> JsNumber(-1)))
+    .cursor[Release]()
+    .collect[List]()
 }

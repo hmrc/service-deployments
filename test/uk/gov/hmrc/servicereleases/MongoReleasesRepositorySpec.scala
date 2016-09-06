@@ -36,6 +36,32 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
   }
 
 
+  "getAll" should {
+    "return all the releases in descending order of productionDate" in {
+
+      val now: LocalDateTime = LocalDateTime.now()
+
+      await(mongoReleasesRepository.add(Release("test2", "v2", None, productionDate = now.minusDays(6))))
+      await(mongoReleasesRepository.add(Release("test3", "v3", None, productionDate = now.minusDays(5))))
+      await(mongoReleasesRepository.add(Release("test1", "v1", None, productionDate = now.minusDays(10))))
+      await(mongoReleasesRepository.add(Release("test4", "v4", None, productionDate = now.minusDays(2))))
+      await(mongoReleasesRepository.add(Release("test5", "vSomeOther1", None, now.minusDays(2), Some(1))))
+      await(mongoReleasesRepository.add(Release("test5", "vSomeOther2", None, now, Some(1))))
+
+      val result: Seq[Release] = await(mongoReleasesRepository.getAllReleases)
+
+      result.map(x => (x.name, x.version)) shouldBe Seq(
+        ("test5", "vSomeOther2"),
+        ("test4", "v4"),
+        ("test5", "vSomeOther1"),
+        ("test3", "v3"),
+        ("test2", "v2"),
+        ("test1", "v1")
+      )
+
+    }
+  }
+
   "getForService" should {
     "return releases for a service sorted in descending order of productionDate" in {
       val now: LocalDateTime = LocalDateTime.now()
@@ -57,11 +83,10 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
 
 
   "add" should {
-
     "be able to insert a new record and update it as well" in {
       val now: LocalDateTime = LocalDateTime.now()
       await(mongoReleasesRepository.add(Release("test", "v", None, now, Some(1))))
-      val all = await(mongoReleasesRepository.getAll)
+      val all = await(mongoReleasesRepository.allServiceReleases)
 
       all.values.flatten.size shouldBe 1
       val savedRelease: Release = all.values.flatten.loneElement
@@ -80,13 +105,13 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
       val now: LocalDateTime = LocalDateTime.now()
       await(mongoReleasesRepository.add(Release("test", "v", None, now)))
 
-      val all = await(mongoReleasesRepository.getAll)
+      val all = await(mongoReleasesRepository.allServiceReleases)
 
       val savedRelease: Release = all.values.flatten.loneElement
 
       await(mongoReleasesRepository.update(savedRelease.copy(leadTime = Some(1))))
 
-      val allUpdated = await(mongoReleasesRepository.getAll)
+      val allUpdated = await(mongoReleasesRepository.allServiceReleases)
       allUpdated.size shouldBe 1
       val updatedRelease: Release = allUpdated.values.flatten.loneElement
 

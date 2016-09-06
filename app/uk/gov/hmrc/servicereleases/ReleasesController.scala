@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.servicereleases
 
-import java.time.LocalDateTime
+import java.time.{Period, LocalDateTime}
 
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
@@ -55,17 +55,28 @@ object ReleaseResult {
 
 }
 
-object ReleasesController extends BaseController with MongoDbConnection {
+object ReleasesController extends ReleasesController with MongoDbConnection {
+  override def releasesRepository = new MongoReleasesRepository(db)
+}
+
+trait ReleasesController extends BaseController {
 
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
 
-  val releasesRepository = new MongoReleasesRepository(db)
+  def releasesRepository: ReleasesRepository
 
   def forService(serviceName: String) = Action.async { implicit request =>
     releasesRepository.getForService(serviceName).map {
       case Some(data) => Ok(Json.toJson(data.map(ReleaseResult.fromRelease)))
       case None => NotFound
     }
+  }
+
+  def getAll() = Action.async { implicit request =>
+    releasesRepository.getAllReleases.map { releases =>
+      Ok(Json.toJson(releases.map(ReleaseResult.fromRelease)))
+    }
+
   }
 
   def update() = Action.async { implicit request =>
@@ -101,8 +112,8 @@ object ReleasesController extends BaseController with MongoDbConnection {
   }
 
   def clear() = Action.async { implicit request =>
-    releasesRepository.removeAll() map { r =>
-      Ok((!r.hasErrors).toString)
+    releasesRepository.clearAllData map { r =>
+      Ok(r.toString)
     }
   }
 }

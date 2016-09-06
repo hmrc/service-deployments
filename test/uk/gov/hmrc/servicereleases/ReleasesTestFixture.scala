@@ -180,7 +180,7 @@ object ServiceTestFixture {
         .toMap
     ))
 
-    when(repository.getAll).thenReturn(Future.successful(
+    when(repository.allServiceReleases).thenReturn(Future.successful(
       fixtures
         .map { f => f.serviceName -> f.releases }
         .filter { case (_, r) => r.nonEmpty }

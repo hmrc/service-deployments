@@ -49,7 +49,7 @@ class DefaultReleasesService(serviceRepositoriesService: ServiceRepositoriesServ
 
   private def getServiceRepositoryDeployments = {
     val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] = deploymentsService.getAll()
-    val allKnownReleasesF: Future[Map[String, Seq[Release]]] = repository.getAll
+    val allKnownReleasesF: Future[Map[String, Seq[Release]]] = repository.allServiceReleases
     val allServiceRepositoriesF: Future[Map[String, Seq[Repository]]] = serviceRepositoriesService.getAll()
 
     FutureIterable(

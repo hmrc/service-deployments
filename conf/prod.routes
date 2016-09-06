@@ -4,5 +4,6 @@
 POST       /api/releases/update                 uk.gov.hmrc.servicereleases.ReleasesController.update
 POST       /api/releases/raw                    uk.gov.hmrc.servicereleases.ReleasesController.importRaw()
 POST       /api/releases/clear                  uk.gov.hmrc.servicereleases.ReleasesController.clear()
+GET        /api/releases                        uk.gov.hmrc.servicereleases.ReleasesController.getAll()
 GET        /api/releases/:serviceName           uk.gov.hmrc.servicereleases.ReleasesController.forService(serviceName)
 GET        /admin/metrics                       com.kenshoo.play.metrics.MetricsController.metrics

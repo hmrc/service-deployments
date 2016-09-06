@@ -44,7 +44,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
     reset(tagsService)
     reset(repository)
 
-    when(repository.getAll).thenReturn(Future.successful(Map.empty[String, Seq[Release]]))
+    when(repository.allServiceReleases).thenReturn(Future.successful(Map.empty[String, Seq[Release]]))
     when(repository.add(any())).thenReturn(Future.successful(true))
     when(repository.update(any())).thenReturn(Future.successful(true))
   }
@@ -124,7 +124,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
       testData("another").verifyReleaseWasUpdatedToMongo("1.0.0")
 
 
-      verify(repository).getAll
+      verify(repository).allServiceReleases
       verifyNoMoreInteractions(repository)
     }
 
