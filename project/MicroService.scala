@@ -1,7 +1,8 @@
 import sbt.Keys._
-import sbt.Tests.{SubProcess, Group}
+import sbt.Tests.{Group, SubProcess}
 import sbt._
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
+import play.sbt.routes.RoutesKeys.{routesGenerator, _}
 
 
 trait MicroService {
@@ -15,11 +16,11 @@ trait MicroService {
   val appName: String
 
   lazy val appDependencies : Seq[ModuleID] = ???
-  lazy val plugins : Seq[Plugins] = Seq(play.PlayScala)
+  lazy val plugins : Seq[Plugins] = Seq()
   lazy val playSettings : Seq[Setting[_]] = Seq.empty
 
   lazy val microservice = Project(appName, file("."))
-    .enablePlugins(Seq(play.PlayScala) ++ plugins : _*)
+    .enablePlugins(Seq(play.sbt.PlayScala) ++ plugins : _*)
     .settings(playSettings : _*)
     .settings(scalaSettings: _*)
     .settings(publishingSettings: _*)
@@ -31,6 +32,7 @@ trait MicroService {
       parallelExecution in Test := false,
       fork in Test := false,
       retrieveManaged := true,
+      routesGenerator := StaticRoutesGenerator,
       evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false)
     )
     .configs(IntegrationTest)
@@ -41,7 +43,7 @@ trait MicroService {
       addTestReportOption(IntegrationTest, "int-test-reports"),
       testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
       parallelExecution in IntegrationTest := false)
-    .settings(resolvers += Resolver.bintrayRepo("hmrc", "releases"))
+    .settings(resolvers ++= Seq(Resolver.bintrayRepo("hmrc", "releases"), Resolver.jcenterRepo))
 }
 
 private object TestPhases {

@@ -24,7 +24,7 @@ import reactivemongo.api.collections.bson.BSONQueryBuilder
 import reactivemongo.api.indexes.{IndexType, Index}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
+//import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -78,17 +78,17 @@ class MongoReleasesRepository(mongo: () => DB)
     )
 
   def add(release: Release): Future[Boolean] = {
-    withTimerAndCounter("mongo.write") {
+    //withTimerAndCounter("mongo.write") {
       insert(release) map {
         case lastError if lastError.inError => throw lastError
         case _ => true
       }
-    }
+    //}
   }
 
   def update(release: Release): Future[Boolean] = {
     require(release._id.isDefined, "_id must be defined")
-    withTimerAndCounter("mongo.update") {
+    //withTimerAndCounter("mongo.update") {
       collection.update(
         selector = Json.obj("_id" -> Json.toJson(release._id.get)(ReactiveMongoFormats.objectIdWrite)),
         update = Release.formats.writes(release)
@@ -96,19 +96,19 @@ class MongoReleasesRepository(mongo: () => DB)
         case lastError if lastError.inError => throw lastError
         case _ => true
       }
-    }
+    //}
   }
 
   override def allServiceReleases: Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
 
   def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
 
-    withTimerAndCounter("mongo.read") {
+    //withTimerAndCounter("mongo.read") {
       find("name" -> BSONDocument("$eq" -> serviceName)) map {
         case Nil => None
         case data => Some(data.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)
       }
-    }
+    //}
   }
 
   def clearAllData = super.removeAll().map(!_.hasErrors)

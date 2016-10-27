@@ -23,7 +23,7 @@ import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
+//import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
 
 case class Tag(version: String, createdAt: LocalDateTime)
 
@@ -47,9 +47,9 @@ class GitHubConnector(gitHubClient: GithubApiClient, identifier: String) extends
   import BlockingIOExecutionContext.executionContext
 
   def get(organisation: String, repoName: String) =
-    withTimerAndCounter(s"git.api.$identifier") {
+    //withTimerAndCounter(s"git.api.$identifier") {
       gitHubClient.getReleases(organisation, repoName).map(identity(_))
-    }
+    //}
 }
 
 class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, identifier: String) extends TagsDataSource {
@@ -69,12 +69,14 @@ class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, ident
     else Future.successful(Nil)
 
   private def getRepoTags(organisation: String, repoName: String) =
-    withTimerAndCounter(s"git.clone.$identifier") {
-      gitClient.getGitRepoTags (repoName, organisation) }
+    //withTimerAndCounter(s"git.clone.$identifier") {
+      gitClient.getGitRepoTags (repoName, organisation)
+//}
 
   private def getApiTags(organisation: String, repoName: String) =
-    withTimerAndCounter(s"git.api.$identifier") {
-      githubApiClient.getReleases(organisation, repoName) }
+    //withTimerAndCounter(s"git.api.$identifier") {
+      githubApiClient.getReleases(organisation, repoName)
+//}
 }
 
 
