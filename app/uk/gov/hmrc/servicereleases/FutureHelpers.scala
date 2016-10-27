@@ -14,27 +14,32 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc
+package uk.gov.hmrc.servicereleases
 
 //import com.kenshoo.play.metrics.MetricsRegistry._
+
+import com.kenshoo.play.metrics.MetricsImpl
+import play.api.Play
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object FutureHelpers {
+  lazy val metrics: MetricsImpl = Play.current.injector.instanceOf[MetricsImpl]
+  lazy val defaultRegistry = metrics.defaultRegistry
 
-//  def withTimerAndCounter[T](name: String)(f: Future[T]) = {
-//    val t = defaultRegistry.timer(s"$name.timer").time()
-//    f.andThen {
-//      case Success(_) =>
-//        t.stop()
-//        defaultRegistry.counter(s"$name.success").inc()
-//      case Failure(_) =>
-//        t.stop()
-//        defaultRegistry.counter(s"$name.failure").inc()
-//    }
-//  }
+  def withTimerAndCounter[T](name: String)(f: Future[T]) = {
+    val t = defaultRegistry.timer(s"$name.timer").time()
+    f.andThen {
+      case Success(_) =>
+        t.stop()
+        defaultRegistry.counter(s"$name.success").inc()
+      case Failure(_) =>
+        t.stop()
+        defaultRegistry.counter(s"$name.failure").inc()
+    }
+  }
 
   implicit class FutureExtender[A](f: Future[A]) {
     def andAlso(fn: A => Unit): Future[A] = {

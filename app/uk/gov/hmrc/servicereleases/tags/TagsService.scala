@@ -23,7 +23,7 @@ import play.api.Logger
 import scala.concurrent.Future
 import scala.util.Try
 import RepoType.{Enterprise, Open}
-import uk.gov.hmrc.FutureHelpers._
+import uk.gov.hmrc.servicereleases.FutureHelpers._
 
 case class ServiceReleaseTag(name: String, createdAt: LocalDateTime)
 

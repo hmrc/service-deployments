@@ -20,7 +20,7 @@ import play.api.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.FutureHelpers._
+import uk.gov.hmrc.servicereleases.FutureHelpers._
 
 case class Repository(org: String, repoType: String)
 
