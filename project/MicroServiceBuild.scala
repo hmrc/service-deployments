@@ -33,7 +33,7 @@ private object AppDependencies {
 
 
   val compile = Seq(
-   // ws,
+    ws,
     "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
     "uk.gov.hmrc" %% "play-health" % playHealthVersion,
     "uk.gov.hmrc" %% "play-url-binders" % playUrlBindersVersion,
