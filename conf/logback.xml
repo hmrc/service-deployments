@@ -45,6 +45,10 @@
 
     <logger name="uk.gov" level="INFO"/>
 
+    <logger name="com.google.inject" level="ERROR"/>
+    <logger name="org.apache.http.wire" level="INFO"/>
+    <logger name="javax.management.mbeanserver" level="INFO"/>
+
     <logger name="application" level="DEBUG"/>
 
     <logger name="connector" level="TRACE">

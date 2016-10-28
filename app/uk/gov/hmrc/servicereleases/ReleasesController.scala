@@ -25,7 +25,6 @@ import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
 
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.servicereleases.Release
 import uk.gov.hmrc.servicereleases.deployments.{Deployment, DeploymentsDataSource}
 
 import scala.concurrent.Future

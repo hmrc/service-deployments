@@ -14,25 +14,33 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc
+package uk.gov.hmrc.servicereleases
 
-import com.kenshoo.play.metrics.MetricsRegistry._
+
+import com.kenshoo.play.metrics.{Metrics, MetricsImpl}
+import play.api.Play
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object FutureHelpers {
+trait DefaultMetricsRegistry {
+   private val metrics: Metrics = Play.current.injector.instanceOf[Metrics]
+   val defaultMetricsRegistry = metrics.defaultRegistry
+}
+
+object FutureHelpers extends DefaultMetricsRegistry{
+
 
   def withTimerAndCounter[T](name: String)(f: Future[T]) = {
-    val t = defaultRegistry.timer(s"$name.timer").time()
+    val t = defaultMetricsRegistry.timer(s"$name.timer").time()
     f.andThen {
       case Success(_) =>
         t.stop()
-        defaultRegistry.counter(s"$name.success").inc()
+        defaultMetricsRegistry.counter(s"$name.success").inc()
       case Failure(_) =>
         t.stop()
-        defaultRegistry.counter(s"$name.failure").inc()
+        defaultMetricsRegistry.counter(s"$name.failure").inc()
     }
   }
 

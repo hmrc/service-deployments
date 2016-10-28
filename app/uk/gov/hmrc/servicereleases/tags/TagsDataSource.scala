@@ -19,23 +19,26 @@ package uk.gov.hmrc.servicereleases.tags
 import java.time.{LocalDateTime, ZoneId}
 
 import uk.gov.hmrc.BlockingIOExecutionContext
+import uk.gov.hmrc.servicereleases.FutureHelpers.withTimerAndCounter
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.FutureHelpers.withTimerAndCounter
 
 case class Tag(version: String, createdAt: LocalDateTime)
 
 object Tag {
   implicit def ghRepoReleasesToServiceReleaseTags(gr: List[GhRepoRelease]): List[Tag] = gr.map(Tag.apply)
+
   implicit def gitTagsToServiceReleaseTags(gt: List[GitTag]): List[Tag] = gt.map(Tag.apply)
 
   def apply(gt: GitTag): Tag = Tag(getVersionNumber(gt.name), gt.createdAt.get.toLocalDateTime)
+
   def apply(ghr: GhRepoRelease): Tag =
     Tag(getVersionNumber(ghr.tagName), ghr.createdAt.toInstant.atZone(ZoneId.systemDefault()).toLocalDateTime)
 
   private val versionNumber = "(?:(\\d+)\\.)?(?:(\\d+)\\.)?(\\*|\\d+)$".r
+
   private def getVersionNumber(tag: String): String = versionNumber.findFirstIn(tag).getOrElse(tag)
 }
 
@@ -44,6 +47,7 @@ trait TagsDataSource {
 }
 
 class GitHubConnector(gitHubClient: GithubApiClient, identifier: String) extends TagsDataSource {
+
   import BlockingIOExecutionContext.executionContext
 
   def get(organisation: String, repoName: String) =
@@ -53,6 +57,7 @@ class GitHubConnector(gitHubClient: GithubApiClient, identifier: String) extends
 }
 
 class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, identifier: String) extends TagsDataSource {
+
   import BlockingIOExecutionContext.executionContext
 
   def get(organisation: String, repoName: String) =
@@ -60,7 +65,8 @@ class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, ident
       val (withCreatedAt, withoutCreatedAt) = x.partition(_.createdAt.isDefined)
       val serviceRelease: List[Tag] = withCreatedAt
 
-      tagsWithReleaseDate(withoutCreatedAt, organisation, repoName).map(serviceRelease ++ _) }
+      tagsWithReleaseDate(withoutCreatedAt, organisation, repoName).map(serviceRelease ++ _)
+    }
 
   private def tagsWithReleaseDate(gitTags: List[GitTag], organisation: String, repoName: String): Future[List[Tag]] =
     if (gitTags.nonEmpty)
@@ -70,11 +76,13 @@ class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, ident
 
   private def getRepoTags(organisation: String, repoName: String) =
     withTimerAndCounter(s"git.clone.$identifier") {
-      gitClient.getGitRepoTags (repoName, organisation) }
+      gitClient.getGitRepoTags(repoName, organisation)
+    }
 
   private def getApiTags(organisation: String, repoName: String) =
     withTimerAndCounter(s"git.api.$identifier") {
-      githubApiClient.getReleases(organisation, repoName) }
+      githubApiClient.getReleases(organisation, repoName)
+    }
 }
 
 

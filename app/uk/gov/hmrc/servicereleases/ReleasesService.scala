@@ -20,7 +20,7 @@ import java.time.{Duration, LocalDateTime, ZoneOffset}
 import java.util.ServiceConfigurationError
 
 import play.api.Logger
-import uk.gov.hmrc.FutureHelpers._
+import FutureHelpers._
 import uk.gov.hmrc.servicereleases.ReleaseOperation.{Update, Add}
 import uk.gov.hmrc.servicereleases.deployments.{ServiceDeployment, ServiceDeploymentsService}
 import uk.gov.hmrc.servicereleases.services.{Repository, ServiceRepositoriesService}

@@ -24,7 +24,7 @@ import net.ceedubs.ficus.Ficus._
 import play.api.mvc.{EssentialAction, EssentialFilter, Filters}
 import play.api.{Application, Configuration, GlobalSettings, Play}
 import uk.gov.hmrc.play.config.{ControllerConfig, RunMode}
-import uk.gov.hmrc.play.filters.{NoCacheFilter, RecoveryFilter}
+import uk.gov.hmrc.play.filters.{MicroserviceFilterSupport, NoCacheFilter, RecoveryFilter}
 import uk.gov.hmrc.play.graphite.GraphiteConfig
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.JsonErrorHandling
@@ -37,13 +37,16 @@ object ControllerConfiguration extends ControllerConfig {
   lazy val controllerConfigs = Play.current.configuration.underlying.as[Config]("controllers")
 }
 
-object MicroserviceLoggingFilter extends LoggingFilter {
+object MicroserviceLoggingFilter extends LoggingFilter with MicroserviceFilterSupport {
   override def controllerNeedsLogging(controllerName: String) = ControllerConfiguration.paramsForController(controllerName).needsLogging
 }
 
 trait MicroserviceFilters {
+
   def loggingFilter: LoggingFilter
-  def metricsFilter: MetricsFilter = MetricsFilter
+
+  lazy val appName = Play.current.configuration.getString("appName").getOrElse("APP NAME NOT SET")
+  def metricsFilter: MetricsFilter = Play.current.injector.instanceOf[MetricsFilter]
 
   protected lazy val defaultMicroserviceFilters: Seq[EssentialFilter] = Seq(
     Some(metricsFilter),
@@ -54,11 +57,13 @@ trait MicroserviceFilters {
   def microserviceFilters: Seq[EssentialFilter] = defaultMicroserviceFilters
 }
 
-object MicroserviceGlobal extends GlobalSettings
+object MicroserviceGlobal
+  extends GlobalSettings
   with MicroserviceFilters with GraphiteConfig with RemovingOfTrailingSlashes with JsonErrorHandling  with RunMode {
 
-  override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
   override val loggingFilter = MicroserviceLoggingFilter
+
+  override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
 
   override def onStart(app: Application): Unit = {
     if (ServiceReleasesConfig.schedulerEnabled)

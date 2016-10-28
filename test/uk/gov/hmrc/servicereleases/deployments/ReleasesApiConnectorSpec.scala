@@ -22,17 +22,17 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
-import uk.gov.hmrc.servicereleases.{Release, WireMockSpec}
+import uk.gov.hmrc.servicereleases.{DefaultPatienceConfig, Release, WireMockSpec}
 import com.github.tomakehurst.wiremock.http.RequestMethod
+import org.scalatestplus.play.OneAppPerTest
 
-class ReleasesApiConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures {
+class ReleasesApiConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest with DefaultPatienceConfig{
 
   val connector = new ReleasesApiConnector(endpointMockUrl)
 
   "Get All" should {
 
     "get all releases from the releases app and return all releases for the service in production" in {
-      running(FakeApplication()) {
         val `release 11.0.0 date` = LocalDateTime.now().minusDays(5).toEpochSecond(ZoneOffset.UTC)
         val `release 8.3.0 date` = LocalDateTime.now().minusMonths(5).toEpochSecond(ZoneOffset.UTC)
 
@@ -94,6 +94,5 @@ class ReleasesApiConnectorSpec extends WordSpec with Matchers with WireMockSpec 
           results.head shouldBe Deployment(
             "prod-something", "appA", "11.0.0", LocalDateTime.ofEpochSecond(`release 11.0.0 date`, 0, ZoneOffset.UTC))
         }
-    }
   }
 }
