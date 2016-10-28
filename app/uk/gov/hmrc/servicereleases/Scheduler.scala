@@ -19,7 +19,6 @@ package uk.gov.hmrc.servicereleases
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-//import com.kenshoo.play.metrics.MetricsRegistry._
 import org.joda.time.Duration
 import play.Logger
 import play.libs.Akka
@@ -68,7 +67,7 @@ trait DefaultSchedulerDependencies extends MongoDbConnection  {
     new MongoReleasesRepository(db))
 }
 
-trait Scheduler extends LockKeeper {
+trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
   self: MongoDbConnection  =>
 
   def akkaSystem: ActorSystem
@@ -97,8 +96,8 @@ trait Scheduler extends LockKeeper {
         val failureCount = result.count(r => !r)
         val successCount = total - failureCount
 
-        //defaultRegistry.counter("scheduler.success").inc(successCount)
-        //defaultRegistry.counter("scheduler.failure").inc(failureCount)
+        defaultMetricsRegistry.counter("scheduler.success").inc(successCount)
+        defaultMetricsRegistry.counter("scheduler.failure").inc(failureCount)
 
         Info(s"Added/updated $successCount releases and encountered $failureCount failures")
       }.recover { case ex =>
