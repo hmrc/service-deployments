@@ -20,11 +20,12 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.play.OneAppPerTest
 import uk.gov.hmrc.servicereleases.DefaultPatienceConfig
 
 import scala.concurrent.Future
 
-class DefaultServiceRepositoriesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with DefaultPatienceConfig {
+class DefaultServiceRepositoriesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerTest with DefaultPatienceConfig {
 
   "getAll" should {
 

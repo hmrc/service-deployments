@@ -18,13 +18,20 @@ package uk.gov.hmrc.servicereleases.services
 
 import com.github.tomakehurst.wiremock.http.RequestMethod.GET
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{Matchers, TestData, WordSpec}
+import org.scalatestplus.play.OneAppPerTest
+import play.api.Application
+import play.api.inject.Module
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.servicereleases.WireMockSpec
 
-class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures {
+class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest {
   val catalogueClient = new CatalogueConnector(endpointMockUrl)
+
+  implicit override def newAppForTest(testData: TestData): Application =
+    new GuiceApplicationBuilder().disable(classOf[com.kenshoo.play.metrics.PlayModule]).build()
 
   "getService" should {
 

@@ -22,11 +22,12 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.play.OneAppPerTest
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures {
+class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneAppPerTest with ScalaFutures {
 
   trait SetUp {
     val gitEnterpriseTagDataSource = mock[TagsDataSource]
