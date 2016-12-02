@@ -21,13 +21,14 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.play.OneAppPerTest
 import uk.gov.hmrc.servicereleases.deployments.ServiceDeploymentsService
 import uk.gov.hmrc.servicereleases.services.ServiceRepositoriesService
 import uk.gov.hmrc.servicereleases.tags.TagsService
 
 import scala.concurrent.Future
 
-class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfterEach with DefaultPatienceConfig {
+class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfterEach with DefaultPatienceConfig with OneAppPerTest {
 
   val servicesService = mock[ServiceRepositoriesService]
   val deploymentsService = mock[ServiceDeploymentsService]
