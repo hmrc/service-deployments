@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.services
+package uk.gov.hmrc.servicedeployments.services
 
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.OneAppPerTest
-import uk.gov.hmrc.servicereleases.DefaultPatienceConfig
+import uk.gov.hmrc.servicedeployments.DefaultPatienceConfig
 
 import scala.concurrent.Future
 

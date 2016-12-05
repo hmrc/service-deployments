@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.time.{ZoneOffset, LocalDateTime}
 
@@ -30,27 +30,27 @@ import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Future
 
-class ReleaseControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues{
+class DeploymentControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues{
 
   val timestamp = LocalDateTime.of(2016, 4, 5, 12, 57, 10)
 
-  val releaseRepo = mock[ReleasesRepository]
+  val deploymentRepo = mock[DeploymentsRepository]
 
-  val controller = new ReleasesController {
-    override def releasesRepository: ReleasesRepository = releaseRepo
+  val controller = new DeploymentsController {
+    override def deploymentsRepository: DeploymentsRepository = deploymentRepo
   }
 
 
   "forService" should {
-    "retrieve list of all releases for a service" in {
+    "retrieve list of all deployments for a service" in {
 
       val now: LocalDateTime = LocalDateTime.now()
 
-      when(releaseRepo.getForService("serviceName")).thenReturn(
+      when(deploymentRepo.getForService("serviceName")).thenReturn(
         Future.successful(Some(Seq(
-          Release(name = "serviceName", version = "1", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
-          Release(name = "serviceName", version = "2", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
-          Release(name = "serviceName", version = "3", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate))
+          Deployment(name = "serviceName", version = "1", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
+          Deployment(name = "serviceName", version = "2", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
+          Deployment(name = "serviceName", version = "3", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate))
         ))
         ))
 

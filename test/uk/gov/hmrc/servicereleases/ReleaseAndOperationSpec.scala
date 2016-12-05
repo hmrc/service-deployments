@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.time.{LocalDate, LocalDateTime}
 
 import org.scalatest.{LoneElement, Matchers, WordSpec}
 import play.api.Logger
-import uk.gov.hmrc.servicereleases.Release
-import uk.gov.hmrc.servicereleases.ReleaseOperation.Add
-import uk.gov.hmrc.servicereleases.deployments.ServiceDeployment
+import uk.gov.hmrc.servicedeployments.Deployment$
+import uk.gov.hmrc.servicedeployments.DeploymentOperation.Add
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeployment
 
-class ReleaseAndOperationSpec extends WordSpec with Matchers with LoneElement{
+class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement{
 
   val `26 August` = LocalDateTime.of(2016, 8, 26, 0, 0)
   val `27 August` = LocalDateTime.of(2016, 8, 27, 0, 0)
@@ -34,7 +34,7 @@ class ReleaseAndOperationSpec extends WordSpec with Matchers with LoneElement{
 
 
   "get" should {
-    "return releases with operation as add for new releases" in {
+    "return deployments with operation as add for new deployments" in {
 
 
       val tagDates = Map(
@@ -47,21 +47,21 @@ class ReleaseAndOperationSpec extends WordSpec with Matchers with LoneElement{
         ServiceDeployment("2.0.0", `30 August`)
       )
 
-      val knownReleases = Seq(
-        Release("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2))
+      val knownDeployments = Seq(
+        Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2))
       )
 
-      val service: Service = Service("sName", Seq(), deployments, knownReleases)
+      val service: Service = Service("sName", Seq(), deployments, knownDeployments)
 
-      val releaseUpdates: Seq[(ReleaseOperation.Value, Release)] = new ReleaseAndOperation(service, tagDates).get
+      val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] = new DeploymentAndOperation(service, tagDates).get
 
-      releaseUpdates.loneElement._1 shouldBe Add   //(Add,Release("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
-      releaseUpdates.loneElement._2.version shouldBe "2.0.0" //(Add,Release("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
+      deploymentUpdates.loneElement._1 shouldBe Add   //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
+      deploymentUpdates.loneElement._2.version shouldBe "2.0.0" //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
 
     }
 
 
-    "return releases with operation as update for new releases" in {
+    "return deployments with operation as update for new deployments" in {
 
 
       val tagDates = Map(
@@ -74,16 +74,16 @@ class ReleaseAndOperationSpec extends WordSpec with Matchers with LoneElement{
         ServiceDeployment("2.0.0", `30 August`)
       )
 
-      val knownReleases = Seq(
-        Release("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2))
+      val knownDeployments = Seq(
+        Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2))
       )
 
-      val service: Service = Service("sName", Seq(), deployments, knownReleases)
+      val service: Service = Service("sName", Seq(), deployments, knownDeployments)
 
-      val releaseUpdates: Seq[(ReleaseOperation.Value, Release)] = new ReleaseAndOperation(service, tagDates).get
+      val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] = new DeploymentAndOperation(service, tagDates).get
 
-      releaseUpdates.loneElement._1 shouldBe Add   //(Add,Release("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
-      releaseUpdates.loneElement._2.version shouldBe "2.0.0" //(Add,Release("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
+      deploymentUpdates.loneElement._1 shouldBe Add   //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
+      deploymentUpdates.loneElement._2.version shouldBe "2.0.0" //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
 
     }
 

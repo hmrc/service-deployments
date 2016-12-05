@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.deployments
+package uk.gov.hmrc.servicedeployments.deployments
 
 import java.time.LocalDateTime
 
@@ -24,21 +24,21 @@ import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
 
 import scala.concurrent.Future
 
-case class Deployment(environment: String, name: String, version: String, firstSeen: LocalDateTime)
+case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime)
 
 trait DeploymentsDataSource {
-  def getAll: Future[List[Deployment]]
+  def getAll: Future[List[EnvironmentalDeployment]]
 }
 
-class ReleasesApiConnector(releasesApiBase: String) extends DeploymentsDataSource {
+class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
   import JavaDateTimeJsonFormatter._
 
-  implicit val reads: Reads[Deployment] = (
+  implicit val reads: Reads[EnvironmentalDeployment] = (
     (JsPath \ "env").read[String] and
     (JsPath \ "an").read[String] and
     (JsPath \ "ver").read[String] and
     (JsPath \ "fs").read[LocalDateTime]
-  )(Deployment.apply _)
+  )(EnvironmentalDeployment.apply _)
 
-  def getAll: Future[List[Deployment]] = HttpClient.get[List[Deployment]](s"$releasesApiBase/apps")
+  def getAll: Future[List[EnvironmentalDeployment]] = HttpClient.get[List[EnvironmentalDeployment]](s"$deploymentsApiBase/apps")
 }

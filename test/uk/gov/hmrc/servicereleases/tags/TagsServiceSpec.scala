@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.tags
+package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
 

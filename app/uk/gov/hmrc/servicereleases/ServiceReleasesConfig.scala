@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.nio.file.{Files, Paths}
 
 import play.api.{Logger, Play}
 
-object ServiceReleasesConfig {
+object ServicedeploymentsConfig {
 
   val schedulerEnabled = Play.current.configuration.getBoolean("scheduler.enabled").getOrElse(false)
 
-  lazy val releasesApiBase: String = config("releases.api.url").get
+  lazy val deploymentsApiBase: String = config("deployments.api.url").get
   lazy val catalogueBaseUrl: String = config("catalogue.api.url").get
 
   lazy val gitEnterpriseHost: String = config("git.enterprise.host").get

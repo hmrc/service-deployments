@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.time.{LocalDateTime, ZoneOffset}
 
@@ -29,12 +29,12 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Release(name: String, version: String,
-                   creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
-                   interval: Option[Long] = None, leadTime: Option[Long] = None,
-                   _id: Option[BSONObjectID] = None)
+case class Deployment(name: String, version: String,
+                      creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
+                      interval: Option[Long] = None, leadTime: Option[Long] = None,
+                      _id: Option[BSONObjectID] = None)
 
-object Release {
+object Deployment {
   implicit val localDateTimeRead: Reads[LocalDateTime] =
     __.read[Long].map { dateTime => LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC) }
 
@@ -44,29 +44,29 @@ object Release {
 
   implicit val bsonIdFormat = ReactiveMongoFormats.objectIdFormats
 
-  val formats = Json.format[Release]
+  val formats = Json.format[Deployment]
 
 }
 
-trait ReleasesRepository {
-  def add(release: Release): Future[Boolean]
+trait DeploymentsRepository {
+  def add(deployment: Deployment): Future[Boolean]
 
-  def update(release: Release): Future[Boolean]
+  def update(deployment: Deployment): Future[Boolean]
 
-  def allServiceReleases: Future[Map[String, Seq[Release]]]
+  def allServicedeployments: Future[Map[String, Seq[Deployment]]]
 
-  def getAllReleases: Future[Seq[Release]]
+  def getAllDeployments: Future[Seq[Deployment]]
 
-  def getForService(serviceName: String): Future[Option[Seq[Release]]]
+  def getForService(serviceName: String): Future[Option[Seq[Deployment]]]
 
   def clearAllData: Future[Boolean]
 }
 
-class MongoReleasesRepository(mongo: () => DB)
-  extends ReactiveRepository[Release, BSONObjectID](
-    collectionName = "releases",
+class MongoDeploymentsRepository(mongo: () => DB)
+  extends ReactiveRepository[Deployment, BSONObjectID](
+    collectionName = "deployments",
     mongo = mongo,
-    domainFormat = Release.formats) with ReleasesRepository {
+    domainFormat = Deployment.formats) with DeploymentsRepository {
 
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
@@ -77,21 +77,21 @@ class MongoReleasesRepository(mongo: () => DB)
       )
     )
 
-  def add(release: Release): Future[Boolean] = {
+  def add(deployment: Deployment): Future[Boolean] = {
     withTimerAndCounter("mongo.write") {
-      insert(release) map {
+      insert(deployment) map {
         case lastError if lastError.inError => throw lastError
         case _ => true
       }
     }
   }
 
-  def update(release: Release): Future[Boolean] = {
-    require(release._id.isDefined, "_id must be defined")
+  def update(deployment: Deployment): Future[Boolean] = {
+    require(deployment._id.isDefined, "_id must be defined")
     withTimerAndCounter("mongo.update") {
       collection.update(
-        selector = Json.obj("_id" -> Json.toJson(release._id.get)(ReactiveMongoFormats.objectIdWrite)),
-        update = Release.formats.writes(release)
+        selector = Json.obj("_id" -> Json.toJson(deployment._id.get)(ReactiveMongoFormats.objectIdWrite)),
+        update = Deployment.formats.writes(deployment)
       ).map {
         case lastError if lastError.inError => throw lastError
         case _ => true
@@ -99,9 +99,9 @@ class MongoReleasesRepository(mongo: () => DB)
     }
   }
 
-  override def allServiceReleases: Future[Map[String, Seq[Release]]] = findAll().map { all => all.groupBy(_.name) }
+  override def allServicedeployments: Future[Map[String, Seq[Deployment]]] = findAll().map { all => all.groupBy(_.name) }
 
-  def getForService(serviceName: String): Future[Option[Seq[Release]]] = {
+  def getForService(serviceName: String): Future[Option[Seq[Deployment]]] = {
 
     withTimerAndCounter("mongo.read") {
       find("name" -> BSONDocument("$eq" -> serviceName)) map {
@@ -113,9 +113,9 @@ class MongoReleasesRepository(mongo: () => DB)
 
   def clearAllData = super.removeAll().map(!_.hasErrors)
 
-  def getAllReleases: Future[Seq[Release]] = collection
+  def getAllDeployments: Future[Seq[Deployment]] = collection
     .find(BSONDocument.empty)
     .sort(Json.obj("productionDate" -> JsNumber(-1)))
-    .cursor[Release]()
+    .cursor[Deployment]()
     .collect[List]()
 }

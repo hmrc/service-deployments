@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.util.concurrent.TimeUnit
 
@@ -26,9 +26,9 @@ import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.gitclient.Git
 import uk.gov.hmrc.githubclient.GithubApiClient
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.servicereleases.deployments.{DefaultServiceDeploymentsService, DeploymentsDataSource, ReleasesApiConnector}
-import uk.gov.hmrc.servicereleases.services.{CatalogueConnector, DefaultServiceRepositoriesService}
-import uk.gov.hmrc.servicereleases.tags.{DefaultTagsService, GitConnector, GitHubConnector}
+import uk.gov.hmrc.servicedeployments.deployments.{DefaultServiceDeploymentsService, DeploymentsDataSource, DeploymentsApiConnector}
+import uk.gov.hmrc.servicedeployments.services.{CatalogueConnector, DefaultServiceRepositoriesService}
+import uk.gov.hmrc.servicedeployments.tags.{DefaultTagsService, GitConnector, GitHubConnector}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -46,7 +46,7 @@ case class Info(message: String) extends JobResult {
 }
 
 trait DefaultSchedulerDependencies extends MongoDbConnection  {
-  import ServiceReleasesConfig._
+  import ServicedeploymentsConfig._
 
   def deploymentsDataSource: DeploymentsDataSource
 
@@ -60,11 +60,11 @@ trait DefaultSchedulerDependencies extends MongoDbConnection  {
     "open")
 
   val akkaSystem = Akka.system()
-  lazy val releasesService = new DefaultReleasesService(
+  lazy val deploymentsService = new DefaultDeploymentsService(
     new DefaultServiceRepositoriesService(new CatalogueConnector(catalogueBaseUrl)),
     new DefaultServiceDeploymentsService(deploymentsDataSource),
     new DefaultTagsService(enterpriseDataSource, openDataSource),
-    new MongoReleasesRepository(db))
+    new MongoDeploymentsRepository(db))
 }
 
 trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
@@ -72,10 +72,10 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
 
   def akkaSystem: ActorSystem
   def deploymentsDataSource: DeploymentsDataSource
-  def releasesService: ReleasesService
+  def deploymentsService: DeploymentsService
 
   override def repo: LockRepository = LockMongoRepository(db)
-  override def lockId: String = "service-releases-scheduled-job"
+  override def lockId: String = "service-deployments-scheduled-job"
 
   override val forceLockReleaseAfter: Duration = Duration.standardMinutes(15)
 
@@ -91,7 +91,7 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
     tryLock {
       Logger.info(s"Starting mongo update")
 
-      releasesService.updateModel().map { result =>
+      deploymentsService.updateModel().map { result =>
         val total = result.toList.length
         val failureCount = result.count(r => !r)
         val successCount = total - failureCount
@@ -99,7 +99,7 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
         defaultMetricsRegistry.counter("scheduler.success").inc(successCount)
         defaultMetricsRegistry.counter("scheduler.failure").inc(failureCount)
 
-        Info(s"Added/updated $successCount releases and encountered $failureCount failures")
+        Info(s"Added/updated $successCount deployments and encountered $failureCount failures")
       }.recover { case ex =>
         Error(s"Something went wrong during the mongo update: ${ex.getMessage}")
       }
@@ -112,7 +112,7 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
 }
 
 object Scheduler extends Scheduler with DefaultSchedulerDependencies {
-  import ServiceReleasesConfig._
+  import ServicedeploymentsConfig._
 
-  override val deploymentsDataSource = new ReleasesApiConnector(releasesApiBase)
+  override val deploymentsDataSource = new DeploymentsApiConnector(deploymentsApiBase)
 }

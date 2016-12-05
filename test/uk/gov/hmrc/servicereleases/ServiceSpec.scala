@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.time.LocalDateTime
 
 import org.scalatest.{Matchers, WordSpec, FunSuite}
-import uk.gov.hmrc.servicereleases.deployments.ServiceDeployment
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeployment
 
 class ServiceSpec extends WordSpec with Matchers {
 
@@ -32,9 +32,9 @@ class ServiceSpec extends WordSpec with Matchers {
   val `30 August` = LocalDateTime.of(2016, 8, 30, 0, 0)
 
 
-  "releaseInterval" should {
+  "deploymentInterval" should {
 
-    "correct release interval for a given version" in {
+    "correct deployment interval for a given version" in {
 
       val deploymemts = Seq(
         ServiceDeployment("1.0.0", `28 August`),
@@ -45,13 +45,13 @@ class ServiceSpec extends WordSpec with Matchers {
 
       val service = Service("name", Seq(), deployments = deploymemts, Seq())
 
-      service.releaseInterval("0.0.1") shouldBe None
-      service.releaseInterval("0.1.0") shouldBe Some(3)
-      service.releaseInterval("1.0.0") shouldBe Some(2)
-      service.releaseInterval("2.0.0") shouldBe Some(2)
+      service.deploymentInterval("0.0.1") shouldBe None
+      service.deploymentInterval("0.1.0") shouldBe Some(3)
+      service.deploymentInterval("1.0.0") shouldBe Some(2)
+      service.deploymentInterval("2.0.0") shouldBe Some(2)
 
     }
-    "return release interval for a old release not in deployments but known to us" in {
+    "return deployment interval for a old deployment not in deployments but known to us" in {
 
       val deploymemts = Seq(
         ServiceDeployment("0.1.0", `26 August`),
@@ -59,9 +59,9 @@ class ServiceSpec extends WordSpec with Matchers {
         ServiceDeployment("2.0.0",`30 August`)
       )
 
-      val service = Service("name", Seq(), deployments = deploymemts, Seq(Release("name", "1.0.0", None, `31 July`, Some(1), None)))
+      val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "1.0.0", None, `31 July`, Some(1), None)))
 
-      service.releaseInterval("0.0.1") should be(Some(23))
+      service.deploymentInterval("0.0.1") should be(Some(23))
 
     }
 
@@ -79,10 +79,10 @@ class ServiceSpec extends WordSpec with Matchers {
         ServiceDeployment("2.0.0",`30 August`)
       )
 
-      val oldReleaseDate: LocalDateTime = LocalDateTime.now().minusDays(60)
-      val service = Service("name", Seq(), deployments = deploymemts, Seq(Release("name", "1.0.0", None, oldReleaseDate, Some(1), None)))
+      val oldDeploymentDate: LocalDateTime = LocalDateTime.now().minusDays(60)
+      val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "1.0.0", None, oldDeploymentDate, Some(1), None)))
 
-      service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", oldReleaseDate))
+      service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", oldDeploymentDate))
 
     }
 
@@ -94,12 +94,12 @@ class ServiceSpec extends WordSpec with Matchers {
         ServiceDeployment("2.0.0",`30 August`)
       )
 
-      val oldReleaseDate: LocalDateTime = LocalDateTime.now().minusDays(60)
-      val service = Service("name", Seq(), deployments = deploymemts, Seq(Release("name", "0.1.0", None, oldReleaseDate, Some(1), None)))
+      val oldDeploymentDate: LocalDateTime = LocalDateTime.now().minusDays(60)
+      val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "0.1.0", None, oldDeploymentDate, Some(1), None)))
 
       service.deploymentsRequiringUpdates.size shouldBe 3
 
-      service.deploymentsRequiringUpdates should contain(ServiceDeployment("0.1.0", oldReleaseDate))
+      service.deploymentsRequiringUpdates should contain(ServiceDeployment("0.1.0", oldDeploymentDate))
 
     }
 

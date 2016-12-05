@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -22,21 +22,21 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.scalatestplus.play.OneAppPerTest
-import uk.gov.hmrc.servicereleases.deployments.ServiceDeploymentsService
-import uk.gov.hmrc.servicereleases.services.ServiceRepositoriesService
-import uk.gov.hmrc.servicereleases.tags.TagsService
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentsService
+import uk.gov.hmrc.servicedeployments.services.ServiceRepositoriesService
+import uk.gov.hmrc.servicedeployments.tags.TagsService
 
 import scala.concurrent.Future
 
-class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfterEach with DefaultPatienceConfig with OneAppPerTest {
+class DefaultDeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfterEach with DefaultPatienceConfig with OneAppPerTest {
 
   val servicesService = mock[ServiceRepositoriesService]
   val deploymentsService = mock[ServiceDeploymentsService]
   val tagsService = mock[TagsService]
-  val repository = mock[ReleasesRepository]
+  val repository = mock[DeploymentsRepository]
 
-  val service = new DefaultReleasesService(servicesService, deploymentsService, tagsService, repository)
-  val configureMocks: (((String) => ReleasesTestFixture) => Seq[ReleasesTestFixture]) => Map[String, ServiceTestFixture] =
+  val service = new DefaultDeploymentsService(servicesService, deploymentsService, tagsService, repository)
+  val configureMocks: (((String) => DeploymentsTestFixture) => Seq[DeploymentsTestFixture]) => Map[String, ServiceTestFixture] =
     ServiceTestFixture.configureMocks(servicesService, deploymentsService, tagsService, repository)
 
   override def beforeEach() = {
@@ -45,7 +45,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
     reset(tagsService)
     reset(repository)
 
-    when(repository.allServiceReleases).thenReturn(Future.successful(Map.empty[String, Seq[Release]]))
+    when(repository.allServicedeployments).thenReturn(Future.successful(Map.empty[String, Seq[Deployment]]))
     when(repository.add(any())).thenReturn(Future.successful(true))
     when(repository.update(any())).thenReturn(Future.successful(true))
   }
@@ -54,7 +54,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
   "updateModel" should {
 
-    "Add any new releases for known services to the mongo repository" in {
+    "Add any new deployments for known services to the mongo repository" in {
       val testData = configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAbout("1.0.0", "2.0.0")
@@ -67,11 +67,11 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyReleaseWasAddedToMongo("3.0.0")
-      testData("another").verifyReleaseWasAddedToMongo("1.1.0")
+      testData("service").verifyDeploymentWasAddedToMongo("3.0.0")
+      testData("another").verifyDeploymentWasAddedToMongo("1.1.0")
     }
 
-    "Add new releases when a service has never been seen before" in {
+    "Add new deployments when a service has never been seen before" in {
       val testData = configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAbout()
@@ -80,10 +80,10 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyReleaseWasAddedToMongo("1.0.0")
+      testData("service").verifyDeploymentWasAddedToMongo("1.0.0")
     }
 
-    "Add new releases with a blank tag date if only a lightweight tag is available" in {
+    "Add new deployments with a blank tag date if only a lightweight tag is available" in {
       val testData = configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAbout()
@@ -92,7 +92,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       val result = service.updateModel().futureValue
 
-      testData("service").verifyReleaseWasAddedToMongoWithBlankCreatedDate("1.0.0")
+      testData("service").verifyDeploymentWasAddedToMongoWithBlankCreatedDate("1.0.0")
     }
 
     "Cope with a scenario where there are no deployments at all for a service" in {
@@ -108,7 +108,7 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
       verify(repository, never).add(any())
     }
 
-    "Ignore new releases for services if we fail to fetch the tags" in {
+    "Ignore new deployments for services if we fail to fetch the tags" in {
       val testData = configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAbout("1.0.0", "2.0.0")
@@ -121,16 +121,16 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyReleaseWasAddedToMongo("3.0.0")
-      testData("another").verifyReleaseWasUpdatedToMongo("1.0.0")
+      testData("service").verifyDeploymentWasAddedToMongo("3.0.0")
+      testData("another").verifyDeploymentWasUpdatedToMongo("1.0.0")
 
 
-      verify(repository).allServiceReleases
+      verify(repository).allServicedeployments
       verifyNoMoreInteractions(repository)
     }
 
 
-    "Add new releases when a service has never been seen before with correct deployment lead time interval" in {
+    "Add new deployments when a service has never been seen before with correct deployment lead time interval" in {
       val testData = configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAbout()
@@ -140,10 +140,10 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval("1.0.0" -> Some(3))
+      testData("service").verifyDeploymentWasAddedToMongoWithCorrectLeadTimeInterval("1.0.0" -> Some(3))
     }
 
-    "Add new releases when a service has never been seen before with correct release interval" in {
+    "Add new deployments when a service has never been seen before with correct deployment interval" in {
       val testData = configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAbout()
@@ -154,12 +154,12 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyReleaseWasAddedToMongoWithCorrectReleaseInterval("1.0.0" -> None)
-      testData("service").verifyReleaseWasAddedToMongoWithCorrectReleaseInterval("2.0.0" -> Some(2))
+      testData("service").verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval("1.0.0" -> None)
+      testData("service").verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval("2.0.0" -> Some(2))
     }
 
 
-    "Add new releases when a service has never been seen before and its the first release" in {
+    "Add new deployments when a service has never been seen before and its the first deployment" in {
       val testData = configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAbout()
@@ -169,10 +169,10 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyReleaseWasAddedToMongoWithCorrectReleaseInterval("1.0.0" -> None)
+      testData("service").verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval("1.0.0" -> None)
     }
 
-    "update missing release interval for existing releases which we already know about and add new releases" in {
+    "update missing deployment interval for existing deployments which we already know about and add new deployments" in {
 
 
       val testData = configureMocks(forService => Seq(
@@ -184,11 +184,11 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyCorrectReleaseIntervalWasUpdatedOnTheRelease("0.1.0" -> None)
-      testData("service").verifyCorrectReleaseIntervalWasUpdatedOnTheRelease("1.0.0" -> Some(2))
+      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("0.1.0" -> None)
+      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("1.0.0" -> Some(2))
     }
 
-    "update missing release interval for existing releases which we already know about but are not known to deployment (old releases)" in {
+    "update missing deployment interval for existing deployments which we already know about but are not known to deployment (old deployments)" in {
 
 
       val testData = configureMocks(forService => Seq(
@@ -200,44 +200,44 @@ class DefaultReleasesServiceSpec extends WordSpec with Matchers with MockitoSuga
 
       service.updateModel().futureValue
 
-      testData("service").verifyCorrectReleaseIntervalWasUpdatedOnTheRelease("0.1.0" -> None)
-      testData("service").verifyCorrectReleaseIntervalWasUpdatedOnTheRelease("0.1.1" -> Some(2))
-      testData("service").verifyReleaseWasAddedToMongoWithCorrectReleaseInterval("1.1.1" -> Some(3))
+      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("0.1.0" -> None)
+      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("0.1.1" -> Some(2))
+      testData("service").verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval("1.1.1" -> Some(3))
     }
 
 
 
-    "update missing leadtime interval for existing releases which we already know about and add new releases" in {
+    "update missing leadtime interval for existing deployments which we already know about and add new deployments" in {
 
       val testData = configureMocks(forService => Seq(
         forService("service")
-          .repositoryKnowsAboutReleaseWithLeadTime(Map("0.1.0" -> ("04-02-2016", None)))
+          .repositoryKnowsAboutDeploymentWithLeadTime(Map("0.1.0" -> ("04-02-2016", None)))
           .deploymentsKnowsAbout(Map("0.1.0" -> "04-02-2016", "1.0.0" -> "06-02-2016"))
           .tagsServiceKnowsAbout(Map("0.1.0" -> "31-01-2016", "1.0.0" -> "01-02-2016"))
       ))
 
       service.updateModel().futureValue
 
-      testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheRelease("0.1.0" -> Some(4))
-      testData("service").verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval("1.0.0" -> Some(5))
+      testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheDeployment("0.1.0" -> Some(4))
+      testData("service").verifyDeploymentWasAddedToMongoWithCorrectLeadTimeInterval("1.0.0" -> Some(5))
     }
 
 
-    "update missing leadtime interval for existing releases which we already know about and are not returned by deployment" in {
+    "update missing leadtime interval for existing deployments which we already know about and are not returned by deployment" in {
 
       val testData = configureMocks(forService => Seq(
         forService("service")
-          .repositoryKnowsAboutReleaseWithLeadTime(Map("0.1.0" -> ("04-02-2016", None)))
+          .repositoryKnowsAboutDeploymentWithLeadTime(Map("0.1.0" -> ("04-02-2016", None)))
           .deploymentsKnowsAbout()
           .tagsServiceKnowsAbout(Map("0.1.0" -> "31-01-2016"))
       ))
 
       service.updateModel().futureValue
 
-      testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheRelease("0.1.0" -> Some(4))
+      testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheDeployment("0.1.0" -> Some(4))
     }
 
-    "Not do anything if there are no new releases and all existing releases have the lead time interval" in {
+    "Not do anything if there are no new deployments and all existing deployments have the lead time interval" in {
       configureMocks(forService => Seq(
         forService("service")
           .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.0.0" -> (Some(1l), Some(2l))))

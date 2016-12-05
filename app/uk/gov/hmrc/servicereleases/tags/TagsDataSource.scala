@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.tags
+package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
 
 import uk.gov.hmrc.BlockingIOExecutionContext
-import uk.gov.hmrc.servicereleases.FutureHelpers.withTimerAndCounter
+import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 
@@ -28,9 +28,9 @@ import scala.concurrent.Future
 case class Tag(version: String, createdAt: LocalDateTime)
 
 object Tag {
-  implicit def ghRepoReleasesToServiceReleaseTags(gr: List[GhRepoRelease]): List[Tag] = gr.map(Tag.apply)
+  implicit def ghRepoDeploymentsToServiceDeploymentTags(gr: List[GhRepoRelease]): List[Tag] = gr.map(Tag.apply)
 
-  implicit def gitTagsToServiceReleaseTags(gt: List[GitTag]): List[Tag] = gt.map(Tag.apply)
+  implicit def gitTagsToServiceDeploymentTags(gt: List[GitTag]): List[Tag] = gt.map(Tag.apply)
 
   def apply(gt: GitTag): Tag = Tag(getVersionNumber(gt.name), gt.createdAt.get.toLocalDateTime)
 
@@ -63,12 +63,12 @@ class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, ident
   def get(organisation: String, repoName: String) =
     getRepoTags(organisation, repoName).flatMap { x =>
       val (withCreatedAt, withoutCreatedAt) = x.partition(_.createdAt.isDefined)
-      val serviceRelease: List[Tag] = withCreatedAt
+      val serviceDeployment: List[Tag] = withCreatedAt
 
-      tagsWithReleaseDate(withoutCreatedAt, organisation, repoName).map(serviceRelease ++ _)
+      tagsWithDeploymentDate(withoutCreatedAt, organisation, repoName).map(serviceDeployment ++ _)
     }
 
-  private def tagsWithReleaseDate(gitTags: List[GitTag], organisation: String, repoName: String): Future[List[Tag]] =
+  private def tagsWithDeploymentDate(gitTags: List[GitTag], organisation: String, repoName: String): Future[List[Tag]] =
     if (gitTags.nonEmpty)
       for (rs <- getApiTags(organisation, repoName))
         yield gitTags.flatMap { gitTag => rs.find(_.tagName == gitTag.name).map(Tag.apply) }

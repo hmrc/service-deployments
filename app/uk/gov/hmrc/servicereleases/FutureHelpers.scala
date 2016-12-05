@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 
 import com.kenshoo.play.metrics.{Metrics, MetricsImpl}

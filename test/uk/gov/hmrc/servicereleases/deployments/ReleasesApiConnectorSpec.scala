@@ -14,27 +14,25 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.deployments
+package uk.gov.hmrc.servicedeployments.deployments
 
-import java.time.{LocalDateTime, ZoneOffset, ZonedDateTime}
+import java.time.{LocalDateTime, ZoneOffset}
 
+import com.github.tomakehurst.wiremock.http.RequestMethod
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpec}
-import play.api.test.FakeApplication
-import play.api.test.Helpers._
-import uk.gov.hmrc.servicereleases.{DefaultPatienceConfig, Release, WireMockSpec}
-import com.github.tomakehurst.wiremock.http.RequestMethod
 import org.scalatestplus.play.OneAppPerTest
+import uk.gov.hmrc.servicedeployments.{DefaultPatienceConfig, WireMockSpec}
 
-class ReleasesApiConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest with DefaultPatienceConfig{
+class DeploymentsApiConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest with DefaultPatienceConfig{
 
-  val connector = new ReleasesApiConnector(endpointMockUrl)
+  val connector = new DeploymentsApiConnector(endpointMockUrl)
 
   "Get All" should {
 
-    "get all releases from the releases app and return all releases for the service in production" in {
-        val `release 11.0.0 date` = LocalDateTime.now().minusDays(5).toEpochSecond(ZoneOffset.UTC)
-        val `release 8.3.0 date` = LocalDateTime.now().minusMonths(5).toEpochSecond(ZoneOffset.UTC)
+    "get all deployments from the deployments app and return all deployments for the service in production" in {
+        val `deployment 11.0.0 date` = LocalDateTime.now().minusDays(5).toEpochSecond(ZoneOffset.UTC)
+        val `deployment 8.3.0 date` = LocalDateTime.now().minusMonths(5).toEpochSecond(ZoneOffset.UTC)
 
         givenRequestExpects(
           method = RequestMethod.GET,
@@ -46,14 +44,14 @@ class ReleasesApiConnectorSpec extends WordSpec with Matchers with WireMockSpec 
               |    {
               |        "an": "appA",
               |        "env": "prod-something",
-              |        "fs": ${`release 11.0.0 date`},
+              |        "fs": ${`deployment 11.0.0 date`},
               |        "ls": 1450877349,
               |        "ver": "11.0.0"
               |    },
               | {
               |         "an": "appA",
               |         "env": "prod-somethingOther",
-              |         "fs": ${`release 11.0.0 date`},
+              |         "fs": ${`deployment 11.0.0 date`},
               |        "ls": 1450877349,
               |        "ver": "11.0.0"
               |    },
@@ -81,7 +79,7 @@ class ReleasesApiConnectorSpec extends WordSpec with Matchers with WireMockSpec 
               |    {
               |        "an": "appA",
               |        "env": "prod-something",
-              |        "fs": ${`release 8.3.0 date`},
+              |        "fs": ${`deployment 8.3.0 date`},
               |        "ls": 1450347910,
               |        "ver": "8.3.0"
               |    }
@@ -91,8 +89,8 @@ class ReleasesApiConnectorSpec extends WordSpec with Matchers with WireMockSpec 
 
           val results = connector.getAll.futureValue
           results.size shouldBe 6
-          results.head shouldBe Deployment(
-            "prod-something", "appA", "11.0.0", LocalDateTime.ofEpochSecond(`release 11.0.0 date`, 0, ZoneOffset.UTC))
+          results.head shouldBe EnvironmentalDeployment(
+            "prod-something", "appA", "11.0.0", LocalDateTime.ofEpochSecond(`deployment 11.0.0 date`, 0, ZoneOffset.UTC))
         }
   }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.services
+package uk.gov.hmrc.servicedeployments.services
 
 import play.api.http.HeaderNames
 import play.api.libs.json.Json

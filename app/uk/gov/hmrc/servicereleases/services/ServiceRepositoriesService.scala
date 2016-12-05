@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.services
+package uk.gov.hmrc.servicedeployments.services
 
 import play.api.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.servicereleases.FutureHelpers._
+import uk.gov.hmrc.servicedeployments.FutureHelpers._
 
 case class Repository(org: String, repoType: String)
 

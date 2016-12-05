@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.tags
+package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
 import java.util.Date
@@ -24,8 +24,6 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.OneAppPerTest
-import play.api.test.FakeApplication
-import play.api.test.Helpers._
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 
@@ -36,15 +34,15 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
   private val githubApiClient = mock[GithubApiClient]
   private val connector = new GitHubConnector(githubApiClient, "")
 
-  "getServiceRepoReleaseTags" should {
+  "getServiceRepoDeploymentTags" should {
 
-    "get repo release tags from git hub releases" in {
+    "get repo deployment tags from git hub deployments" in {
       val now: LocalDateTime = LocalDateTime.now()
-      val releases = List(
-        GhRepoRelease(123, "releases/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
+      val deployments = List(
+        GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
 
       when(githubApiClient.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(releases))
+        .thenReturn(Future.successful(deployments))
 
       val tags = connector.get("OrgA", "repoA")
 

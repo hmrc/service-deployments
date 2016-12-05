@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.services
+package uk.gov.hmrc.servicedeployments.services
 
 import com.github.tomakehurst.wiremock.http.RequestMethod.GET
 import org.scalatest.concurrent.ScalaFutures
@@ -25,7 +25,7 @@ import play.api.inject.Module
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.FakeApplication
 import play.api.test.Helpers._
-import uk.gov.hmrc.servicereleases.WireMockSpec
+import uk.gov.hmrc.servicedeployments.WireMockSpec
 
 class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest {
   val catalogueClient = new CatalogueConnector(endpointMockUrl)

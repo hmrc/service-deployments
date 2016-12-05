@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.time.{Period, LocalDateTime}
 
@@ -25,55 +25,55 @@ import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
 
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.servicereleases.deployments.{Deployment, DeploymentsDataSource}
+import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentalDeployment, DeploymentsDataSource}
 
 import scala.concurrent.Future
 import scala.io.Source
 
 
-case class ReleaseResult(name: String, version: String,
+case class DeploymentResult(name: String, version: String,
                          creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
                          interval: Option[Long], leadTime: Option[Long])
 
-object ReleaseResult {
+object DeploymentResult {
 
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
 
-  implicit val formats = Json.format[ReleaseResult]
+  implicit val formats = Json.format[DeploymentResult]
 
-  def fromRelease(release: Release): ReleaseResult = {
-    ReleaseResult(
-      release.name,
-      release.version,
-      release.creationDate,
-      release.productionDate,
-      release.interval,
-      release.leadTime
+  def fromDeployment(deployment: Deployment): DeploymentResult = {
+    DeploymentResult(
+      deployment.name,
+      deployment.version,
+      deployment.creationDate,
+      deployment.productionDate,
+      deployment.interval,
+      deployment.leadTime
     )
   }
 
 }
 
-object ReleasesController extends ReleasesController with MongoDbConnection {
-  override def releasesRepository = new MongoReleasesRepository(db)
+object DeploymentsController extends DeploymentsController with MongoDbConnection {
+  override def deploymentsRepository = new MongoDeploymentsRepository(db)
 }
 
-trait ReleasesController extends BaseController {
+trait DeploymentsController extends BaseController {
 
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
 
-  def releasesRepository: ReleasesRepository
+  def deploymentsRepository: DeploymentsRepository
 
   def forService(serviceName: String) = Action.async { implicit request =>
-    releasesRepository.getForService(serviceName).map {
-      case Some(data) => Ok(Json.toJson(data.map(ReleaseResult.fromRelease)))
+    deploymentsRepository.getForService(serviceName).map {
+      case Some(data) => Ok(Json.toJson(data.map(DeploymentResult.fromDeployment)))
       case None => NotFound
     }
   }
 
   def getAll() = Action.async { implicit request =>
-    releasesRepository.getAllReleases.map { releases =>
-      Ok(Json.toJson(releases.map(ReleaseResult.fromRelease)))
+    deploymentsRepository.getAllDeployments.map { deployments =>
+      Ok(Json.toJson(deployments.map(DeploymentResult.fromDeployment)))
     }
 
   }
@@ -87,19 +87,19 @@ trait ReleasesController extends BaseController {
   }
 
   def importRaw() = Action.async(parse.temporaryFile) { request =>
-    implicit val reads: Reads[Deployment] = (
+    implicit val reads: Reads[EnvironmentalDeployment] = (
       (JsPath \ "env").read[String] and
         (JsPath \ "an").read[String] and
         (JsPath \ "ver").read[String] and
         (JsPath \ "fs").read[LocalDateTime]
-      )(Deployment.apply _)
+      )(EnvironmentalDeployment.apply _)
 
     val source = Source.fromFile(request.body.file, "UTF-8")
-    val jsons = for (line <- source.getLines()) yield Json.fromJson[Deployment](Json.parse(line))
+    val jsons = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
 
     val scheduler = new Scheduler with DefaultSchedulerDependencies {
       val deploymentsDataSource = new DeploymentsDataSource {
-        def getAll: Future[List[Deployment]] = Future.successful(jsons.map(_.get).toList)
+        def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
       }
     }
 
@@ -111,7 +111,7 @@ trait ReleasesController extends BaseController {
   }
 
   def clear() = Action.async { implicit request =>
-    releasesRepository.clearAllData map { r =>
+    deploymentsRepository.clearAllData map { r =>
       Ok(r.toString)
     }
   }

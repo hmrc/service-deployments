@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.deployments
+package uk.gov.hmrc.servicedeployments.deployments
 
 import java.time.LocalDateTime
 
@@ -34,12 +34,12 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
 
   "Get all" should {
 
-    "give all releases for a given service in production" in {
+    "give all deployments for a given service in production" in {
       Mockito.when(dataSource.getAll).thenReturn(Future.successful(
         List(
-          Deployment("production","some-serviceName","1.0",now),
-          Deployment("prod","some-serviceName","2.0",now),
-          Deployment("production","some-other-ServiceName","1.0",now.minusDays(2)))
+          EnvironmentalDeployment("production","some-serviceName","1.0",now),
+          EnvironmentalDeployment("prod","some-serviceName","2.0",now),
+          EnvironmentalDeployment("production","some-other-ServiceName","1.0",now.minusDays(2)))
         ))
 
       val result = service.getAll().futureValue
@@ -47,15 +47,15 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
       result("some-other-ServiceName") shouldBe Seq(ServiceDeployment("1.0", now.minusDays(2)))
     }
 
-    "remove re releases and take the release with earliest date" in {
+    "remove re deployments and take the deployment with earliest date" in {
       val twoDaysEarlier = now.minusDays(2)
       val aHourEarlier = now.minusHours(1)
       Mockito.when(dataSource.getAll).thenReturn(Future.successful(
         List(
-          Deployment("production","some-serviceName","1.0",now),
-          Deployment("prod","some-serviceName","1.0",aHourEarlier),
-          Deployment("production","some-serviceName","1.0", twoDaysEarlier),
-          Deployment("production","some-other-serviceName","1.0", twoDaysEarlier)
+          EnvironmentalDeployment("production","some-serviceName","1.0",now),
+          EnvironmentalDeployment("prod","some-serviceName","1.0",aHourEarlier),
+          EnvironmentalDeployment("production","some-serviceName","1.0", twoDaysEarlier),
+          EnvironmentalDeployment("production","some-other-serviceName","1.0", twoDaysEarlier)
         )
       ))
 
@@ -64,14 +64,14 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
       result("some-other-serviceName") shouldBe Seq(ServiceDeployment("1.0",twoDaysEarlier))
     }
 
-    "releases should be sorted by date" in {
+    "deployments should be sorted by date" in {
       val twoDaysEarlier = now.minusDays(2)
       val aHourEarlier = now.minusHours(1)
       Mockito.when(dataSource.getAll).thenReturn(Future.successful(
         List(
-          Deployment("production","some-serviceName","3.0",now),
-          Deployment("prod","some-serviceName","2.0",aHourEarlier),
-          Deployment("production","some-serviceName","1.0", twoDaysEarlier)
+          EnvironmentalDeployment("production","some-serviceName","3.0",now),
+          EnvironmentalDeployment("prod","some-serviceName","2.0",aHourEarlier),
+          EnvironmentalDeployment("production","some-serviceName","1.0", twoDaysEarlier)
         )
       ))
 

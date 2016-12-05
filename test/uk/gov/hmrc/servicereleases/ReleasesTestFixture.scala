@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.io.Serializable
 import java.time.{ZoneId, LocalDate, LocalDateTime}
@@ -23,9 +23,9 @@ import java.time.format.DateTimeFormatter
 import org.mockito.ArgumentCaptor
 import org.mockito.Mockito._
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.servicereleases.deployments.{ServiceDeployment, ServiceDeploymentsService}
-import uk.gov.hmrc.servicereleases.services.{Repository, ServiceRepositoriesService}
-import uk.gov.hmrc.servicereleases.tags.{Tag, TagsService}
+import uk.gov.hmrc.servicedeployments.deployments.{ServiceDeployment, ServiceDeploymentsService}
+import uk.gov.hmrc.servicedeployments.services.{Repository, ServiceRepositoriesService}
+import uk.gov.hmrc.servicedeployments.tags.{Tag, TagsService}
 import scala.collection.JavaConversions._
 
 import scala.concurrent.Future
@@ -33,15 +33,15 @@ import scala.util.{Failure, Success, Try}
 
 case class ServiceTestFixture(serviceName: String,
                               tags: Try[Seq[Tag]],
-                              releases: Seq[Release],
+                              releases: Seq[Deployment],
                               deployments: Seq[ServiceDeployment],
-                              verifyReleaseWasAddedToMongo: (String) => Unit,
-                              verifyReleaseWasAddedToMongoWithBlankCreatedDate: (String) => Unit,
-                              verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval: ((String, Option[Long])) => Unit,
-                              verifyCorrectLeadTimeIntervalWasUpdatedOnTheRelease: ((String, Option[Long])) => Unit,
-                              verifyReleaseWasAddedToMongoWithCorrectReleaseInterval: ((String, Option[Long])) => Unit,
-                              verifyCorrectReleaseIntervalWasUpdatedOnTheRelease: ((String, Option[Long])) => Unit,
-                              verifyReleaseWasUpdatedToMongo: (String) => Unit)
+                              verifyDeploymentWasAddedToMongo: (String) => Unit,
+                              verifyDeploymentWasAddedToMongoWithBlankCreatedDate: (String) => Unit,
+                              verifyDeploymentWasAddedToMongoWithCorrectLeadTimeInterval: ((String, Option[Long])) => Unit,
+                              verifyCorrectLeadTimeIntervalWasUpdatedOnTheDeployment: ((String, Option[Long])) => Unit,
+                              verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval: ((String, Option[Long])) => Unit,
+                              verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment: ((String, Option[Long])) => Unit,
+                              verifyDeploymentWasUpdatedToMongo: (String) => Unit)
 
 
 object ServiceTestFixture {
@@ -51,10 +51,10 @@ object ServiceTestFixture {
   def configureMocks(servicesService: ServiceRepositoriesService,
                      deploymentsService: ServiceDeploymentsService,
                      tagsService: TagsService,
-                     repository: ReleasesRepository)
-                    (fixturesToBuild: ((String) => ReleasesTestFixture) => Seq[ReleasesTestFixture]) = {
+                     repository: DeploymentsRepository)
+                    (fixturesToBuild: ((String) => DeploymentsTestFixture) => Seq[DeploymentsTestFixture]) = {
 
-    def build(fixture: ReleasesTestFixture) = {
+    def build(fixture: DeploymentsTestFixture) = {
       val defaultVersionDates = (fixture.releaseData.keys ++ fixture.deploymentsData.keys ++ fixture.tagsData.map(_.keys).getOrElse(Seq())).map(_ -> RandomData.date()).toMap
 
       val tagsDataWithDefaultDates: Try[Map[String, LocalDateTime]] =  fixture.tagsData.map { tagsData =>
@@ -69,9 +69,9 @@ object ServiceTestFixture {
 
       val releasesWithDefaultDates = fixture.releaseData.map {
         case (v, (Some(d), lt, ri)) =>
-          Release(fixture.serviceName, v, tagsDataWithDefaultDates.getOrElse(Map()).get(v), d, ri, lt, Some(knownReleaseObjectId))
+          Deployment(fixture.serviceName, v, tagsDataWithDefaultDates.getOrElse(Map()).get(v), d, ri, lt, Some(knownReleaseObjectId))
         case (v, (None, lt, ri)) =>
-          Release(fixture.serviceName, v, tagsDataWithDefaultDates.getOrElse(Map()).get(v), deploymentsDataWithDefaultDates(v), ri, lt, Some(knownReleaseObjectId))
+          Deployment(fixture.serviceName, v, tagsDataWithDefaultDates.getOrElse(Map()).get(v), deploymentsDataWithDefaultDates(v), ri, lt, Some(knownReleaseObjectId))
       }.toSeq
 
 
@@ -90,9 +90,9 @@ object ServiceTestFixture {
       )
     }
 
-    def verifyReleaseWasAddedToMongo(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
+    def verifyReleaseWasAddedToMongo(fixture: DeploymentsTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
 
-      val releaseCaptur = ArgumentCaptor.forClass(classOf[Release])
+      val releaseCaptur = ArgumentCaptor.forClass(classOf[Deployment])
 
       verify(repository, atLeastOnce()).add(releaseCaptur.capture())
 
@@ -100,9 +100,9 @@ object ServiceTestFixture {
     }
 
 
-    def verifyReleaseWasUpdatedToMongo(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
+    def verifyReleaseWasUpdatedToMongo(fixture: DeploymentsTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
 
-      val releaseCaptur = ArgumentCaptor.forClass(classOf[Release])
+      val releaseCaptur = ArgumentCaptor.forClass(classOf[Deployment])
 
       verify(repository, atLeastOnce()).update(releaseCaptur.capture())
 
@@ -110,9 +110,9 @@ object ServiceTestFixture {
     }
 
 
-    def verifyReleaseWasAddedToMongoWithBlankCreatedDate(fixture: ReleasesTestFixture, deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
+    def verifyReleaseWasAddedToMongoWithBlankCreatedDate(fixture: DeploymentsTestFixture, deploymentDates: Map[String, LocalDateTime])(version: String): Unit = {
 
-      val releaseCaptur = ArgumentCaptor.forClass(classOf[Release])
+      val releaseCaptur = ArgumentCaptor.forClass(classOf[Deployment])
 
 
       verify(repository).add(releaseCaptur.capture())
@@ -120,22 +120,22 @@ object ServiceTestFixture {
       assert(releaseCaptur.getAllValues.toList.find(_.version == version).exists(_.creationDate == None), s"release : $version was not added to mongo With blank creation date")
     }
 
-    def verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionLeadInterval: (String, Option[Long])): Unit = {
+    def verifyReleaseWasAddedToMongoWithCorrectLeadTimeInterval(fixture: DeploymentsTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionLeadInterval: (String, Option[Long])): Unit = {
 
       val (version, leadInterval) = versionLeadInterval
 
-      val releaseCaptur = ArgumentCaptor.forClass(classOf[Release])
+      val releaseCaptur = ArgumentCaptor.forClass(classOf[Deployment])
 
       verify(repository).add(releaseCaptur.capture())
 
       assert(releaseCaptur.getAllValues.toList.find(_.version == version).exists(_.leadTime == leadInterval), s"release : $version was not added to mongo With leadTime : $leadInterval")
     }
 
-    def verifyReleaseWasAddedToMongoWithCorrectReleaseInterval(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionReleaseInterval: (String, Option[Long])): Unit = {
+    def verifyReleaseWasAddedToMongoWithCorrectReleaseInterval(fixture: DeploymentsTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionReleaseInterval: (String, Option[Long])): Unit = {
 
       val (version, releaseInterval) = versionReleaseInterval
 
-      val releaseCaptur = ArgumentCaptor.forClass(classOf[Release])
+      val releaseCaptur = ArgumentCaptor.forClass(classOf[Deployment])
 
       verify(repository, atLeastOnce()).add(releaseCaptur.capture())
 
@@ -143,32 +143,32 @@ object ServiceTestFixture {
     }
 
 
-    def verifyCorrectLeadTimeIntervalWasUpdatedOnTheRelease(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionLeadInterval: (String, Option[Long])): Unit = {
+    def verifyCorrectLeadTimeIntervalWasUpdatedOnTheRelease(fixture: DeploymentsTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionLeadInterval: (String, Option[Long])): Unit = {
       val (version, leadInterval) = versionLeadInterval
 
-      val releaseCaptur = ArgumentCaptor.forClass(classOf[Release])
+      val releaseCaptur = ArgumentCaptor.forClass(classOf[Deployment])
 
       verify(repository, atLeastOnce()).update(releaseCaptur.capture())
 
-      val release: Option[Release] = releaseCaptur.getAllValues.toList.find(_.version == version)
+      val release: Option[Deployment] = releaseCaptur.getAllValues.toList.find(_.version == version)
       assert(release.exists(_.leadTime == leadInterval), s"release : $version was not updated to mongo With leadTimeInterval : $leadInterval")
       assert(release.exists(_._id == Some(knownReleaseObjectId)), s"release : $version was not updated to mongo With _id : $knownReleaseObjectId")
 
     }
 
-    def verifyCorrectReleaseIntervalWasUpdatedOnTheRelease(fixture: ReleasesTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionReleaseInterval: (String, Option[Long])): Unit = {
+    def verifyCorrectReleaseIntervalWasUpdatedOnTheRelease(fixture: DeploymentsTestFixture, tagDates: Map[String, LocalDateTime], deploymentDates: Map[String, LocalDateTime])(versionReleaseInterval: (String, Option[Long])): Unit = {
       val (version, releaseInterval) = versionReleaseInterval
 
-      val releaseCaptur = ArgumentCaptor.forClass(classOf[Release])
+      val releaseCaptur = ArgumentCaptor.forClass(classOf[Deployment])
 
       verify(repository, atLeastOnce()).update(releaseCaptur.capture())
 
-      val release: Option[Release] = releaseCaptur.getAllValues.toList.find(_.version == version)
+      val release: Option[Deployment] = releaseCaptur.getAllValues.toList.find(_.version == version)
       assert(release.exists(_.interval == releaseInterval), s"release : $version was not updated to mongo With releaseInterval : $releaseInterval")
       assert(release.exists(_._id == Some(knownReleaseObjectId)), s"release : $version was not updated to mongo With _id : $knownReleaseObjectId")
     }
 
-    val fixtures = fixturesToBuild(ReleasesTestFixture.apply).map(build)
+    val fixtures = fixturesToBuild(DeploymentsTestFixture.apply).map(build)
 
     when(servicesService.getAll()).thenReturn(Future.successful(
       fixtures.map { sd => sd.serviceName -> List(Repository("hmrc", "github")) } toMap))
@@ -180,7 +180,7 @@ object ServiceTestFixture {
         .toMap
     ))
 
-    when(repository.allServiceReleases).thenReturn(Future.successful(
+    when(repository.allServicedeployments).thenReturn(Future.successful(
       fixtures
         .map { f => f.serviceName -> f.releases }
         .filter { case (_, r) => r.nonEmpty }
@@ -196,11 +196,11 @@ object ServiceTestFixture {
 
 }
 
-object ReleasesTestFixture {
-  def apply(name: String): ReleasesTestFixture = new ReleasesTestFixture(name)
+object DeploymentsTestFixture {
+  def apply(name: String): DeploymentsTestFixture = new DeploymentsTestFixture(name)
 }
 
-class ReleasesTestFixture(val serviceName: String = RandomData.string(8)) {
+class DeploymentsTestFixture(val serviceName: String = RandomData.string(8)) {
 
   var releaseData: Map[String, Tuple3[Option[LocalDateTime], Option[Long], Option[Long]]] = Map()
   var deploymentsData: Map[String, Option[LocalDateTime]] = Map()
@@ -223,7 +223,7 @@ class ReleasesTestFixture(val serviceName: String = RandomData.string(8)) {
     this
   }
 
-  def repositoryKnowsAboutReleaseWithLeadTime(versionAndDeploymentDatesAndLeadTime: Map[String, (String, Option[Long])]) = {
+  def repositoryKnowsAboutDeploymentWithLeadTime(versionAndDeploymentDatesAndLeadTime: Map[String, (String, Option[Long])]) = {
     releaseData = releaseData ++ versionAndDeploymentDatesAndLeadTime.mapValues(x => (Some(toLocalDateTime(x._1)), x._2, Some(0l))).toSeq
     this
   }

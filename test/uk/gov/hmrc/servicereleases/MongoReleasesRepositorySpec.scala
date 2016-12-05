@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -27,29 +27,29 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSpecSupport with ScalaFutures with OptionValues with BeforeAndAfterEach with OneAppPerTest {
+class MongoDeploymentsRepositorySpec extends UnitSpec with LoneElement with MongoSpecSupport with ScalaFutures with OptionValues with BeforeAndAfterEach with OneAppPerTest {
 
 
-  val mongoReleasesRepository = new MongoReleasesRepository(mongo)
+  val mongoDeploymentsRepository = new MongoDeploymentsRepository(mongo)
 
   override def beforeEach() {
-    await(mongoReleasesRepository.drop)
+    await(mongoDeploymentsRepository.drop)
   }
 
 
   "getAll" should {
-    "return all the releases in descending order of productionDate" in {
+    "return all the deployments in descending order of productionDate" in {
 
       val now: LocalDateTime = LocalDateTime.now()
 
-      await(mongoReleasesRepository.add(Release("test2", "v2", None, productionDate = now.minusDays(6))))
-      await(mongoReleasesRepository.add(Release("test3", "v3", None, productionDate = now.minusDays(5))))
-      await(mongoReleasesRepository.add(Release("test1", "v1", None, productionDate = now.minusDays(10))))
-      await(mongoReleasesRepository.add(Release("test4", "v4", None, productionDate = now.minusDays(2))))
-      await(mongoReleasesRepository.add(Release("test5", "vSomeOther1", None, now.minusDays(2), Some(1))))
-      await(mongoReleasesRepository.add(Release("test5", "vSomeOther2", None, now, Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test2", "v2", None, productionDate = now.minusDays(6))))
+      await(mongoDeploymentsRepository.add(Deployment("test3", "v3", None, productionDate = now.minusDays(5))))
+      await(mongoDeploymentsRepository.add(Deployment("test1", "v1", None, productionDate = now.minusDays(10))))
+      await(mongoDeploymentsRepository.add(Deployment("test4", "v4", None, productionDate = now.minusDays(2))))
+      await(mongoDeploymentsRepository.add(Deployment("test5", "vSomeOther1", None, now.minusDays(2), Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test5", "vSomeOther2", None, now, Some(1))))
 
-      val result: Seq[Release] = await(mongoReleasesRepository.getAllReleases)
+      val result: Seq[Deployment] = await(mongoDeploymentsRepository.getAllDeployments)
 
       result.map(x => (x.name, x.version)) shouldBe Seq(
         ("test5", "vSomeOther2"),
@@ -64,20 +64,20 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
   }
 
   "getForService" should {
-    "return releases for a service sorted in descending order of productionDate" in {
+    "return deployments for a service sorted in descending order of productionDate" in {
       val now: LocalDateTime = LocalDateTime.now()
 
-      await(mongoReleasesRepository.add(Release("randomService", "vSomeOther1", None, now, Some(1))))
-      await(mongoReleasesRepository.add(Release("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
-      await(mongoReleasesRepository.add(Release("test", "v2", None, productionDate = now.minusDays(6), interval = Some(1))))
-      await(mongoReleasesRepository.add(Release("test", "v3", None, productionDate = now.minusDays(5), Some(1))))
-      await(mongoReleasesRepository.add(Release("test", "v4", None, productionDate = now.minusDays(2), Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("randomService", "vSomeOther1", None, now, Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v2", None, productionDate = now.minusDays(6), interval = Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v3", None, productionDate = now.minusDays(5), Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v4", None, productionDate = now.minusDays(2), Some(1))))
 
-      val releases: Option[Seq[Release]] = await(mongoReleasesRepository.getForService("test"))
+      val deployments: Option[Seq[Deployment]] = await(mongoDeploymentsRepository.getForService("test"))
 
-      releases.get.size shouldBe 4
+      deployments.get.size shouldBe 4
 
-      releases.get.map(_.version) shouldBe List("v4", "v3", "v2", "v1")
+      deployments.get.map(_.version) shouldBe List("v4", "v3", "v2", "v1")
 
     }
   }
@@ -86,41 +86,41 @@ class MongoReleasesRepositorySpec extends UnitSpec with LoneElement with MongoSp
   "add" should {
     "be able to insert a new record and update it as well" in {
       val now: LocalDateTime = LocalDateTime.now()
-      await(mongoReleasesRepository.add(Release("test", "v", None, now, Some(1))))
-      val all = await(mongoReleasesRepository.allServiceReleases)
+      await(mongoDeploymentsRepository.add(Deployment("test", "v", None, now, Some(1))))
+      val all = await(mongoDeploymentsRepository.allServicedeployments)
 
       all.values.flatten.size shouldBe 1
-      val savedRelease: Release = all.values.flatten.loneElement
+      val savedDeployment: Deployment = all.values.flatten.loneElement
 
-      savedRelease.name shouldBe "test"
-      savedRelease.version shouldBe "v"
-      savedRelease.creationDate shouldBe None
-      savedRelease.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe now.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
-      savedRelease.leadTime shouldBe None
+      savedDeployment.name shouldBe "test"
+      savedDeployment.version shouldBe "v"
+      savedDeployment.creationDate shouldBe None
+      savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe now.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
+      savedDeployment.leadTime shouldBe None
 
     }
   }
 
   "update" should {
-    "update already existing release" in {
+    "update already existing deployment" in {
       val now: LocalDateTime = LocalDateTime.now()
-      await(mongoReleasesRepository.add(Release("test", "v", None, now)))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v", None, now)))
 
-      val all = await(mongoReleasesRepository.allServiceReleases)
+      val all = await(mongoDeploymentsRepository.allServicedeployments)
 
-      val savedRelease: Release = all.values.flatten.loneElement
+      val savedDeployment: Deployment = all.values.flatten.loneElement
 
-      await(mongoReleasesRepository.update(savedRelease.copy(leadTime = Some(1))))
+      await(mongoDeploymentsRepository.update(savedDeployment.copy(leadTime = Some(1))))
 
-      val allUpdated = await(mongoReleasesRepository.allServiceReleases)
+      val allUpdated = await(mongoDeploymentsRepository.allServicedeployments)
       allUpdated.size shouldBe 1
-      val updatedRelease: Release = allUpdated.values.flatten.loneElement
+      val updatedDeployment: Deployment = allUpdated.values.flatten.loneElement
 
-      updatedRelease.name shouldBe savedRelease.name
-      updatedRelease.version shouldBe savedRelease.version
-      updatedRelease.creationDate shouldBe savedRelease.creationDate
-      savedRelease.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe savedRelease.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
-      updatedRelease.leadTime shouldBe Some(1)
+      updatedDeployment.name shouldBe savedDeployment.name
+      updatedDeployment.version shouldBe savedDeployment.version
+      updatedDeployment.creationDate shouldBe savedDeployment.creationDate
+      savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
+      updatedDeployment.leadTime shouldBe Some(1)
     }
 
   }

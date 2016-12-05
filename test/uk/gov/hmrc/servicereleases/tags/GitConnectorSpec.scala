@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.tags
+package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.ZonedDateTime
 import java.util.Date
@@ -47,7 +47,7 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
       when(gitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(
           GitTag("v1.0.0", Some(now)),
-          GitTag("release/9.101.0", Some(now)),
+          GitTag("deployment/9.101.0", Some(now)),
           GitTag("someRandomtagName", Some(now)))))
 
       connector.get(org, repoName).futureValue shouldBe List(
@@ -56,7 +56,7 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
         Tag("someRandomtagName", now.toLocalDateTime))
     }
 
-    "try to lookup tag dates from the github releases if tag date is missing and only return tags which have dates" in running(FakeApplication()) {
+    "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in running(FakeApplication()) {
       val now = ZonedDateTime.now()
       val repoName = "repoName"
       val org = "HMRC"
@@ -64,13 +64,13 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
       when(gitHubClient.getReleases("HMRC", "repoName")(BlockingIOExecutionContext.executionContext)).thenReturn(
         Future.successful(List(
           GhRepoRelease(123, "someRandomTagName", Date.from(now.toInstant)),
-          GhRepoRelease(124, "release/9.102.0", Date.from(now.toInstant)))))
+          GhRepoRelease(124, "deployment/9.102.0", Date.from(now.toInstant)))))
 
       when(gitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(
           GitTag("v1.0.0", None),
-          GitTag("release/9.101.0", Some(now)),
-          GitTag("release/9.102.0", None),
+          GitTag("deployment/9.101.0", Some(now)),
+          GitTag("deployment/9.102.0", None),
           GitTag("someRandomTagName", None))))
 
       connector.get(org, repoName).futureValue shouldBe List(

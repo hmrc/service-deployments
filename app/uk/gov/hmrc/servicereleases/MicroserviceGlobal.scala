@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import java.util.concurrent.TimeUnit
 
@@ -66,7 +66,7 @@ object MicroserviceGlobal
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
 
   override def onStart(app: Application): Unit = {
-    if (ServiceReleasesConfig.schedulerEnabled)
+    if (ServicedeploymentsConfig.schedulerEnabled)
       Scheduler.start(FiniteDuration(1, TimeUnit.HOURS))
 
     super.onStart(app)

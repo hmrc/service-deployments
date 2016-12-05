@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.deployments
+package uk.gov.hmrc.servicedeployments.deployments
 
 import java.time.{LocalDateTime, ZoneOffset}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class ServiceDeployment(version: String, releasedAt: LocalDateTime)
+case class ServiceDeployment(version: String, deploymentdAt: LocalDateTime)
 
 
 trait ServiceDeploymentsService {
@@ -38,23 +38,23 @@ class DefaultServiceDeploymentsService(dataSource: DeploymentsDataSource) extend
           .asServiceDeployments()
     }
 
-  private def isProductionDeployment(deployment: Deployment): Boolean =
+  private def isProductionDeployment(deployment: EnvironmentalDeployment): Boolean =
     deployment.environment.startsWith("production") || deployment.environment.startsWith("prod")
 
-  private class DeploymentMapWrapper(deployments: Map[String, Seq[Deployment]]) {
+  private class DeploymentMapWrapper(deployments: Map[String, Seq[EnvironmentalDeployment]]) {
     def asServiceDeployments(): Map[String, Seq[ServiceDeployment]] =
       deployments.map { case (serviceName, list) =>
         serviceName ->
-          firstDeploymentForEachVersionIn(list).sortBy(_.releasedAt.toEpochSecond(ZoneOffset.UTC)) }
+          firstDeploymentForEachVersionIn(list).sortBy(_.deploymentdAt.toEpochSecond(ZoneOffset.UTC)) }
 
-    private def firstDeploymentForEachVersionIn(deployments: Seq[Deployment]) =
+    private def firstDeploymentForEachVersionIn(deployments: Seq[EnvironmentalDeployment]) =
       deployments.sortBy(_.firstSeen.toEpochSecond(ZoneOffset.UTC))
         .groupBy(_.version)
         .map { case (v, d) => ServiceDeployment(d.head.version, d.head.firstSeen) }
         .toSeq
   }
 
-  private implicit def DeploymentTraversableWrapper(deployments: Map[String, Seq[Deployment]]) : DeploymentMapWrapper =
+  private implicit def DeploymentTraversableWrapper(deployments: Map[String, Seq[EnvironmentalDeployment]]) : DeploymentMapWrapper =
     new DeploymentMapWrapper(deployments)
 
 }
