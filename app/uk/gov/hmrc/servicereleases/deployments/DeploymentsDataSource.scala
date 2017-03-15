@@ -19,26 +19,47 @@ package uk.gov.hmrc.servicedeployments.deployments
 import java.time.LocalDateTime
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Reads}
+import play.api.libs.json._
 import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
 
 import scala.concurrent.Future
 
-case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime)
+case class Deployer(name: String, deploymentDate: LocalDateTime)
+
+case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime, deployerAudit: Seq[Deployer] = Seq.empty)
+
+object EnvironmentalDeployment {
+
+  import JavaDateTimeJsonFormatter._
+
+ private implicit val listToDeployer = new Reads[Deployer] {
+    override def reads(json: JsValue): JsResult[Deployer] = {
+      json match {
+        case JsArray(Seq(JsString(name), time: JsNumber)) => JsSuccess(Deployer(name, time.as[LocalDateTime]))
+      }
+
+    }
+
+
+  }
+  implicit val reads: Reads[EnvironmentalDeployment] = (
+    (JsPath \ 'env).read[String] and
+      (JsPath \ 'an).read[String] and
+      (JsPath \ 'ver).read[String] and
+      (JsPath \ 'fs).read[LocalDateTime] and
+      (JsPath \ 'deployer_audit).readNullable[List[Deployer]].map {
+        case None => Seq.empty
+        case Some(ls) => ls
+      }
+    ) (EnvironmentalDeployment.apply _)
+
+}
 
 trait DeploymentsDataSource {
   def getAll: Future[List[EnvironmentalDeployment]]
 }
 
 class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
-  import JavaDateTimeJsonFormatter._
-
-  implicit val reads: Reads[EnvironmentalDeployment] = (
-    (JsPath \ "env").read[String] and
-    (JsPath \ "an").read[String] and
-    (JsPath \ "ver").read[String] and
-    (JsPath \ "fs").read[LocalDateTime]
-  )(EnvironmentalDeployment.apply _)
 
   def getAll: Future[List[EnvironmentalDeployment]] = HttpClient.get[List[EnvironmentalDeployment]](s"$deploymentsApiBase/apps")
 }

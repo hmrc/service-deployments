@@ -87,12 +87,8 @@ trait DeploymentsController extends BaseController {
   }
 
   def importRaw() = Action.async(parse.temporaryFile) { request =>
-    implicit val reads: Reads[EnvironmentalDeployment] = (
-      (JsPath \ "env").read[String] and
-        (JsPath \ "an").read[String] and
-        (JsPath \ "ver").read[String] and
-        (JsPath \ "fs").read[LocalDateTime]
-      )(EnvironmentalDeployment.apply _)
+
+    import EnvironmentalDeployment._
 
     val source = Source.fromFile(request.body.file, "UTF-8")
     val jsons = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))

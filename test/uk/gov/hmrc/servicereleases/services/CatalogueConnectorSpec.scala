@@ -18,6 +18,7 @@ package uk.gov.hmrc.servicedeployments.services
 
 import com.github.tomakehurst.wiremock.http.RequestMethod.GET
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Milliseconds, Seconds, Span}
 import org.scalatest.{Matchers, TestData, WordSpec}
 import org.scalatestplus.play.OneAppPerTest
 import play.api.Application
@@ -27,7 +28,7 @@ import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import uk.gov.hmrc.servicedeployments.WireMockSpec
 
-class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest {
+class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest{
   val catalogueClient = new CatalogueConnector(endpointMockUrl)
 
   implicit override def newAppForTest(testData: TestData): Application =
@@ -36,6 +37,8 @@ class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec wi
   "getService" should {
 
     "return all services with github urls" in running(FakeApplication()) {
+
+      implicit val patienceConfig = PatienceConfig(Span(4, Seconds), Span(100, Milliseconds))
 
       givenRequestExpects(
         method = GET,

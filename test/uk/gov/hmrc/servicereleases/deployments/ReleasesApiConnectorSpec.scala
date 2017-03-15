@@ -79,10 +79,12 @@ class DeploymentsApiConnectorSpec extends WordSpec with Matchers with WireMockSp
               |    {
               |        "an": "appA",
               |        "env": "prod-something",
+              |        "deployer_audit": [[ "abc.xyz",${`deployment 8.3.0 date`}]],
               |        "fs": ${`deployment 8.3.0 date`},
               |        "ls": 1450347910,
               |        "ver": "8.3.0"
               |    }
+              |
               |]
             """.stripMargin
           )))
@@ -91,6 +93,14 @@ class DeploymentsApiConnectorSpec extends WordSpec with Matchers with WireMockSp
           results.size shouldBe 6
           results.head shouldBe EnvironmentalDeployment(
             "prod-something", "appA", "11.0.0", LocalDateTime.ofEpochSecond(`deployment 11.0.0 date`, 0, ZoneOffset.UTC))
-        }
+
+      val expectedDate: LocalDateTime = LocalDateTime.ofEpochSecond(`deployment 8.3.0 date`, 0, ZoneOffset.UTC)
+      results.last shouldBe EnvironmentalDeployment(
+        "prod-something", "appA", "8.3.0", expectedDate, Seq(Deployer(name ="abc.xyz", deploymentDate = expectedDate )))
+
+
+    }
+
+
   }
 }
