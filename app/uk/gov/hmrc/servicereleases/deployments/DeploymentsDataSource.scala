@@ -26,21 +26,24 @@ import scala.concurrent.Future
 
 case class Deployer(name: String, deploymentDate: LocalDateTime)
 
-case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime, deployerAudit: Seq[Deployer] = Seq.empty)
+object Deployer{
+  import JavaDateTimeJsonFormatter._
+  implicit val writes = Json.format[Deployer]
+}
+
+case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime, deployers: Seq[Deployer] = Seq.empty)
 
 object EnvironmentalDeployment {
 
   import JavaDateTimeJsonFormatter._
 
- private implicit val listToDeployer = new Reads[Deployer] {
+  private implicit val listToDeployer = new Reads[Deployer] {
     override def reads(json: JsValue): JsResult[Deployer] = {
       json match {
         case JsArray(Seq(JsString(name), time: JsNumber)) => JsSuccess(Deployer(name, time.as[LocalDateTime]))
+        case _ => JsError(s"invalid json format for field deployer_audit required [[name, epoch seconds]] got ${json.toString()}")
       }
-
     }
-
-
   }
   implicit val reads: Reads[EnvironmentalDeployment] = (
     (JsPath \ 'env).read[String] and

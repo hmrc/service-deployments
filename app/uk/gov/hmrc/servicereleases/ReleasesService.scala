@@ -63,7 +63,7 @@ class DefaultDeploymentsService(serviceRepositoriesService: ServiceRepositoriesS
 
   }
 
-  private def tryGetTagDatesFor(service: Service) =
+  private def tryGetTagDatesFor(service: Service): Future[Try[Map[String, LocalDateTime]]] =
     getTagsForService(service).map { results =>
       combineResultsOrFailIfAnyTryDoesNotSucceed(results)
         .map(_.flatten)
@@ -130,9 +130,9 @@ case class Service(serviceName: String, repositories: Seq[Repository], deploymen
 
   private lazy val newDeployments = deployments.filter(isNewDeployment)
 
-  private lazy val allDeployments = newDeployments ++ knownDeployments.map(x => ServiceDeployment(x.version, x.productionDate))
+  private lazy val allDeployments = newDeployments ++ knownDeployments.map(x => ServiceDeployment(x.version, x.productionDate, x.deployers))
 
-  lazy val deploymentsRequiringUpdates = allDeployments.filter(x => isNewDeployment(x) || isMissingLeadTime(x))
+  lazy val deploymentsRequiringUpdates = deployments.filter(x => isNewDeployment(x) || isRedeployment(x))
 
   private lazy val deploymentsSortedByDeploymentdAt = allDeployments.sortBy(_.deploymentdAt.toEpochSecond(ZoneOffset.UTC))
 
@@ -145,8 +145,7 @@ case class Service(serviceName: String, repositories: Seq[Repository], deploymen
 
   private def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownDeployments.exists(kr => kr.version == deployment.version)
 
-  private def isMissingLeadTime(deployment: ServiceDeployment): Boolean = knownDeployments.exists(kr => kr.version == deployment.version && kr.leadTime.isEmpty)
-
+  private def isRedeployment(deployment: ServiceDeployment): Boolean = knownDeployments.exists(kr => kr.version == deployment.version && kr.deployers != deployment.deployers)
 }
 
 object Service {
@@ -178,9 +177,9 @@ class DeploymentAndOperation(service: Service, tagDates: Map[String, LocalDateTi
     service.deploymentsRequiringUpdates.map { nd =>
       val tagDate = tagDates.get(nd.version)
       service.knownDeployments.find(_.version == nd.version).fold {
-        (Add, Deployment(service.serviceName, nd.version, tagDate, nd.deploymentdAt, service.deploymentInterval(nd.version), leadTime(nd, tagDate)))
+        (Add, Deployment(service.serviceName, nd.version, tagDate, nd.deploymentdAt, service.deploymentInterval(nd.version), leadTime(nd, tagDate), nd.deployers))
       } { kr =>
-        (Update, kr.copy(leadTime = leadTime(nd, tagDate), interval = service.deploymentInterval(nd.version)))
+        (Update, kr.copy(deployers = nd.deployers))
       }
     }
 

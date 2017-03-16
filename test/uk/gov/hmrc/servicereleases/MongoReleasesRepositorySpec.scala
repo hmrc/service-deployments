@@ -24,6 +24,7 @@ import org.scalatest.{BeforeAndAfterEach, LoneElement, OptionValues}
 import org.scalatestplus.play.OneAppPerTest
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.servicedeployments.deployments.Deployer
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -47,17 +48,17 @@ class MongoDeploymentsRepositorySpec extends UnitSpec with LoneElement with Mong
       await(mongoDeploymentsRepository.add(Deployment("test1", "v1", None, productionDate = now.minusDays(10))))
       await(mongoDeploymentsRepository.add(Deployment("test4", "v4", None, productionDate = now.minusDays(2))))
       await(mongoDeploymentsRepository.add(Deployment("test5", "vSomeOther1", None, now.minusDays(2), Some(1))))
-      await(mongoDeploymentsRepository.add(Deployment("test5", "vSomeOther2", None, now, Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test5", "vSomeOther2", None, now, Some(1), None, Seq(Deployer("xyz.abc", now)), None)))
 
       val result: Seq[Deployment] = await(mongoDeploymentsRepository.getAllDeployments)
 
-      result.map(x => (x.name, x.version)) shouldBe Seq(
-        ("test5", "vSomeOther2"),
-        ("test4", "v4"),
-        ("test5", "vSomeOther1"),
-        ("test3", "v3"),
-        ("test2", "v2"),
-        ("test1", "v1")
+      result.map(x => (x.name, x.version, x.deployers.map(_.name))) shouldBe Seq(
+        ("test5", "vSomeOther2", Seq("xyz.abc")),
+        ("test4", "v4", Nil),
+        ("test5", "vSomeOther1", Nil),
+        ("test3", "v3", Nil),
+        ("test2", "v2", Nil),
+        ("test1", "v1", Nil)
       )
 
     }

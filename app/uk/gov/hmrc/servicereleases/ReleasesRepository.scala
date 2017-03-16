@@ -20,19 +20,22 @@ import java.time.{LocalDateTime, ZoneOffset}
 
 import play.api.libs.json.{JsValue, Writes, _}
 import reactivemongo.api.DB
-import reactivemongo.api.collections.bson.BSONQueryBuilder
-import reactivemongo.api.indexes.{IndexType, Index}
+import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
-import FutureHelpers.withTimerAndCounter
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
+import uk.gov.hmrc.servicedeployments.deployments.Deployer
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 case class Deployment(name: String, version: String,
                       creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
                       interval: Option[Long] = None, leadTime: Option[Long] = None,
-                      _id: Option[BSONObjectID] = None)
+                      deployers: Seq[Deployer] = Seq.empty,
+                      _id: Option[BSONObjectID] = None
+                     )
 
 object Deployment {
   implicit val localDateTimeRead: Reads[LocalDateTime] =
