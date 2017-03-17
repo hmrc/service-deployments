@@ -16,16 +16,15 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.{Period, LocalDateTime}
+import java.time.{LocalDateTime, Period}
 
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
-
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentalDeployment, DeploymentsDataSource}
+import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment}
 
 import scala.concurrent.Future
 import scala.io.Source
@@ -33,7 +32,7 @@ import scala.io.Source
 
 case class DeploymentResult(name: String, version: String,
                          creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
-                         interval: Option[Long], leadTime: Option[Long])
+                         interval: Option[Long], leadTime: Option[Long], deployers : Seq[Deployer])
 
 object DeploymentResult {
 
@@ -48,7 +47,8 @@ object DeploymentResult {
       deployment.creationDate,
       deployment.productionDate,
       deployment.interval,
-      deployment.leadTime
+      deployment.leadTime,
+      deployment.deployers
     )
   }
 
@@ -82,7 +82,7 @@ trait DeploymentsController extends BaseController {
     Scheduler.run.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
-      case Error(message) => InternalServerError(message)
+      case Error(message, ex) => InternalServerError(message)
     }
   }
 
@@ -102,7 +102,7 @@ trait DeploymentsController extends BaseController {
     scheduler.run.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
-      case Error(message) => InternalServerError(message)
+      case Error(message, ex) => InternalServerError(message)
     }
   }
 

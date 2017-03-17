@@ -174,12 +174,13 @@ class DeploymentAndOperation(service: Service, tagDates: Map[String, LocalDateTi
 
   def get: Seq[(DeploymentOperation.Value, Deployment)] = {
 
-    service.deploymentsRequiringUpdates.map { nd =>
-      val tagDate = tagDates.get(nd.version)
-      service.knownDeployments.find(_.version == nd.version).fold {
-        (Add, Deployment(service.serviceName, nd.version, tagDate, nd.deploymentdAt, service.deploymentInterval(nd.version), leadTime(nd, tagDate), nd.deployers))
-      } { kr =>
-        (Update, kr.copy(deployers = nd.deployers))
+    service.deploymentsRequiringUpdates.map { deploymentToUpdate =>
+      val tagDate = tagDates.get(deploymentToUpdate.version)
+
+      service.knownDeployments.find(_.version == deploymentToUpdate.version).fold {
+        (Add, Deployment(service.serviceName, deploymentToUpdate.version, tagDate, deploymentToUpdate.deploymentdAt, service.deploymentInterval(deploymentToUpdate.version), leadTime(deploymentToUpdate, tagDate), deploymentToUpdate.deployers))
+      } { knownDeployment =>
+        (Update, knownDeployment.copy(deployers = (knownDeployment.deployers ++ deploymentToUpdate.deployers).distinct))
       }
     }
 

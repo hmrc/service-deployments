@@ -102,7 +102,9 @@ class MongoDeploymentsRepository(mongo: () => DB)
     }
   }
 
-  override def allServicedeployments: Future[Map[String, Seq[Deployment]]] = findAll().map { all => all.groupBy(_.name) }
+  override def allServicedeployments: Future[Map[String, Seq[Deployment]]] = {
+    findAll().map { all => all.groupBy(_.name) }
+  }
 
   def getForService(serviceName: String): Future[Option[Seq[Deployment]]] = {
 

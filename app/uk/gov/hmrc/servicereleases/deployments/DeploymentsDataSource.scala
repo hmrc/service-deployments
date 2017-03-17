@@ -18,6 +18,7 @@ package uk.gov.hmrc.servicedeployments.deployments
 
 import java.time.LocalDateTime
 
+import play.api.Logger
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
@@ -26,8 +27,7 @@ import scala.concurrent.Future
 
 case class Deployer(name: String, deploymentDate: LocalDateTime)
 
-object Deployer{
-  import JavaDateTimeJsonFormatter._
+object Deployer {
   implicit val writes = Json.format[Deployer]
 }
 
@@ -64,5 +64,23 @@ trait DeploymentsDataSource {
 
 class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
 
-  def getAll: Future[List[EnvironmentalDeployment]] = HttpClient.get[List[EnvironmentalDeployment]](s"$deploymentsApiBase/apps")
+  def getAll: Future[List[EnvironmentalDeployment]] = {
+
+    Logger.info("Getting all the rdeployments.")
+    HttpClient.getWithParsing(s"$deploymentsApiBase/apps?secondsago=31557600") {
+      case JsArray(x) =>
+
+        val (validRecords, inValidRecords) = x.partition { jsv =>
+          (jsv \ "fs").validate[LocalDateTime].isSuccess
+        }
+        inValidRecords.foreach(x => Logger.warn(s"Invalid deployments record : ${x.toString()}"))
+        validRecords.map(_.as[EnvironmentalDeployment]).toList
+
+      case _ =>
+        Logger.warn(s"No deployment records returned")
+        Nil
+    }
+  }
+
+
 }

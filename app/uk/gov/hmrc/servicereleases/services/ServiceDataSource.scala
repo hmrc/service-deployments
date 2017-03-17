@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.servicedeployments.services
 
+import play.api.Logger
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.HttpClient._
@@ -33,5 +34,8 @@ class CatalogueConnector(apiBase: String) extends ServiceDataSource {
   implicit val urlReads = Json.reads[GithubUrl]
   implicit val reads = Json.reads[Service]
 
-  override def getAll() = get[List[Service]](s"$apiBase/services?details=true")
+  override def getAll() = {
+    Logger.info("Getting details of all the services.")
+    get[List[Service]](s"$apiBase/services?details=true")
+  }
 }

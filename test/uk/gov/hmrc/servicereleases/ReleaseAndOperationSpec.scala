@@ -16,15 +16,13 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDateTime
 
 import org.scalatest.{LoneElement, Matchers, WordSpec}
-import play.api.Logger
-import uk.gov.hmrc.servicedeployments.Deployment$
-import uk.gov.hmrc.servicedeployments.DeploymentOperation.Add
-import uk.gov.hmrc.servicedeployments.deployments.ServiceDeployment
+import uk.gov.hmrc.servicedeployments.DeploymentOperation._
+import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
 
-class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement{
+class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement {
 
   val `26 August` = LocalDateTime.of(2016, 8, 26, 0, 0)
   val `27 August` = LocalDateTime.of(2016, 8, 27, 0, 0)
@@ -55,35 +53,40 @@ class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement
 
       val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] = new DeploymentAndOperation(service, tagDates).get
 
-      deploymentUpdates.loneElement._1 shouldBe Add   //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
+      deploymentUpdates.loneElement._1 shouldBe Add //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
       deploymentUpdates.loneElement._2.version shouldBe "2.0.0" //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
 
     }
 
 
-    "return deployments with operation as update for new deployments" in {
+    "return deployments with operation as update with deployers list merged" in {
 
 
+      val now = LocalDateTime.now()
+      val deployer1: Deployer = Deployer("xyz.abc", now.minusDays(10))
+      val deployer2: Deployer = Deployer("xyz.lmn", now.minusDays(1))
       val tagDates = Map(
         "1.0.0" -> `26 August`,
         "2.0.0" -> `28 August`
       )
 
       val deployments = Seq(
-        ServiceDeployment("1.0.0", `28 August`),
+        ServiceDeployment("1.0.0", `28 August`, Seq(deployer2)),
         ServiceDeployment("2.0.0", `30 August`)
       )
 
+
       val knownDeployments = Seq(
-        Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2))
+        Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2), deployers = Seq(deployer1))
       )
 
       val service: Service = Service("sName", Seq(), deployments, knownDeployments)
 
       val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] = new DeploymentAndOperation(service, tagDates).get
 
-      deploymentUpdates.loneElement._1 shouldBe Add   //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
-      deploymentUpdates.loneElement._2.version shouldBe "2.0.0" //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
+      deploymentUpdates.size shouldBe 2
+      deploymentUpdates contains  (Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
+      deploymentUpdates contains  (Update,Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2), Seq(deployer1 ,deployer2)))
 
     }
 

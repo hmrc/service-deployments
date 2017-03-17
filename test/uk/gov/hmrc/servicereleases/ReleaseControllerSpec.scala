@@ -16,17 +16,18 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.{ZoneOffset, LocalDateTime}
+import java.time.{LocalDateTime, ZoneOffset}
 
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, OptionValues}
 import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.{OneAppPerTest, PlaySpec}
 import play.api.libs.json._
-import play.api.mvc.{Result, AnyContentAsEmpty, Results}
+import play.api.mvc.{AnyContentAsEmpty, Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.servicedeployments.deployments.Deployer
 
 import scala.concurrent.Future
 
@@ -50,7 +51,7 @@ class DeploymentControllerSpec extends PlaySpec with MockitoSugar with Results w
         Future.successful(Some(Seq(
           Deployment(name = "serviceName", version = "1", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
           Deployment(name = "serviceName", version = "2", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
-          Deployment(name = "serviceName", version = "3", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate))
+          Deployment(name = "serviceName", version = "3", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate), deployers = Seq(Deployer("xyz.abc", now)))
         ))
         ))
 
@@ -60,10 +61,9 @@ class DeploymentControllerSpec extends PlaySpec with MockitoSugar with Results w
 
       jsonResult.size mustBe  3
       jsonResult.map(_.value) mustBe Seq(
-        Map("name" -> JsString("serviceName"), "version" -> JsString("1"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC))),
-        Map("name" -> JsString("serviceName"), "version" -> JsString("2"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC))),
-        Map("name" -> JsString("serviceName"), "version" -> JsString("3"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)))
-      )
+        Map("name" -> JsString("serviceName"), "version" -> JsString("1"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(List.empty)),
+        Map("name" -> JsString("serviceName"), "version" -> JsString("2"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(List.empty)),
+        Map("name" -> JsString("serviceName"), "version" -> JsString("3"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> Json.toJson(Seq(Deployer("xyz.abc", now)))))
     }
   }
 }
