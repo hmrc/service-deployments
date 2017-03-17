@@ -102,5 +102,53 @@ class DeploymentsApiConnectorSpec extends WordSpec with Matchers with WireMockSp
     }
 
 
+    "get all deployments from the deployments app should evict records which do not have first seen" in {
+      val `deployment 11.0.0 date` = LocalDateTime.now().minusDays(5).toEpochSecond(ZoneOffset.UTC)
+      val `deployment 8.3.0 date` = LocalDateTime.now().minusMonths(5).toEpochSecond(ZoneOffset.UTC)
+
+      givenRequestExpects(
+        method = RequestMethod.GET,
+        url = s"$endpointMockUrl/apps",
+        willRespondWith = (200,
+          Some(
+            s"""
+               |[
+               |    {
+               |        "an": "appA",
+               |        "env": "prod-something",
+               |        "ls": 1450877349,
+               |        "ver": "11.0.0"
+               |    },
+               | {
+               |         "an": "appA",
+               |         "env": "prod-somethingOther",
+               |         "fs": ${`deployment 11.0.0 date`},
+               |        "ls": 1450877349,
+               |        "ver": "11.0.0"
+               |    },
+               |    {
+               |        "an": "appA",
+               |        "env": "qa",
+               |        "fs": null,
+               |        "ls": 1450347910,
+               |        "ver": "7.3.0"
+               |    }
+              |]
+            """.stripMargin
+          )))
+
+      val results = connector.getAll.futureValue
+      results.size shouldBe 1
+//      results.head shouldBe EnvironmentalDeployment(
+//        "prod-something", "appA", "11.0.0", LocalDateTime.ofEpochSecond(`deployment 11.0.0 date`, 0, ZoneOffset.UTC))
+//
+//      val expectedDate: LocalDateTime = LocalDateTime.ofEpochSecond(`deployment 8.3.0 date`, 0, ZoneOffset.UTC)
+//      results.last shouldBe EnvironmentalDeployment(
+//        "prod-something", "appA", "8.3.0", expectedDate, Seq(Deployer(name ="abc.xyz", deploymentDate = expectedDate )))
+
+
+    }
+
+
   }
 }

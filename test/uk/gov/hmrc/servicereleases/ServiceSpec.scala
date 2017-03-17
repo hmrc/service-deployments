@@ -18,8 +18,8 @@ package uk.gov.hmrc.servicedeployments
 
 import java.time.LocalDateTime
 
-import org.scalatest.{Matchers, WordSpec, FunSuite}
-import uk.gov.hmrc.servicedeployments.deployments.ServiceDeployment
+import org.scalatest.{FunSuite, Matchers, WordSpec}
+import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
 
 class ServiceSpec extends WordSpec with Matchers {
 
@@ -71,18 +71,17 @@ class ServiceSpec extends WordSpec with Matchers {
 
   "deploymentsRequiringUpdates" should {
 
-    "return if deployment is known and is missing lead time" in {
+    "return if deployment is known but is re-deployed" in {
+      val oldDeploymentDate: LocalDateTime = LocalDateTime.now().minusDays(60)
 
       val deploymemts = Seq(
-        ServiceDeployment("0.1.0", `26 August`),
         ServiceDeployment("0.0.1", `23 August`),
-        ServiceDeployment("2.0.0",`30 August`)
+        ServiceDeployment("1.0.0", oldDeploymentDate, Seq(Deployer(name = "abc.xyz", `29 August`)))
       )
 
-      val oldDeploymentDate: LocalDateTime = LocalDateTime.now().minusDays(60)
       val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "1.0.0", None, oldDeploymentDate, Some(1), None)))
 
-      service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", oldDeploymentDate))
+      service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", oldDeploymentDate, Seq(Deployer(name = "abc.xyz", `29 August`))))
 
     }
 
@@ -97,9 +96,11 @@ class ServiceSpec extends WordSpec with Matchers {
       val oldDeploymentDate: LocalDateTime = LocalDateTime.now().minusDays(60)
       val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "0.1.0", None, oldDeploymentDate, Some(1), None)))
 
-      service.deploymentsRequiringUpdates.size shouldBe 3
+      service.deploymentsRequiringUpdates.size shouldBe 2
 
-      service.deploymentsRequiringUpdates should contain(ServiceDeployment("0.1.0", oldDeploymentDate))
+      service.deploymentsRequiringUpdates should be(
+        Seq(ServiceDeployment("0.0.1", `23 August`), ServiceDeployment("2.0.0",`30 August`))
+      )
 
     }
 

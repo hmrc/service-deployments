@@ -35,8 +35,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 sealed trait JobResult
-case class Error(message: String) extends JobResult {
-  Logger.error(message)
+case class Error(message: String, ex : Throwable) extends JobResult {
+  Logger.error(message, ex)
 }
 case class Warn(message: String) extends JobResult {
   Logger.warn(message)
@@ -101,7 +101,7 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
 
         Info(s"Added/updated $successCount deployments and encountered $failureCount failures")
       }.recover { case ex =>
-        Error(s"Something went wrong during the mongo update: ${ex.getMessage}")
+        Error(s"Something went wrong during the mongo update:", ex)
       }
     } map { resultOrLocked =>
       resultOrLocked getOrElse {

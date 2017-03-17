@@ -39,12 +39,12 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
         List(
           EnvironmentalDeployment("production","some-serviceName","1.0",now),
           EnvironmentalDeployment("prod","some-serviceName","2.0",now),
-          EnvironmentalDeployment("production","some-other-ServiceName","1.0",now.minusDays(2)))
-        ))
+          EnvironmentalDeployment("production","some-other-ServiceName","1.0",now.minusDays(2), Seq(Deployer("abc.xyz", now)))
+        )))
 
       val result = service.getAll().futureValue
       result("some-serviceName") shouldBe Seq(ServiceDeployment("1.0",now), ServiceDeployment("2.0",now))
-      result("some-other-ServiceName") shouldBe Seq(ServiceDeployment("1.0", now.minusDays(2)))
+      result("some-other-ServiceName") shouldBe Seq(ServiceDeployment("1.0", now.minusDays(2), Seq(Deployer("abc.xyz", now))))
     }
 
     "remove re deployments and take the deployment with earliest date" in {

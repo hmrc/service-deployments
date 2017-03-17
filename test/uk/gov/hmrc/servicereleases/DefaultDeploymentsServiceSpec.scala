@@ -33,21 +33,21 @@ class DefaultDeploymentsServiceSpec extends WordSpec with Matchers with MockitoS
   val servicesService = mock[ServiceRepositoriesService]
   val deploymentsService = mock[ServiceDeploymentsService]
   val tagsService = mock[TagsService]
-  val repository = mock[DeploymentsRepository]
+  val deploymentsRepository = mock[DeploymentsRepository]
 
-  val service = new DefaultDeploymentsService(servicesService, deploymentsService, tagsService, repository)
+  val service = new DefaultDeploymentsService(servicesService, deploymentsService, tagsService, deploymentsRepository)
   val configureMocks: (((String) => DeploymentsTestFixture) => Seq[DeploymentsTestFixture]) => Map[String, ServiceTestFixture] =
-    ServiceTestFixture.configureMocks(servicesService, deploymentsService, tagsService, repository)
+    ServiceTestFixture.configureMocks(servicesService, deploymentsService, tagsService, deploymentsRepository)
 
   override def beforeEach() = {
     reset(servicesService)
     reset(deploymentsService)
     reset(tagsService)
-    reset(repository)
+    reset(deploymentsRepository)
 
-    when(repository.allServicedeployments).thenReturn(Future.successful(Map.empty[String, Seq[Deployment]]))
-    when(repository.add(any())).thenReturn(Future.successful(true))
-    when(repository.update(any())).thenReturn(Future.successful(true))
+    when(deploymentsRepository.allServicedeployments).thenReturn(Future.successful(Map.empty[String, Seq[Deployment]]))
+    when(deploymentsRepository.add(any())).thenReturn(Future.successful(true))
+    when(deploymentsRepository.update(any())).thenReturn(Future.successful(true))
   }
 
 
@@ -105,7 +105,7 @@ class DefaultDeploymentsServiceSpec extends WordSpec with Matchers with MockitoS
       service.updateModel().futureValue
 
       verify(tagsService, never).get(any(), any(), any())
-      verify(repository, never).add(any())
+      verify(deploymentsRepository, never).add(any())
     }
 
     "Ignore new deployments for services if we fail to fetch the tags" in {
@@ -122,11 +122,9 @@ class DefaultDeploymentsServiceSpec extends WordSpec with Matchers with MockitoS
       service.updateModel().futureValue
 
       testData("service").verifyDeploymentWasAddedToMongo("3.0.0")
-      testData("another").verifyDeploymentWasUpdatedToMongo("1.0.0")
 
-
-      verify(repository).allServicedeployments
-      verifyNoMoreInteractions(repository)
+      verify(deploymentsRepository).allServicedeployments
+      verifyNoMoreInteractions(deploymentsRepository)
     }
 
 
@@ -172,69 +170,19 @@ class DefaultDeploymentsServiceSpec extends WordSpec with Matchers with MockitoS
       testData("service").verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval("1.0.0" -> None)
     }
 
-    "update missing deployment interval for existing deployments which we already know about and add new deployments" in {
-
+    "update existing deployments which we already know if there is a re-deployment of the same version" in {
 
       val testData = configureMocks(forService => Seq(
         forService("service")
-          .repositoryKnowsAbout(Map("1.0.0" -> "06-02-2016", "0.1.0" -> "04-02-2016"))
-          .deploymentsKnowsAbout(Map("0.1.0" -> "04-02-2016", "1.0.0" -> "06-02-2016"))
+          .repositoryKnowsAbout(Map("1.0.0" -> "06-02-2016"))
+          .deploymentsKnowsAboutWithDeployer(Map("0.1.0" -> "xyz.abc", "1.0.0" -> "user.name"))
           .tagsServiceKnowsAbout("0.1.0", "1.0.0")
       ))
 
       service.updateModel().futureValue
 
-      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("0.1.0" -> None)
-      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("1.0.0" -> Some(2))
-    }
-
-    "update missing deployment interval for existing deployments which we already know about but are not known to deployment (old deployments)" in {
-
-
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout(Map("0.1.0" -> "04-02-2016", "0.1.1" -> "06-02-2016"))
-          .deploymentsKnowsAbout(Map("1.1.1" -> "09-02-2016"))
-          .tagsServiceKnowsAbout("0.1.0", "1.0.0")
-      ))
-
-      service.updateModel().futureValue
-
-      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("0.1.0" -> None)
-      testData("service").verifyCorrectDeploymentIntervalWasUpdatedOnTheDeployment("0.1.1" -> Some(2))
-      testData("service").verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval("1.1.1" -> Some(3))
-    }
-
-
-
-    "update missing leadtime interval for existing deployments which we already know about and add new deployments" in {
-
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAboutDeploymentWithLeadTime(Map("0.1.0" -> ("04-02-2016", None)))
-          .deploymentsKnowsAbout(Map("0.1.0" -> "04-02-2016", "1.0.0" -> "06-02-2016"))
-          .tagsServiceKnowsAbout(Map("0.1.0" -> "31-01-2016", "1.0.0" -> "01-02-2016"))
-      ))
-
-      service.updateModel().futureValue
-
-      testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheDeployment("0.1.0" -> Some(4))
-      testData("service").verifyDeploymentWasAddedToMongoWithCorrectLeadTimeInterval("1.0.0" -> Some(5))
-    }
-
-
-    "update missing leadtime interval for existing deployments which we already know about and are not returned by deployment" in {
-
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAboutDeploymentWithLeadTime(Map("0.1.0" -> ("04-02-2016", None)))
-          .deploymentsKnowsAbout()
-          .tagsServiceKnowsAbout(Map("0.1.0" -> "31-01-2016"))
-      ))
-
-      service.updateModel().futureValue
-
-      testData("service").verifyCorrectLeadTimeIntervalWasUpdatedOnTheDeployment("0.1.0" -> Some(4))
+      testData("service").verifyDeploymentWasAddedWithCorrectDeployers("0.1.0" -> Seq("xyz.abc"))
+      testData("service").verifyDeploymentWasUpdatedWithCorrectDeployers("1.0.0" -> Seq("user.name"))
     }
 
     "Not do anything if there are no new deployments and all existing deployments have the lead time interval" in {
@@ -251,8 +199,8 @@ class DefaultDeploymentsServiceSpec extends WordSpec with Matchers with MockitoS
       service.updateModel().futureValue
 
       verify(tagsService, never).get(any(), any(), any())
-      verify(repository, never).add(any())
-      verify(repository, never).update(any())
+      verify(deploymentsRepository, never).add(any())
+      verify(deploymentsRepository, never).update(any())
     }
 
 

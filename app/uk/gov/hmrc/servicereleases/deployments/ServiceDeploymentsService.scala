@@ -21,7 +21,7 @@ import java.time.{LocalDateTime, ZoneOffset}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class ServiceDeployment(version: String, deploymentdAt: LocalDateTime)
+case class ServiceDeployment(version: String, deploymentdAt: LocalDateTime, deployers : Seq[Deployer] = Seq.empty )
 
 
 trait ServiceDeploymentsService {
@@ -50,7 +50,7 @@ class DefaultServiceDeploymentsService(dataSource: DeploymentsDataSource) extend
     private def firstDeploymentForEachVersionIn(deployments: Seq[EnvironmentalDeployment]) =
       deployments.sortBy(_.firstSeen.toEpochSecond(ZoneOffset.UTC))
         .groupBy(_.version)
-        .map { case (v, d) => ServiceDeployment(d.head.version, d.head.firstSeen) }
+        .map { case (v, d) => ServiceDeployment(d.head.version, d.head.firstSeen, d.head.deployers) }
         .toSeq
   }
 

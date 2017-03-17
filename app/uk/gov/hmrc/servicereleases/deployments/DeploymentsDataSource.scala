@@ -18,6 +18,7 @@ package uk.gov.hmrc.servicedeployments.deployments
 
 import java.time.LocalDateTime
 
+import play.api.Logger
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
@@ -26,21 +27,23 @@ import scala.concurrent.Future
 
 case class Deployer(name: String, deploymentDate: LocalDateTime)
 
-case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime, deployerAudit: Seq[Deployer] = Seq.empty)
+object Deployer {
+  implicit val writes = Json.format[Deployer]
+}
+
+case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime, deployers: Seq[Deployer] = Seq.empty)
 
 object EnvironmentalDeployment {
 
   import JavaDateTimeJsonFormatter._
 
- private implicit val listToDeployer = new Reads[Deployer] {
+  private implicit val listToDeployer = new Reads[Deployer] {
     override def reads(json: JsValue): JsResult[Deployer] = {
       json match {
         case JsArray(Seq(JsString(name), time: JsNumber)) => JsSuccess(Deployer(name, time.as[LocalDateTime]))
+        case _ => JsError(s"invalid json format for field deployer_audit required [[name, epoch seconds]] got ${json.toString()}")
       }
-
     }
-
-
   }
   implicit val reads: Reads[EnvironmentalDeployment] = (
     (JsPath \ 'env).read[String] and
@@ -61,5 +64,23 @@ trait DeploymentsDataSource {
 
 class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
 
-  def getAll: Future[List[EnvironmentalDeployment]] = HttpClient.get[List[EnvironmentalDeployment]](s"$deploymentsApiBase/apps")
+  def getAll: Future[List[EnvironmentalDeployment]] = {
+
+    Logger.info("Getting all the rdeployments.")
+    HttpClient.getWithParsing(s"$deploymentsApiBase/apps?secondsago=31557600") {
+      case JsArray(x) =>
+
+        val (validRecords, inValidRecords) = x.partition { jsv =>
+          (jsv \ "fs").validate[LocalDateTime].isSuccess
+        }
+        inValidRecords.foreach(x => Logger.warn(s"Invalid deployments record : ${x.toString()}"))
+        validRecords.map(_.as[EnvironmentalDeployment]).toList
+
+      case _ =>
+        Logger.warn(s"No deployment records returned")
+        Nil
+    }
+  }
+
+
 }
