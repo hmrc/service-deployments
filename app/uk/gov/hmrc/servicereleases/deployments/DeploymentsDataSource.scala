@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.servicedeployments.deployments
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneOffset}
 
 import play.api.Logger
 import play.api.libs.functional.syntax._
@@ -28,7 +28,7 @@ import scala.concurrent.Future
 case class Deployer(name: String, deploymentDate: LocalDateTime)
 
 object Deployer {
-  implicit val writes = Json.format[Deployer]
+  implicit val format = Json.format[Deployer]
 }
 
 case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime, deployers: Seq[Deployer] = Seq.empty)

@@ -18,7 +18,7 @@ package uk.gov.hmrc.servicedeployments
 
 import java.time.{LocalDateTime, ZoneOffset}
 
-import play.api.libs.json.{JsValue, Writes, _}
+import play.api.libs.json._
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
@@ -38,16 +38,43 @@ case class Deployment(name: String, version: String,
                      )
 
 object Deployment {
-  implicit val localDateTimeRead: Reads[LocalDateTime] =
+
+  import play.api.libs.functional.syntax._
+  import play.api.libs.json.Reads._
+  import play.api.libs.json._
+
+  val localDateTimeRead: Reads[LocalDateTime] =
     __.read[Long].map { dateTime => LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC) }
 
-  implicit val localDateTimeWrite: Writes[LocalDateTime] = new Writes[LocalDateTime] {
+  val localDateTimeWrites = new Writes[LocalDateTime] {
     def writes(dateTime: LocalDateTime): JsValue = JsNumber(value = dateTime.atOffset(ZoneOffset.UTC).toEpochSecond)
   }
 
-  implicit val bsonIdFormat = ReactiveMongoFormats.objectIdFormats
+  val deploymentReads: Reads[Deployment] = (
+    (__ \ "name").read[String] and
+      (__ \ "version").read[String] and
+      (__ \ "creationDate").readNullable[LocalDateTime](localDateTimeRead) and
+      (__ \ "productionDate").read[LocalDateTime](localDateTimeRead) and
+      (__ \ "interval").readNullable[Long] and
+      (__ \ "leadTime").readNullable[Long] and
+      (__ \ "deployers").readNullable[Seq[Deployer]].map(_.getOrElse(Seq.empty)) and
+      (__ \ "_id").readNullable[BSONObjectID](ReactiveMongoFormats.objectIdRead)
+    ) (Deployment.apply _)
 
-  val formats = Json.format[Deployment]
+
+  val deploymentWrites: Writes[Deployment] = {
+    import ReactiveMongoFormats.objectIdWrite
+    implicit val localDateTimeWrite: Writes[LocalDateTime] = localDateTimeWrites
+      Json.writes[Deployment]
+  }
+
+
+  val formats = new OFormat[Deployment]() {
+    override def writes(o: Deployment): JsObject = deploymentWrites.writes(o).as[JsObject]
+
+    override def reads(json: JsValue): JsResult[Deployment] = deploymentReads.reads(json)
+  }
+
 
 }
 
@@ -118,9 +145,11 @@ class MongoDeploymentsRepository(mongo: () => DB)
 
   def clearAllData = super.removeAll().map(!_.hasErrors)
 
-  def getAllDeployments: Future[Seq[Deployment]] = collection
-    .find(BSONDocument.empty)
-    .sort(Json.obj("productionDate" -> JsNumber(-1)))
-    .cursor[Deployment]()
-    .collect[List]()
+  def getAllDeployments: Future[Seq[Deployment]] = {
+    collection
+      .find(BSONDocument.empty)
+      .sort(Json.obj("productionDate" -> JsNumber(-1)))
+      .cursor[Deployment]()
+      .collect[List]()
+  }
 }

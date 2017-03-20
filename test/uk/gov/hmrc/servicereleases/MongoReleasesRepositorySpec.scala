@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneOffset}
 import java.time.format.DateTimeFormatter
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterEach, LoneElement, OptionValues}
 import org.scalatestplus.play.OneAppPerTest
+import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID, BSONString}
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import uk.gov.hmrc.servicedeployments.deployments.Deployer
@@ -39,6 +40,41 @@ class MongoDeploymentsRepositorySpec extends UnitSpec with LoneElement with Mong
 
 
   "getAll" should {
+    "return all the deployments when already saved deployments do not have 'deployers' " in {
+
+
+      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
+      import scala.concurrent.ExecutionContext.Implicits.global
+      import play.api.libs.json._
+      import reactivemongo.json._
+
+      val now = LocalDateTime.now()
+
+      implicit val dateWriteFormat =  Deployment.localDateTimeWrites
+
+      await(mongoDeploymentsRepository.collection.insert(Json.obj(
+        "name" -> "nisp" ,
+        "version" -> "5.4.2" ,
+        "productionDate" -> now.toEpochSecond(ZoneOffset.UTC) ,
+        "interval" -> 1
+      )))
+
+      val deployments: Seq[Deployment] = await(mongoDeploymentsRepository.getAllDeployments)
+
+      deployments.size shouldBe 1
+      deployments.head.creationDate shouldBe None
+      deployments.head.productionDate.toLocalDate shouldBe now.toLocalDate
+      deployments.head.productionDate.toLocalTime.getMinute shouldBe now.toLocalTime.getMinute
+      deployments.head.productionDate.toLocalTime.getSecond shouldBe now.toLocalTime.getSecond
+      deployments.head.name shouldBe "nisp"
+      deployments.head.version shouldBe "5.4.2"
+      deployments.head.interval.get shouldBe 1
+      deployments.head.leadTime shouldBe None
+      deployments.head.deployers shouldBe Seq.empty
+
+
+    }
+
     "return all the deployments in descending order of productionDate" in {
 
       val now: LocalDateTime = LocalDateTime.now()
