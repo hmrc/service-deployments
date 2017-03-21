@@ -46,7 +46,7 @@ object Deployment {
   val localDateTimeRead: Reads[LocalDateTime] =
     __.read[Long].map { dateTime => LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC) }
 
-  val localDateTimeWrites = new Writes[LocalDateTime] {
+  val localDateTimeToEpochSecondsWrites = new Writes[LocalDateTime] {
     def writes(dateTime: LocalDateTime): JsValue = JsNumber(value = dateTime.atOffset(ZoneOffset.UTC).toEpochSecond)
   }
 
@@ -64,7 +64,7 @@ object Deployment {
 
   val deploymentWrites: Writes[Deployment] = {
     import ReactiveMongoFormats.objectIdWrite
-    implicit val localDateTimeWrite: Writes[LocalDateTime] = localDateTimeWrites
+    implicit val localDateTimeWrite: Writes[LocalDateTime] = localDateTimeToEpochSecondsWrites
       Json.writes[Deployment]
   }
 

@@ -28,7 +28,28 @@ import scala.concurrent.Future
 case class Deployer(name: String, deploymentDate: LocalDateTime)
 
 object Deployer {
-  implicit val format = Json.format[Deployer]
+
+  import play.api.libs.functional.syntax._
+
+  import play.api.libs.json._
+  import JavaDateTimeJsonFormatter._
+
+  val deployerWrites = (
+    (__ \ 'name).write[String] and
+    (__ \ 'deploymentDate).write[LocalDateTime](localDateTimeWrites)
+    )(unlift(Deployer.unapply))
+
+  val deployerReads = (
+    (__ \ 'name).read[String] and
+      (__ \ 'deploymentDate).read[LocalDateTime](localDateTimeReads)
+    )(Deployer.apply _)
+
+
+  implicit val format = new OFormat[Deployer]() {
+    override def writes(o: Deployer): JsObject = deployerWrites.writes(o).as[JsObject]
+
+    override def reads(json: JsValue): JsResult[Deployer] = deployerReads.reads(json)
+  }
 }
 
 case class EnvironmentalDeployment(environment: String, name: String, version: String, firstSeen: LocalDateTime, deployers: Seq[Deployer] = Seq.empty)

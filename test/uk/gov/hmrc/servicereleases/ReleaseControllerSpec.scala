@@ -63,7 +63,7 @@ class DeploymentControllerSpec extends PlaySpec with MockitoSugar with Results w
       jsonResult.map(_.value) mustBe Seq(
         Map("name" -> JsString("serviceName"), "version" -> JsString("1"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(List.empty)),
         Map("name" -> JsString("serviceName"), "version" -> JsString("2"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(List.empty)),
-        Map("name" -> JsString("serviceName"), "version" -> JsString("3"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> Json.toJson(Seq(Deployer("xyz.abc", now)))))
+        Map("name" -> JsString("serviceName"), "version" -> JsString("3"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(Seq(Json.obj("name" -> JsString("xyz.abc"), "deploymentDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)))))))
     }
   }
 }

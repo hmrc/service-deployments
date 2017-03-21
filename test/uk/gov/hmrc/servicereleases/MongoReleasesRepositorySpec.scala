@@ -49,8 +49,7 @@ class MongoDeploymentsRepositorySpec extends UnitSpec with LoneElement with Mong
       import reactivemongo.json._
 
       val now = LocalDateTime.now()
-
-      implicit val dateWriteFormat =  Deployment.localDateTimeWrites
+      implicit val dateWriteFormat =  Deployment.localDateTimeToEpochSecondsWrites
 
       await(mongoDeploymentsRepository.collection.insert(Json.obj(
         "name" -> "nisp" ,

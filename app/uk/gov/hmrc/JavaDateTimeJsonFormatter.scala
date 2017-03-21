@@ -32,6 +32,7 @@ object JavaDateTimeJsonFormatter {
     }
   }
 
+
   implicit val localDateTimeWrites = new Writes[LocalDateTime] {
     override def writes(o: LocalDateTime): JsValue = {
       JsNumber(o.toEpochSecond(ZoneOffset.UTC))
