@@ -79,15 +79,38 @@ object EnvironmentalDeployment {
 
 }
 
+case class WhatIsRunningWhere(applicationName: String, environments: Seq[String])
+object WhatIsRunningWhere {
+
+  implicit val reads = new Reads[WhatIsRunningWhere] {
+    override def reads(json: JsValue): JsResult[WhatIsRunningWhere] = {
+      val asMap = json.as[Map[String, String]]
+      asMap.get("an") match {
+        case Some(appName) =>
+          JsSuccess(WhatIsRunningWhere(appName, getEnvironments(asMap)))
+        case None => JsError(s"'an' (i.e. application name) field is missing in json ${json.toString()}")
+      }
+    }
+
+    private def getEnvironments(asMap: Map[String, String]) = {
+      val fullSetOfEnvironments = Seq("qa", "staging", "production", "externaltest")
+      val environments = asMap.filterNot(_._1 == "an").keys.toSeq
+      fullSetOfEnvironments.filter(referenceEnv => environments.exists(_.toLowerCase.startsWith(referenceEnv)))
+    }
+  }
+}
+
+
 trait DeploymentsDataSource {
   def getAll: Future[List[EnvironmentalDeployment]]
+  def whatIsRunningWhere: Future[List[WhatIsRunningWhere]]
 }
 
 class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
 
   def getAll: Future[List[EnvironmentalDeployment]] = {
 
-    Logger.info("Getting all the rdeployments.")
+    Logger.info("Getting all the deployments.")
     HttpClient.getWithParsing(s"$deploymentsApiBase/apps?secondsago=31557600") {
       case JsArray(x) =>
 
@@ -103,5 +126,20 @@ class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDat
     }
   }
 
+  override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = {
+    Logger.info("Getting whatIsRunningWhere records.")
+    HttpClient.getWithParsing(s"$deploymentsApiBase/whats-running-where") {
+      case JsArray(x) =>
+        val (validRecords, inValidRecords) = x.partition { jsv =>
+          jsv.validate[WhatIsRunningWhere].isSuccess
+        }
+        inValidRecords.foreach(x => Logger.warn(s"Invalid whatIsRunningWhere record : ${x.toString()}"))
+        validRecords.map(_.as[WhatIsRunningWhere]).toList
 
+      case _ =>
+        Logger.warn(s"No whatIsRunningWhere records returned")
+        Nil
+    }
+
+  }
 }

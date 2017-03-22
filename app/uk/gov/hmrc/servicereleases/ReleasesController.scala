@@ -24,7 +24,7 @@ import play.api.libs.json._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment}
+import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment, WhatIsRunningWhere}
 
 import scala.concurrent.Future
 import scala.io.Source
@@ -96,6 +96,8 @@ trait DeploymentsController extends BaseController {
     val scheduler = new Scheduler with DefaultSchedulerDependencies {
       val deploymentsDataSource = new DeploymentsDataSource {
         def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
+
+        override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = ???
       }
     }
 
