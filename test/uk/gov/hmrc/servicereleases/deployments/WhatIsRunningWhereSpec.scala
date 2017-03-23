@@ -22,31 +22,31 @@ import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
 
 class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
-  describe("parsing the json to ")  {
+  describe("parsing the json")  {
 
     it("should return appname and all environments correctly") {
-      val j = """{
-                |    "staging-datacentred-sal01": "0.90.0",
-                |    "staging-skyscape-farnborough": "0.90.0",
-                |    "production-skyscape-farnborough": "0.90.0",
-                |    "qa-datacentred-sal01": "0.100.0",
-                |    "production-datacentred-sal01": "0.90.0",
-                |    "an": "app123",
-                |    "externaltest-datacentred-sal01": "0.98.0"
-                |  }""".stripMargin
+      val json = """{
+                    | "staging-datacentred-sal01": "0.90.0",
+                    | "staging-skyscape-farnborough": "0.90.0",
+                    | "production-skyscape-farnborough": "0.90.0",
+                    | "qa-datacentred-sal01": "0.100.0",
+                    | "production-datacentred-sal01": "0.90.0",
+                    | "an": "app123",
+                    | "externaltest-datacentred-sal01": "0.98.0"
+                    |}""".stripMargin
 
 
-      val whatIsRunningWhere = Json.parse(j).as[WhatIsRunningWhere]
+      val whatIsRunningWhere = Json.parse(json).as[WhatIsRunningWhere]
       whatIsRunningWhere.applicationName shouldBe "app123"
       whatIsRunningWhere.environments should contain theSameElementsAs Seq("staging", "production", "qa", "externaltest")
     }
 
     it("should not return environment names that the is not deployed to") {
       val j = """{
-                |    "production-skyscape-farnborough": "0.90.0",
-                |    "an": "app123",
-                |    "externaltest-datacentred-sal01": "0.98.0"
-                |  }""".stripMargin
+                |  "production-skyscape-farnborough": "0.90.0",
+                |  "an": "app123",
+                |  "externaltest-datacentred-sal01": "0.98.0"
+                |}""".stripMargin
 
 
       val whatIsRunningWhere = Json.parse(j).as[WhatIsRunningWhere]
@@ -56,9 +56,9 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
     it("should error if app name is missing in payload") {
       val j = """{
-                |    "production-skyscape-farnborough": "0.90.0",
-                |    "externaltest-datacentred-sal01": "0.98.0"
-                |  }""".stripMargin
+                |  "production-skyscape-farnborough": "0.90.0",
+                |  "externaltest-datacentred-sal01": "0.98.0"
+                |}""".stripMargin
 
 
       val whatIsRunningWhere = Json.parse(j).validate[WhatIsRunningWhere]
@@ -71,8 +71,8 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
     it("should NOT error if no environments are found in payload") {
       val j = """{
-                |    "an": "appName"
-                |  }""".stripMargin
+                |  "an": "appName"
+                |}""".stripMargin
 
 
       val whatIsRunningWhere = Json.parse(j).as[WhatIsRunningWhere]

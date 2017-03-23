@@ -98,6 +98,13 @@ object WhatIsRunningWhere {
       fullSetOfEnvironments.filter(referenceEnv => environments.exists(_.toLowerCase.startsWith(referenceEnv)))
     }
   }
+
+  implicit val writes = Json.writes[WhatIsRunningWhere]
+
+  implicit val format: Format[WhatIsRunningWhere] =
+    Format(reads, writes)
+
+
 }
 
 
@@ -128,7 +135,7 @@ class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDat
 
   override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = {
     Logger.info("Getting whatIsRunningWhere records.")
-    HttpClient.getWithParsing(s"$deploymentsApiBase/whats-running-where") {
+    HttpClient.getWithParsing(s"$deploymentsApiBase/whats-running-where", List("Accept"->"application/json")) {
       case JsArray(x) =>
         val (validRecords, inValidRecords) = x.partition { jsv =>
           jsv.validate[WhatIsRunningWhere].isSuccess

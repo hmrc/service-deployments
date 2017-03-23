@@ -57,17 +57,22 @@ trait MicroserviceFilters {
   def microserviceFilters: Seq[EssentialFilter] = defaultMicroserviceFilters
 }
 
-object MicroserviceGlobal
-  extends GlobalSettings
-  with MicroserviceFilters with GraphiteConfig with RemovingOfTrailingSlashes with JsonErrorHandling  with RunMode {
+object MicroserviceGlobal extends GlobalSettings
+  with MicroserviceFilters
+  with GraphiteConfig
+  with RemovingOfTrailingSlashes
+  with JsonErrorHandling
+  with RunMode {
 
   override val loggingFilter = MicroserviceLoggingFilter
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
 
   override def onStart(app: Application): Unit = {
-    if (ServicedeploymentsConfig.schedulerEnabled)
-      Scheduler.start(FiniteDuration(1, TimeUnit.HOURS))
+    if (ServicedeploymentsConfig.schedulerEnabled) {
+      Scheduler.startUpdatingWhatIsRunningWhereModel(FiniteDuration(10, TimeUnit.MINUTES))
+      Scheduler.startUpdatingDeploymentServiceModel(FiniteDuration(1, TimeUnit.HOURS))
+    }
 
     super.onStart(app)
   }

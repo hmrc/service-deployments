@@ -26,9 +26,10 @@ import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.gitclient.Git
 import uk.gov.hmrc.githubclient.GithubApiClient
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.servicedeployments.deployments.{DefaultServiceDeploymentsService, DeploymentsDataSource, DeploymentsApiConnector}
+import uk.gov.hmrc.servicedeployments.deployments.{DefaultServiceDeploymentsService, DeploymentsApiConnector, DeploymentsDataSource, WhatIsRunningWhere}
 import uk.gov.hmrc.servicedeployments.services.{CatalogueConnector, DefaultServiceRepositoriesService}
 import uk.gov.hmrc.servicedeployments.tags.{DefaultTagsService, GitConnector, GitHubConnector}
+import uk.gov.hmrc.servicereleases.{DefaultWhatIsRunningWhereUpdateService, MongoWhatIsRunningWhereRepository, WhatIsRunningWhereUpdateService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -65,6 +66,12 @@ trait DefaultSchedulerDependencies extends MongoDbConnection  {
     new DefaultServiceDeploymentsService(deploymentsDataSource),
     new DefaultTagsService(enterpriseDataSource, openDataSource),
     new MongoDeploymentsRepository(db))
+
+  lazy val whatIsRunningWhereService = new  DefaultWhatIsRunningWhereUpdateService(
+    deploymentsDataSource,
+    new MongoWhatIsRunningWhereRepository(db)
+  )
+
 }
 
 trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
@@ -73,21 +80,30 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
   def akkaSystem: ActorSystem
   def deploymentsDataSource: DeploymentsDataSource
   def deploymentsService: DeploymentsService
+  def whatIsRunningWhereService: WhatIsRunningWhereUpdateService
 
   override def repo: LockRepository = LockMongoRepository(db)
   override def lockId: String = "service-deployments-scheduled-job"
 
   override val forceLockReleaseAfter: Duration = Duration.standardMinutes(15)
 
-  def start(interval: FiniteDuration): Unit = {
-    Logger.info(s"Initialising mongo update every $interval")
+  def startUpdatingDeploymentServiceModel(interval: FiniteDuration): Unit = {
+    Logger.info(s"Initialising mongo update (for DeploymentServiceModel) every $interval")
 
     akkaSystem.scheduler.schedule(FiniteDuration(1, TimeUnit.SECONDS), interval) {
-      run
+      updateDeploymentServiceModel
     }
   }
 
-  def run: Future[JobResult] = {
+  def startUpdatingWhatIsRunningWhereModel(interval: FiniteDuration): Unit = {
+    Logger.info(s"Initialising mongo update (for WhatIsRunningWhere) every $interval")
+
+    akkaSystem.scheduler.schedule(FiniteDuration(1, TimeUnit.SECONDS), interval) {
+      updateWhatIsRunningWhereModel
+    }
+  }
+
+  def updateDeploymentServiceModel: Future[JobResult] = {
     tryLock {
       Logger.info(s"Starting mongo update")
 
@@ -100,6 +116,26 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
         defaultMetricsRegistry.counter("scheduler.failure").inc(failureCount)
 
         Info(s"Added/updated $successCount deployments and encountered $failureCount failures")
+      }.recover { case ex =>
+        Error(s"Something went wrong during the mongo update:", ex)
+      }
+    } map { resultOrLocked =>
+      resultOrLocked getOrElse {
+        Warn("Failed to obtain lock. Another process may have it.")
+      }
+    }
+  }
+  
+  def updateWhatIsRunningWhereModel: Future[JobResult] = {
+    tryLock {
+      Logger.info(s"Starting mongo update")
+
+      whatIsRunningWhereService.updateModel().map { result =>
+        val total = result.toList.length
+
+        defaultMetricsRegistry.counter("scheduler.success").inc(total)
+
+        Info(s"Added/updated $total WhatIsRunningWhere")
       }.recover { case ex =>
         Error(s"Something went wrong during the mongo update:", ex)
       }

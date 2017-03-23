@@ -39,13 +39,15 @@ class DefaultDeploymentsService(serviceRepositoriesService: ServiceRepositoriesS
                              tagsService: TagsService,
                              repository: DeploymentsRepository) extends DeploymentsService {
 
-  def updateModel() =
+  def updateModel(): Future[Iterable[Boolean]] =
     for {
       service <- getServiceRepositoryDeployments
       _ <- log(service)
       maybeTagDates <- tryGetTagDatesFor(service)
       success <- processDeployments(service, maybeTagDates)
     } yield success
+
+
 
   private def getServiceRepositoryDeployments = {
     val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] = deploymentsService.getAll()

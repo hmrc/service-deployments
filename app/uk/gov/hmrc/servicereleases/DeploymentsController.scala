@@ -79,7 +79,7 @@ trait DeploymentsController extends BaseController {
   }
 
   def update() = Action.async { implicit request =>
-    Scheduler.run.map {
+    Scheduler.updateDeploymentServiceModel.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message, ex) => InternalServerError(message)
@@ -97,11 +97,12 @@ trait DeploymentsController extends BaseController {
       val deploymentsDataSource = new DeploymentsDataSource {
         def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
 
-        override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = ???
+        // noop
+        override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = Future.successful(Nil)
       }
     }
 
-    scheduler.run.map {
+    scheduler.updateDeploymentServiceModel.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message, ex) => InternalServerError(message)
