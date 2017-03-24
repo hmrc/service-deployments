@@ -24,10 +24,9 @@ import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.servicedeployments.Deployment
-import uk.gov.hmrc.servicedeployments.Deployment.{deploymentReads, deploymentWrites, localDateTimeRead, localDateTimeToEpochSecondsWrites}
+
 import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
-import uk.gov.hmrc.servicedeployments.deployments.{Deployer, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -80,7 +79,7 @@ trait WhatIsRunningWhereRepository {
 
 
 
-//!@TODO: test
+
 class MongoWhatIsRunningWhereRepository(mongo: () => DB)
   extends ReactiveRepository[WhatIsRunningWhereModel, BSONObjectID](
     collectionName = "WhatIsRunningWhere", //!@ rename to start lower case
