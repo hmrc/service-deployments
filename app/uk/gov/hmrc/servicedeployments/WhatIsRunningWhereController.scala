@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._

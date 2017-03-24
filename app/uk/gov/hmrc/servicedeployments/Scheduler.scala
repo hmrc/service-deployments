@@ -29,7 +29,6 @@ import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import uk.gov.hmrc.servicedeployments.deployments.{DefaultServiceDeploymentsService, DeploymentsApiConnector, DeploymentsDataSource, WhatIsRunningWhere}
 import uk.gov.hmrc.servicedeployments.services.{CatalogueConnector, DefaultServiceRepositoriesService}
 import uk.gov.hmrc.servicedeployments.tags.{DefaultTagsService, GitConnector, GitHubConnector}
-import uk.gov.hmrc.servicereleases.{DefaultWhatIsRunningWhereUpdateService, MongoWhatIsRunningWhereRepository, WhatIsRunningWhereUpdateService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

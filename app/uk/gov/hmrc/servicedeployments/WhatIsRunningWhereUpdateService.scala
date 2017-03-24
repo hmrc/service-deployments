@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
 import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, WhatIsRunningWhere}

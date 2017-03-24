@@ -21,8 +21,8 @@ import org.scalatest._
 import org.scalatestplus.play.OneAppPerTest
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.MongoSpecSupport
+import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
 import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
-
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global

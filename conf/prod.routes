@@ -6,6 +6,6 @@ POST       /api/deployments/raw                    uk.gov.hmrc.servicedeployment
 POST       /api/deployments/clear                  uk.gov.hmrc.servicedeployments.DeploymentsController.clear()
 GET        /api/deployments                        uk.gov.hmrc.servicedeployments.DeploymentsController.getAll()
 GET        /api/deployments/:serviceName           uk.gov.hmrc.servicedeployments.DeploymentsController.forService(serviceName)
-GET        /api/whatsrunningwhere                  uk.gov.hmrc.servicereleases.WhatIsRunningWhereController.getAll()
-GET        /api/whatsrunningwhere/:applicationName uk.gov.hmrc.servicereleases.WhatIsRunningWhereController.forApplication(applicationName)
+GET        /api/whatsrunningwhere                  uk.gov.hmrc.servicedeployments.WhatIsRunningWhereController.getAll()
+GET        /api/whatsrunningwhere/:applicationName uk.gov.hmrc.servicedeployments.WhatIsRunningWhereController.forApplication(applicationName)
 GET        /admin/metrics                          @com.kenshoo.play.metrics.MetricsController.metrics
