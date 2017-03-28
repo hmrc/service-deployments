@@ -134,11 +134,10 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
         "environments" -> Set(Environment("qa", "qa"))
       )))
 
-      val whatIsRunningWheres: Option[Seq[WhatIsRunningWhereModel]] = await(mongoWhatIsRunningWhereRepository.getForApplication("app-1"))
+      val whatIsRunningWheres: Option[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getForApplication("app-1"))
 
-      whatIsRunningWheres.value.size shouldBe 1
-      whatIsRunningWheres.value.head.applicationName shouldBe "app-1"
-      whatIsRunningWheres.value.head.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
+      whatIsRunningWheres.value.applicationName shouldBe "app-1"
+      whatIsRunningWheres.value.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
 
     }
   }

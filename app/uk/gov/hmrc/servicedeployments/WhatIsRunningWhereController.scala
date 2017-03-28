@@ -40,7 +40,7 @@ trait WhatIsRunningWhereController extends BaseController {
 
   def forApplication(applicationName: String) = Action.async { implicit request =>
     whatIsRunningWhereRepository.getForApplication(applicationName).map {
-      case Some(data) => Ok(Json.toJson(data.map(fromWhatIsRunningWhereModel)))
+      case Some(data) => Ok(Json.toJson(fromWhatIsRunningWhereModel(data)))
       case None => NotFound
     }
   }

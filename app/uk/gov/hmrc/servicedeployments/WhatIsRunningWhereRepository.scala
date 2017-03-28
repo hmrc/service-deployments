@@ -71,7 +71,7 @@ trait WhatIsRunningWhereRepository {
 
   def getAll: Future[Seq[WhatIsRunningWhereModel]]
 
-  def getForApplication(applicationName: String): Future[Option[Seq[WhatIsRunningWhereModel]]]
+  def getForApplication(applicationName: String): Future[Option[WhatIsRunningWhereModel]]
 
   def clearAllData: Future[Boolean]
 }
@@ -111,12 +111,12 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
     findAll().map { all => all.groupBy(_.applicationName) }
   }
 
-  def getForApplication(applicationName: String): Future[Option[Seq[WhatIsRunningWhereModel]]] = {
+  def getForApplication(applicationName: String): Future[Option[WhatIsRunningWhereModel]] = {
 
     withTimerAndCounter("mongo.read") {
       find("applicationName" -> BSONDocument("$eq" -> applicationName)) map {
         case Nil => None
-        case data => Some(data)
+        case data => data.headOption
       }
     }
   }
