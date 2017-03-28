@@ -24,16 +24,15 @@ import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-
 import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
+import uk.gov.hmrc.servicedeployments.deployments.{Environment, WhatIsRunningWhere}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 
 case class WhatIsRunningWhereModel(applicationName: String,
-                                   environments: Seq[String],
+                                   environments: Set[Environment],
                                    _id: Option[BSONObjectID] = None)
 
 object WhatIsRunningWhereModel {
@@ -44,7 +43,7 @@ object WhatIsRunningWhereModel {
 
   val whatIsRunningWhereReads: Reads[WhatIsRunningWhereModel] = (
     (__ \ "applicationName").read[String] and
-      (__ \ "environments").read[Seq[String]] and
+      (__ \ "environments").read[Set[Environment]] and
       (__ \ "_id").readNullable[BSONObjectID](ReactiveMongoFormats.objectIdRead)
     ) (WhatIsRunningWhereModel.apply _)
 

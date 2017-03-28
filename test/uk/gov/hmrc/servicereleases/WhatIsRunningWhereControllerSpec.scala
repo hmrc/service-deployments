@@ -25,6 +25,8 @@ import play.api.libs.json._
 import play.api.mvc.{Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.servicedeployments.deployments.Environment
+import uk.gov.hmrc.servicedeployments.{WhatIsRunningWhereController, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
 
 import scala.concurrent.Future
 
@@ -42,7 +44,7 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
 
       when(whatIsRunningWhereRepo.getForApplication("appName-1")).thenReturn(
         Future.successful(Some(Seq(
-          WhatIsRunningWhereModel(applicationName = "appName-1", environments = Seq("qa", "prod")))
+          WhatIsRunningWhereModel(applicationName = "appName-1", environments = Set(Environment("qa", "qa"), Environment("prod", "prod"))))
         ))
       )
 
@@ -51,7 +53,15 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
       val jsonResult: Seq[JsObject] = contentAsJson(result).as[Seq[JsObject]]
 
       jsonResult.size mustBe  1
-      jsonResult.map(_.value) mustBe Seq(Map("applicationName" -> JsString("appName-1"), "environments" -> JsArray(Seq(JsString("qa"),JsString("prod")))))
+      jsonResult.map(_.value) mustBe Seq(
+        Map(
+          "applicationName" -> JsString("appName-1"),
+          "environments" -> JsArray(
+            Seq(
+              JsObject(Map("name" -> JsString("qa"), "whatIsRunningWhereId" -> JsString("qa"))),
+              JsObject(Map("name" -> JsString("prod"), "whatIsRunningWhereId" -> JsString("prod")))
+            ))))
+
     }
   }
 }

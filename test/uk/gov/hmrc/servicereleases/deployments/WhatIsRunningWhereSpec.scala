@@ -18,7 +18,7 @@ package uk.gov.hmrc.servicereleases.deployments
 
 import org.scalatest.{FunSpec, Matchers}
 import play.api.libs.json.{JsError, Json}
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
+import uk.gov.hmrc.servicedeployments.deployments.{Environment, WhatIsRunningWhere}
 
 class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
@@ -38,7 +38,11 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
       val whatIsRunningWhere = Json.parse(json).as[WhatIsRunningWhere]
       whatIsRunningWhere.applicationName shouldBe "app123"
-      whatIsRunningWhere.environments should contain theSameElementsAs Seq("staging", "production", "qa", "externaltest")
+      whatIsRunningWhere.environments should contain theSameElementsAs Set(
+        Environment("staging", "staging"),
+        Environment("production", "production"),
+        Environment("qa", "qa"),
+        Environment("external test", "externaltest"))
     }
 
     it("should not return environment names that the is not deployed to") {
@@ -50,8 +54,10 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
 
       val whatIsRunningWhere = Json.parse(j).as[WhatIsRunningWhere]
-      
-      whatIsRunningWhere.environments should contain theSameElementsAs Seq("production", "externaltest")
+
+      whatIsRunningWhere.environments should contain theSameElementsAs Set(
+        Environment("production", "production"),
+        Environment("external test", "externaltest"))
     }
 
     it("should error if app name is missing in payload") {
@@ -77,7 +83,7 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
       val whatIsRunningWhere = Json.parse(j).as[WhatIsRunningWhere]
 
-      whatIsRunningWhere shouldBe WhatIsRunningWhere("appName", Nil)
+      whatIsRunningWhere shouldBe WhatIsRunningWhere("appName", Set.empty)
     }
   }
 }

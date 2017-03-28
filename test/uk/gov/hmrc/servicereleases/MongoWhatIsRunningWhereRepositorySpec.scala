@@ -22,7 +22,7 @@ import org.scalatestplus.play.OneAppPerTest
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
+import uk.gov.hmrc.servicedeployments.deployments.{Environment, WhatIsRunningWhere}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -44,21 +44,21 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
   describe("update") {
     it("should update already existing items") {
 
-      val whatIsRunningWhere = WhatIsRunningWhere("app-1", Seq("qa", "production"))
+      val whatIsRunningWhere = WhatIsRunningWhere("app-1", Set(Environment("qa", "qa") , Environment("production", "production")))
       await(mongoWhatIsRunningWhereRepository.update(whatIsRunningWhere))
 
       val all = await(mongoWhatIsRunningWhereRepository.findAll())
 
       val savedWhatIsRunningWhere: WhatIsRunningWhereModel = all.loneElement
 
-      await(mongoWhatIsRunningWhereRepository.update(whatIsRunningWhere.copy(environments= Seq("staging"))))
+      await(mongoWhatIsRunningWhereRepository.update(whatIsRunningWhere.copy(environments= Set(Environment("staging", "staging")))))
 
       val allUpdated = await(mongoWhatIsRunningWhereRepository.getAll)
       allUpdated.size shouldBe 1
       val updatedWhatIsRunningWhere: WhatIsRunningWhereModel = allUpdated.loneElement
 
       updatedWhatIsRunningWhere.applicationName shouldBe whatIsRunningWhere.applicationName
-      updatedWhatIsRunningWhere.environments shouldBe Seq("staging")
+      updatedWhatIsRunningWhere.environments shouldBe Set(Environment("staging", "staging"))
 
     }
 
@@ -75,14 +75,14 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
 
         await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
           "applicationName" -> "app-123" ,
-          "environments" -> Seq("qa", "production")
+          "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
         )))
 
         val whatIsRunningWheres: Seq[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getAll)
 
         whatIsRunningWheres.size shouldBe 1
         whatIsRunningWheres.head.applicationName shouldBe "app-123"
-        whatIsRunningWheres.head.environments shouldBe Seq("qa", "production")
+        whatIsRunningWheres.head.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
 
       }
     }
@@ -93,29 +93,29 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
       import reactivemongo.json._
       import play.api.libs.json._
 
-      it("shoulf return all the whatIsRunningWhere grouped by application name") {
+      it("should return all the whatIsRunningWhere grouped by application name") {
 
-      await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "applicationName" -> "app-1" ,
-        "environments" -> Seq("qa", "production")
-      )))
-      await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "applicationName" -> "app-2" ,
-        "environments" -> Seq("qa")
-      )))
+        await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
+          "applicationName" -> "app-1",
+          "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
+        )))
+        await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
+          "applicationName" -> "app-2",
+          "environments" -> Set(Environment("qa", "qa"))
+        )))
 
-      val whatIsRunningWheres: Map[String, Seq[WhatIsRunningWhereModel]] = await(mongoWhatIsRunningWhereRepository.allGroupedByName)
+        val whatIsRunningWheres: Map[String, Seq[WhatIsRunningWhereModel]] = await(mongoWhatIsRunningWhereRepository.allGroupedByName)
 
-      whatIsRunningWheres.size shouldBe 2
-      whatIsRunningWheres.keys should contain theSameElementsAs Seq("app-1","app-2")
-      whatIsRunningWheres("app-1").size shouldBe 1
-      whatIsRunningWheres("app-1").head.environments should contain theSameElementsAs Seq("qa", "production")
+        whatIsRunningWheres.size shouldBe 2
+        whatIsRunningWheres.keys should contain theSameElementsAs Seq("app-1", "app-2")
+        whatIsRunningWheres("app-1").size shouldBe 1
+        whatIsRunningWheres("app-1").head.environments should contain theSameElementsAs Set(Environment("qa", "qa"), Environment("production", "production"))
 
-      whatIsRunningWheres("app-2").size shouldBe 1
-      whatIsRunningWheres("app-2").head.environments should contain theSameElementsAs Seq("qa")
+        whatIsRunningWheres("app-2").size shouldBe 1
+        whatIsRunningWheres("app-2").head.environments should contain theSameElementsAs Set(Environment("qa", "qa"))
 
+      }
     }
-  }
 
   describe("getForApplication" ) {
       import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
@@ -127,18 +127,18 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
 
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
         "applicationName" -> "app-1" ,
-        "environments" -> Seq("qa", "production")
+        "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
       )))
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
         "applicationName" -> "app-2" ,
-        "environments" -> Seq("qa")
+        "environments" -> Set(Environment("qa", "qa"))
       )))
 
       val whatIsRunningWheres: Option[Seq[WhatIsRunningWhereModel]] = await(mongoWhatIsRunningWhereRepository.getForApplication("app-1"))
 
       whatIsRunningWheres.value.size shouldBe 1
       whatIsRunningWheres.value.head.applicationName shouldBe "app-1"
-      whatIsRunningWheres.value.head.environments shouldBe Seq("qa", "production")
+      whatIsRunningWheres.value.head.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
 
     }
   }

@@ -21,6 +21,7 @@ import java.time.{LocalDateTime, ZoneOffset}
 import play.api.Logger
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.servicedeployments.deployments.Environment.fullListOfEnvironments
 import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
 
 import scala.concurrent.Future
@@ -79,24 +80,36 @@ object EnvironmentalDeployment {
 
 }
 
-case class WhatIsRunningWhere(applicationName: String, environments: Seq[String])
+final case class Environment(name: String, whatIsRunningWhereId: String)
+
+object Environment {
+  implicit val environmentFormat = Json.format[Environment]
+  val fullListOfEnvironments = Set(
+    Environment("qa" , "qa"),
+    Environment("staging" , "staging"),
+    Environment("external test" , "externaltest"),
+    Environment("production" , "production")
+  )
+}
+
+case class WhatIsRunningWhere(applicationName: String, environments: Set[Environment])
 object WhatIsRunningWhere {
 
   implicit val reads = new Reads[WhatIsRunningWhere] {
-    override def reads(json: JsValue): JsResult[WhatIsRunningWhere] = {
-      val asMap = json.as[Map[String, String]]
-      asMap.get("an") match {
+    override def reads(whatsRunningWhereJson: JsValue): JsResult[WhatIsRunningWhere] = {
+      val whatsRunningWhereMap = whatsRunningWhereJson.as[Map[String, String]]
+      val applicationName = whatsRunningWhereMap.get("an")
+      applicationName match {
         case Some(appName) =>
-          JsSuccess(WhatIsRunningWhere(appName, getEnvironments(asMap)))
-        case None => JsError(s"'an' (i.e. application name) field is missing in json ${json.toString()}")
+          JsSuccess(WhatIsRunningWhere(appName, getDeployedEnvironments(whatsRunningWhereMap)))
+        case None => JsError(s"'an' (i.e. application name) field is missing in json ${whatsRunningWhereJson.toString()}")
       }
     }
 
-    private def getEnvironments(asMap: Map[String, String]) = {
-      val fullSetOfEnvironments = Seq("qa", "staging", "production", "externaltest")
-      val environments = asMap.filterNot(_._1 == "an").keys.toSeq
-      fullSetOfEnvironments.filter(referenceEnv => environments.exists(_.toLowerCase.startsWith(referenceEnv)))
-    }
+    private def getDeployedEnvironments(whatsRunningWhereMap: Map[String, String]): Set[Environment] = {
+      val deployedEnvironments = whatsRunningWhereMap.filterNot(_._1 == "an").keys.toSeq
+      fullListOfEnvironments.filter(referenceEnv => deployedEnvironments.exists(_.toLowerCase.startsWith(referenceEnv.whatIsRunningWhereId)))
+    } 
   }
 
   implicit val writes = Json.writes[WhatIsRunningWhere]
