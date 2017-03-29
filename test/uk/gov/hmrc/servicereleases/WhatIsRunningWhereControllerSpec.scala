@@ -42,9 +42,9 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
   "forApplication" should {
     "retrieve list of all whats running where for an application" in {
 
-      when(whatIsRunningWhereRepo.getForApplication("appName-1")).thenReturn(
+      when(whatIsRunningWhereRepo.getForService("appName-1")).thenReturn(
         Future.successful(Some(
-          WhatIsRunningWhereModel(applicationName = "appName-1", environments = Set(Environment("qa", "qa"), Environment("prod", "prod")))
+          WhatIsRunningWhereModel(serviceName = "appName-1", environments = Set(Environment("qa", "qa"), Environment("prod", "prod")))
         ))
       )
 
@@ -55,7 +55,7 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
 
 
       jsonResult mustBe JsObject(Map(
-        "applicationName" -> JsString("appName-1"),
+        "serviceName" -> JsString("appName-1"),
           "environments" -> JsArray(
             Seq(
               JsObject(Map("name" -> JsString("qa"), "whatIsRunningWhereId" -> JsString("qa"))),

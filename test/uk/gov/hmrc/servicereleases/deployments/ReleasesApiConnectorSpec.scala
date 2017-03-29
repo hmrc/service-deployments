@@ -184,7 +184,7 @@ class DeploymentsApiConnectorSpec extends WordSpec with Matchers with WireMockSp
 
       val results = connector.whatIsRunningWhere.futureValue
       results.size shouldBe 2
-      results(0).applicationName shouldBe "app-1"
+      results(0).serviceName shouldBe "app-1"
       results(0).environments should contain theSameElementsAs Set(
         Environment("staging", "staging"),
         Environment("production", "production"),
@@ -192,7 +192,7 @@ class DeploymentsApiConnectorSpec extends WordSpec with Matchers with WireMockSp
         Environment("external test", "externaltest"))
 
 
-      results(1).applicationName shouldBe "app-2"
+      results(1).serviceName shouldBe "app-2"
       results(1).environments should contain theSameElementsAs Set(
         Environment("staging", "staging"),
         Environment("production", "production"),

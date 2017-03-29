@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 
-case class WhatIsRunningWhereModel(applicationName: String,
+case class WhatIsRunningWhereModel(serviceName: String,
                                    environments: Set[Environment],
                                    _id: Option[BSONObjectID] = None)
 
@@ -39,10 +39,10 @@ object WhatIsRunningWhereModel {
   import play.api.libs.functional.syntax._
   import play.api.libs.json.Reads._
   import play.api.libs.json._
-  
+
 
   val whatIsRunningWhereReads: Reads[WhatIsRunningWhereModel] = (
-    (__ \ "applicationName").read[String] and
+    (__ \ "serviceName").read[String] and
       (__ \ "environments").read[Set[Environment]] and
       (__ \ "_id").readNullable[BSONObjectID](ReactiveMongoFormats.objectIdRead)
     ) (WhatIsRunningWhereModel.apply _)
@@ -71,7 +71,7 @@ trait WhatIsRunningWhereRepository {
 
   def getAll: Future[Seq[WhatIsRunningWhereModel]]
 
-  def getForApplication(applicationName: String): Future[Option[WhatIsRunningWhereModel]]
+  def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]]
 
   def clearAllData: Future[Boolean]
 }
@@ -89,7 +89,7 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
     Future.sequence(
       Seq(
-        collection.indexesManager.ensure(Index(Seq("applicationName" -> IndexType.Text), name = Some("applicationNameIdx")))
+        collection.indexesManager.ensure(Index(Seq("serviceName" -> IndexType.Text), name = Some("serviceNameIdx")))
       )
     )
 
@@ -99,7 +99,7 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
 
     withTimerAndCounter("mongo.update") {
       for {
-        update <- collection.update(selector = Json.obj("applicationName" -> Json.toJson(deployment.applicationName)), update = deployment, upsert = true)
+        update <- collection.update(selector = Json.obj("serviceName" -> Json.toJson(deployment.serviceName)), update = deployment, upsert = true)
       } yield update match {
         case lastError if lastError.inError => throw new RuntimeException(s"failed to persist $deployment")
         case _ => true
@@ -108,13 +108,13 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
   }
 
   override def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]] = {
-    findAll().map { all => all.groupBy(_.applicationName) }
+    findAll().map { all => all.groupBy(_.serviceName) }
   }
 
-  def getForApplication(applicationName: String): Future[Option[WhatIsRunningWhereModel]] = {
+  def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]] = {
 
     withTimerAndCounter("mongo.read") {
-      find("applicationName" -> BSONDocument("$eq" -> applicationName)) map {
+      find("serviceName" -> BSONDocument("$eq" -> serviceName)) map {
         case Nil => None
         case data => data.headOption
       }

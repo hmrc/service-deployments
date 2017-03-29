@@ -37,7 +37,7 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
 
       val whatIsRunningWhere = Json.parse(json).as[WhatIsRunningWhere]
-      whatIsRunningWhere.applicationName shouldBe "app123"
+      whatIsRunningWhere.serviceName shouldBe "app123"
       whatIsRunningWhere.environments should contain theSameElementsAs Set(
         Environment("staging", "staging"),
         Environment("production", "production"),

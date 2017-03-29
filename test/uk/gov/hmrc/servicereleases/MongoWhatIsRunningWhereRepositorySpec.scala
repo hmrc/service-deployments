@@ -57,7 +57,7 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
       allUpdated.size shouldBe 1
       val updatedWhatIsRunningWhere: WhatIsRunningWhereModel = allUpdated.loneElement
 
-      updatedWhatIsRunningWhere.applicationName shouldBe whatIsRunningWhere.applicationName
+      updatedWhatIsRunningWhere.serviceName shouldBe whatIsRunningWhere.serviceName
       updatedWhatIsRunningWhere.environments shouldBe Set(Environment("staging", "staging"))
 
     }
@@ -74,14 +74,14 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
       it("return all the whatIsRunningWhere records") {
 
         await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-          "applicationName" -> "app-123" ,
+          "serviceName" -> "app-123" ,
           "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
         )))
 
         val whatIsRunningWheres: Seq[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getAll)
 
         whatIsRunningWheres.size shouldBe 1
-        whatIsRunningWheres.head.applicationName shouldBe "app-123"
+        whatIsRunningWheres.head.serviceName shouldBe "app-123"
         whatIsRunningWheres.head.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
 
       }
@@ -96,11 +96,11 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
       it("should return all the whatIsRunningWhere grouped by application name") {
 
         await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-          "applicationName" -> "app-1",
+          "serviceName" -> "app-1",
           "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
         )))
         await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-          "applicationName" -> "app-2",
+          "serviceName" -> "app-2",
           "environments" -> Set(Environment("qa", "qa"))
         )))
 
@@ -126,17 +126,17 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
       it("return the whatIsRunningWhere for the given application name" ) {
 
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "applicationName" -> "app-1" ,
+        "serviceName" -> "app-1" ,
         "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
       )))
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "applicationName" -> "app-2" ,
+        "serviceName" -> "app-2" ,
         "environments" -> Set(Environment("qa", "qa"))
       )))
 
-      val whatIsRunningWheres: Option[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getForApplication("app-1"))
+      val whatIsRunningWheres: Option[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getForService("app-1"))
 
-      whatIsRunningWheres.value.applicationName shouldBe "app-1"
+      whatIsRunningWheres.value.serviceName shouldBe "app-1"
       whatIsRunningWheres.value.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
 
     }
@@ -151,11 +151,11 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
     it("remove all the whatIsRunningWhere records") {
 
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "applicationName" -> "app-1",
+        "serviceName" -> "app-1",
         "environments" -> Seq("qa", "production")
       )))
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "applicationName" -> "app-2",
+        "serviceName" -> "app-2",
         "environments" -> Seq("qa")
       )))
 

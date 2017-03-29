@@ -92,7 +92,7 @@ object Environment {
   )
 }
 
-case class WhatIsRunningWhere(applicationName: String, environments: Set[Environment])
+case class WhatIsRunningWhere(serviceName: String, environments: Set[Environment])
 object WhatIsRunningWhere {
 
   implicit val reads = new Reads[WhatIsRunningWhere] {
