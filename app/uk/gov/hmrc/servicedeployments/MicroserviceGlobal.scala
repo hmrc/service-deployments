@@ -69,9 +69,11 @@ object MicroserviceGlobal extends GlobalSettings
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
 
   override def onStart(app: Application): Unit = {
+    import scala.concurrent.duration._
+
     if (ServicedeploymentsConfig.schedulerEnabled) {
-      Scheduler.startUpdatingWhatIsRunningWhereModel(FiniteDuration(10, TimeUnit.MINUTES))
-      Scheduler.startUpdatingDeploymentServiceModel(FiniteDuration(1, TimeUnit.HOURS))
+      Scheduler.startUpdatingWhatIsRunningWhereModel(10 minutes)
+      Scheduler.startUpdatingDeploymentServiceModel((19 minutes) + (38 seconds))
     }
 
     super.onStart(app)
