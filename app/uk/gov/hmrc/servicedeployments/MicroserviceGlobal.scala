@@ -72,8 +72,8 @@ object MicroserviceGlobal extends GlobalSettings
     import scala.concurrent.duration._
 
     if (ServicedeploymentsConfig.schedulerEnabled) {
-      Scheduler.startUpdatingWhatIsRunningWhereModel(10 minutes)
-      Scheduler.startUpdatingDeploymentServiceModel((19 minutes) + (38 seconds))
+      new UpdateScheduler("what-is-running-where-job").startUpdatingWhatIsRunningWhereModel(10 minutes)
+      new UpdateScheduler("service-deployments-scheduled-job").startUpdatingDeploymentServiceModel(20 minutes)
     }
 
     super.onStart(app)

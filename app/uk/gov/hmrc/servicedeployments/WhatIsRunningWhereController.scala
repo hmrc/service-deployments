@@ -53,7 +53,7 @@ trait WhatIsRunningWhereController extends BaseController {
   }
 
   def update() = Action.async { implicit request =>
-    Scheduler.updateWhatIsRunningWhereModel.map {
+    new UpdateScheduler("what-is-running-where-job").updateWhatIsRunningWhereModel.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message, ex) => InternalServerError(message)

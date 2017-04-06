@@ -73,7 +73,7 @@ trait DefaultSchedulerDependencies extends MongoDbConnection  {
 
 }
 
-trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
+private[servicedeployments] abstract class Scheduler extends LockKeeper with DefaultMetricsRegistry {
   self: MongoDbConnection  =>
 
   def akkaSystem: ActorSystem
@@ -82,7 +82,6 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
   def whatIsRunningWhereService: WhatIsRunningWhereUpdateService
 
   override def repo: LockRepository = LockMongoRepository(db)
-  override def lockId: String = "service-deployments-scheduled-job"
 
   override val forceLockReleaseAfter: Duration = Duration.standardMinutes(15)
 
@@ -146,8 +145,10 @@ trait Scheduler extends LockKeeper with DefaultMetricsRegistry{
   }
 }
 
-object Scheduler extends Scheduler with DefaultSchedulerDependencies {
+class UpdateScheduler(lockName: String) extends Scheduler with DefaultSchedulerDependencies {
   import ServicedeploymentsConfig._
+
+  override def lockId: String = lockName
 
   override val deploymentsDataSource = new DeploymentsApiConnector(deploymentsApiBase)
 }

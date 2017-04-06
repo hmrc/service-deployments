@@ -79,7 +79,7 @@ trait DeploymentsController extends BaseController {
   }
 
   def update() = Action.async { implicit request =>
-    Scheduler.updateDeploymentServiceModel.map {
+    new UpdateScheduler("service-deployments-scheduled-job").updateDeploymentServiceModel.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message, ex) => InternalServerError(message)
@@ -94,8 +94,10 @@ trait DeploymentsController extends BaseController {
     val jsons = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
 
     val scheduler = new Scheduler with DefaultSchedulerDependencies {
-      val deploymentsDataSource = new DeploymentsDataSource {
-        def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
+      override def lockId: String = "service-deployments-scheduled-job"
+
+      override val deploymentsDataSource:DeploymentsDataSource = new DeploymentsDataSource {
+        override def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
 
         // noop
         override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = Future.successful(Nil)
