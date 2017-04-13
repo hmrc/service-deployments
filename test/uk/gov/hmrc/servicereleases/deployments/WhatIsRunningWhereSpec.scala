@@ -18,7 +18,8 @@ package uk.gov.hmrc.servicereleases.deployments
 
 import org.scalatest.{FunSpec, Matchers}
 import play.api.libs.json.{JsError, Json}
-import uk.gov.hmrc.servicedeployments.deployments.{Environment, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
+import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, WhatIsRunningWhere}
 
 class WhatIsRunningWhereSpec extends FunSpec with Matchers {
 
@@ -27,37 +28,24 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
     it("should return appname and all environments correctly") {
       val json = """{
                     | "staging-datacentred-sal01": "0.90.0",
-                    | "staging-skyscape-farnborough": "0.90.0",
-                    | "production-skyscape-farnborough": "0.90.0",
-                    | "qa-datacentred-sal01": "0.100.0",
-                    | "production-datacentred-sal01": "0.90.0",
+                    | "staging-skyscape-farnborough": "0.91.0",
+                    | "production-skyscape-farnborough": "0.92.0",
+                    | "qa-datacentred-sal01": "0.93.0",
+                    | "production-datacentred-sal01": "0.94.0",
                     | "an": "app123",
-                    | "externaltest-datacentred-sal01": "0.98.0"
+                    | "externaltest-datacentred-sal01": "0.95.0"
                     |}""".stripMargin
 
 
       val whatIsRunningWhere = Json.parse(json).as[WhatIsRunningWhere]
       whatIsRunningWhere.serviceName shouldBe "app123"
-      whatIsRunningWhere.environments should contain theSameElementsAs Set(
-        Environment("staging", "staging"),
-        Environment("production", "production"),
-        Environment("qa", "qa"),
-        Environment("external test", "externaltest"))
-    }
-
-    it("should not return environment names that the is not deployed to") {
-      val j = """{
-                |  "production-skyscape-farnborough": "0.90.0",
-                |  "an": "app123",
-                |  "externaltest-datacentred-sal01": "0.98.0"
-                |}""".stripMargin
-
-
-      val whatIsRunningWhere = Json.parse(j).as[WhatIsRunningWhere]
-
-      whatIsRunningWhere.environments should contain theSameElementsAs Set(
-        Environment("production", "production"),
-        Environment("external test", "externaltest"))
+      whatIsRunningWhere.deployments should contain theSameElementsAs Set(
+        Deployment(EnvironmentMapping("staging", "staging"), "datacentred-sal01", "0.90.0"),
+        Deployment(EnvironmentMapping("staging", "staging"), "skyscape-farnborough", "0.91.0"),
+        Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.92.0"),
+        Deployment(EnvironmentMapping("qa", "qa"), "datacentred-sal01", "0.93.0"),
+        Deployment(EnvironmentMapping("production", "production"), "datacentred-sal01", "0.94.0"),
+        Deployment(EnvironmentMapping("external test", "externaltest"), "datacentred-sal01", "0.95.0"))
     }
 
     it("should error if app name is missing in payload") {

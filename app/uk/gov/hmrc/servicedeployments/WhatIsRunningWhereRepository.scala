@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.LocalDateTime
-
 import play.api.libs.json._
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -25,14 +23,14 @@ import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
-import uk.gov.hmrc.servicedeployments.deployments.{Environment, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 
 case class WhatIsRunningWhereModel(serviceName: String,
-                                   environments: Set[Environment],
+                                   deployments: Set[WhatIsRunningWhere.Deployment],
                                    _id: Option[BSONObjectID] = None)
 
 object WhatIsRunningWhereModel {
@@ -43,13 +41,12 @@ object WhatIsRunningWhereModel {
 
   val whatIsRunningWhereReads: Reads[WhatIsRunningWhereModel] = (
     (__ \ "serviceName").read[String] and
-      (__ \ "environments").read[Set[Environment]] and
+      (__ \ "deployments").read[Set[WhatIsRunningWhere.Deployment]] and
       (__ \ "_id").readNullable[BSONObjectID](ReactiveMongoFormats.objectIdRead)
     ) (WhatIsRunningWhereModel.apply _)
 
 
   val whatIsRunningWhereWrites: Writes[WhatIsRunningWhereModel] = {
-    import ReactiveMongoFormats.objectIdWrite
 
     Json.writes[WhatIsRunningWhereModel]
   }

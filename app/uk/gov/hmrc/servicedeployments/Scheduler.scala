@@ -26,7 +26,7 @@ import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.gitclient.Git
 import uk.gov.hmrc.githubclient.GithubApiClient
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.servicedeployments.deployments.{DefaultServiceDeploymentsService, DeploymentsApiConnector, DeploymentsDataSource, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.{DefaultServiceDeploymentsService, DeploymentsDataSource, ReleasesAppConnector}
 import uk.gov.hmrc.servicedeployments.services.{CatalogueConnector, DefaultServiceRepositoriesService}
 import uk.gov.hmrc.servicedeployments.tags.{DefaultTagsService, GitConnector, GitHubConnector}
 
@@ -150,5 +150,5 @@ class UpdateScheduler(lockName: String) extends Scheduler with DefaultSchedulerD
 
   override def lockId: String = lockName
 
-  override val deploymentsDataSource = new DeploymentsApiConnector(deploymentsApiBase)
+  override val deploymentsDataSource = new ReleasesAppConnector(deploymentsApiBase)
 }

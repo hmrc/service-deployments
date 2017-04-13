@@ -25,7 +25,8 @@ import play.api.libs.json._
 import play.api.mvc.{Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.servicedeployments.deployments.Environment
+import uk.gov.hmrc.servicedeployments.deployments.EnvironmentMapping
+import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
 import uk.gov.hmrc.servicedeployments.{WhatIsRunningWhereController, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
 
 import scala.concurrent.Future
@@ -39,12 +40,17 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
   }
 
 
-  "forApplication" should {
-    "retrieve list of all whats running where for an application" in {
+  "WhatIsRunningWhereController.forApplication" should {
+    "retrieve list of all WhatsRunningWhere for an application" in {
+
+      val deployments = Set(
+        Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"),
+        Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2")
+      )
 
       when(whatIsRunningWhereRepo.getForService("appName-1")).thenReturn(
         Future.successful(Some(
-          WhatIsRunningWhereModel(serviceName = "appName-1", environments = Set(Environment("qa", "qa"), Environment("prod", "prod")))
+          WhatIsRunningWhereModel(serviceName = "appName-1", deployments = deployments)
         ))
       )
 
@@ -53,15 +59,33 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
       val json = contentAsJson(result)
       val jsonResult: JsObject = json.as[JsObject]
 
-
       jsonResult mustBe JsObject(Map(
         "serviceName" -> JsString("appName-1"),
-          "environments" -> JsArray(
-            Seq(
-              JsObject(Map("name" -> JsString("qa"), "whatIsRunningWhereId" -> JsString("qa"))),
-              JsObject(Map("name" -> JsString("prod"), "whatIsRunningWhereId" -> JsString("prod")))
-            ))))
-
+        "deployments" -> JsArray(
+          Seq(
+            JsObject(
+              Map(
+                "environmentMappings" -> JsObject(
+                  Map(
+                    "name" -> JsString("qa"),
+                    "releasesAppId" -> JsString("qa")
+                  )
+                ),
+                "datacentre" -> JsString("datacentred"),
+                "version" -> JsString("0.0.1")
+              )),
+            JsObject(
+              Map(
+                "environmentMappings" -> JsObject(
+                  Map(
+                    "name" -> JsString("production"),
+                    "releasesAppId" -> JsString("production")
+                  )
+                ),
+                "datacentre" -> JsString("skyscape-farnborough"),
+                "version" -> JsString("0.0.2")
+              ))
+          ))))
     }
   }
 }

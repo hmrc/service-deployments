@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.servicedeployments.deployments
 
-import java.time.{LocalDateTime, ZoneOffset}
+import java.time.LocalDateTime
 
 import play.api.Logger
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import uk.gov.hmrc.servicedeployments.deployments.Environment.fullListOfEnvironments
+import uk.gov.hmrc.servicedeployments.deployments.EnvironmentMapping.fullListOfEnvironments
 import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
 
 import scala.concurrent.Future
@@ -30,10 +30,9 @@ case class Deployer(name: String, deploymentDate: LocalDateTime)
 
 object Deployer {
 
-  import play.api.libs.functional.syntax._
-
-  import play.api.libs.json._
   import JavaDateTimeJsonFormatter._
+  import play.api.libs.functional.syntax._
+  import play.api.libs.json._
 
   val deployerWrites = (
     (__ \ 'name).write[String] and
@@ -80,20 +79,31 @@ object EnvironmentalDeployment {
 
 }
 
-final case class Environment(name: String, whatIsRunningWhereId: String)
 
-object Environment {
-  implicit val environmentFormat = Json.format[Environment]
+final case class EnvironmentMapping(name: String, releasesAppId: String)
+
+object EnvironmentMapping {
+  implicit val environmentFormat = Json.format[EnvironmentMapping]
   val fullListOfEnvironments = Set(
-    Environment("qa" , "qa"),
-    Environment("staging" , "staging"),
-    Environment("external test" , "externaltest"),
-    Environment("production" , "production")
+    EnvironmentMapping("qa" , "qa"),
+    EnvironmentMapping("staging" , "staging"),
+    EnvironmentMapping("external test" , "externaltest"),
+    EnvironmentMapping("production" , "production")
   )
 }
 
-case class WhatIsRunningWhere(serviceName: String, environments: Set[Environment])
+import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
+
+case class WhatIsRunningWhere(serviceName: String, deployments: Set[Deployment])
+
 object WhatIsRunningWhere {
+
+  case class Deployment(environmentMappings: EnvironmentMapping, datacentre: String, version: String)
+
+  object Deployment {
+    implicit val deploymentFormat: OFormat[Deployment] =
+      Json.format[Deployment]
+  }
 
   implicit val reads = new Reads[WhatIsRunningWhere] {
     override def reads(whatsRunningWhereJson: JsValue): JsResult[WhatIsRunningWhere] = {
@@ -101,15 +111,25 @@ object WhatIsRunningWhere {
       val applicationName = whatsRunningWhereMap.get("an")
       applicationName match {
         case Some(appName) =>
-          JsSuccess(WhatIsRunningWhere(appName, getDeployedEnvironments(whatsRunningWhereMap)))
+          JsSuccess(WhatIsRunningWhere(appName, getDeployments(whatsRunningWhereMap)))
         case None => JsError(s"'an' (i.e. application name) field is missing in json ${whatsRunningWhereJson.toString()}")
       }
     }
 
-    private def getDeployedEnvironments(whatsRunningWhereMap: Map[String, String]): Set[Environment] = {
-      val deployedEnvironments = whatsRunningWhereMap.filterNot(_._1 == "an").keys.toSeq
-      fullListOfEnvironments.filter(referenceEnv => deployedEnvironments.exists(_.toLowerCase.startsWith(referenceEnv.whatIsRunningWhereId)))
-    } 
+    private def getDeployments(whatsRunningWhereMap: Map[String, String]): Set[Deployment] = {
+      whatsRunningWhereMap
+        .filterNot(_._1 == "an")
+        .map {
+          case (datacentreWithEnvironment, version) =>
+            val environment = datacentreWithEnvironment.split("-").head
+            val datacentre = datacentreWithEnvironment.split("-").tail.mkString("-")
+            Deployment(
+              fullListOfEnvironments.find(_.releasesAppId == environment).get,
+              datacentreWithEnvironment.replaceAll("^\\w+-", ""),
+              version
+            )
+        }.toSet
+    }
   }
 
   implicit val writes = Json.writes[WhatIsRunningWhere]
@@ -126,7 +146,7 @@ trait DeploymentsDataSource {
   def whatIsRunningWhere: Future[List[WhatIsRunningWhere]]
 }
 
-class DeploymentsApiConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
+class ReleasesAppConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
 
   def getAll: Future[List[EnvironmentalDeployment]] = {
 

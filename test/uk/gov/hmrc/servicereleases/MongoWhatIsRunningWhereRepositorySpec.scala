@@ -16,17 +16,17 @@
 
 package uk.gov.hmrc.servicereleases
 
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.OneAppPerTest
-import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.mongo.MongoSpecSupport
+import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
+import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, WhatIsRunningWhere}
 import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
-import uk.gov.hmrc.servicedeployments.deployments.{Environment, WhatIsRunningWhere}
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 
 class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with LoneElement with MongoSpecSupport with ScalaFutures with OptionValues with BeforeAndAfterEach with OneAppPerTest {
@@ -44,21 +44,42 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
   describe("update") {
     it("should update already existing items") {
 
-      val whatIsRunningWhere = WhatIsRunningWhere("app-1", Set(Environment("qa", "qa") , Environment("production", "production")))
+      val whatIsRunningWhere =
+        WhatIsRunningWhere(
+          "app-1",
+          Set(
+            Deployment(
+              EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"
+            ),
+            Deployment(
+              EnvironmentMapping("production", "production"), "datacentred", "0.0.1"
+            )
+          )
+        )
+
       await(mongoWhatIsRunningWhereRepository.update(whatIsRunningWhere))
 
       val all = await(mongoWhatIsRunningWhereRepository.findAll())
 
       val savedWhatIsRunningWhere: WhatIsRunningWhereModel = all.loneElement
 
-      await(mongoWhatIsRunningWhereRepository.update(whatIsRunningWhere.copy(environments= Set(Environment("staging", "staging")))))
+      val changedDeployments =
+        Set(
+          Deployment(
+            EnvironmentMapping("staging", "staging"), "skyscape-farnborough", "0.0.2"
+          )
+        )
+
+      await(
+        mongoWhatIsRunningWhereRepository
+          .update(whatIsRunningWhere.copy(deployments = changedDeployments)))
 
       val allUpdated = await(mongoWhatIsRunningWhereRepository.getAll)
       allUpdated.size shouldBe 1
       val updatedWhatIsRunningWhere: WhatIsRunningWhereModel = allUpdated.loneElement
 
       updatedWhatIsRunningWhere.serviceName shouldBe whatIsRunningWhere.serviceName
-      updatedWhatIsRunningWhere.environments shouldBe Set(Environment("staging", "staging"))
+      updatedWhatIsRunningWhere.deployments shouldBe changedDeployments
 
     }
 
@@ -66,42 +87,72 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
 
 
   describe("getAll") {
-      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
-      import scala.concurrent.ExecutionContext.Implicits.global
-      import reactivemongo.json._
       import play.api.libs.json._
+      import reactivemongo.json._
+
+      import scala.concurrent.ExecutionContext.Implicits.global
 
       it("return all the whatIsRunningWhere records") {
 
+        WhatIsRunningWhere(
+          "app-1",
+          Set(
+            Deployment(
+              EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"
+            ),
+            Deployment(
+              EnvironmentMapping("production", "production"), "datacentred", "0.0.1"
+            )
+          )
+        )
+
+        val deployments = Set(
+          Deployment(
+            EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"
+          ),
+          Deployment(
+            EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2"
+          )
+        )
+
+
         await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
           "serviceName" -> "app-123" ,
-          "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
+          "deployments" -> deployments
         )))
 
         val whatIsRunningWheres: Seq[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getAll)
 
         whatIsRunningWheres.size shouldBe 1
         whatIsRunningWheres.head.serviceName shouldBe "app-123"
-        whatIsRunningWheres.head.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
-
+        whatIsRunningWheres.head.deployments shouldBe deployments
       }
     }
 
     describe("allGroupedByName") {
-      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
-      import scala.concurrent.ExecutionContext.Implicits.global
-      import reactivemongo.json._
       import play.api.libs.json._
+      import reactivemongo.json._
+
+      import scala.concurrent.ExecutionContext.Implicits.global
 
       it("should return all the whatIsRunningWhere grouped by application name") {
 
+        val deployments1 = Set(
+          Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"),
+          Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2")
+        )
+
+        val deployments2 = Set(
+          Deployment(EnvironmentMapping("staging", "staging"), "datacentred", "0.0.3")
+        )
+
         await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-          "serviceName" -> "app-1",
-          "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
-        )))
+            "serviceName" -> "app-1",
+            "deployments" -> deployments1
+          )))
         await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
           "serviceName" -> "app-2",
-          "environments" -> Set(Environment("qa", "qa"))
+          "deployments" -> deployments2
         )))
 
         val whatIsRunningWheres: Map[String, Seq[WhatIsRunningWhereModel]] = await(mongoWhatIsRunningWhereRepository.allGroupedByName)
@@ -109,54 +160,70 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
         whatIsRunningWheres.size shouldBe 2
         whatIsRunningWheres.keys should contain theSameElementsAs Seq("app-1", "app-2")
         whatIsRunningWheres("app-1").size shouldBe 1
-        whatIsRunningWheres("app-1").head.environments should contain theSameElementsAs Set(Environment("qa", "qa"), Environment("production", "production"))
+        whatIsRunningWheres("app-1").head.deployments should contain theSameElementsAs deployments1
 
         whatIsRunningWheres("app-2").size shouldBe 1
-        whatIsRunningWheres("app-2").head.environments should contain theSameElementsAs Set(Environment("qa", "qa"))
-
+        whatIsRunningWheres("app-2").head.deployments should contain theSameElementsAs deployments2
       }
     }
 
   describe("getForApplication" ) {
-      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
-      import scala.concurrent.ExecutionContext.Implicits.global
-      import reactivemongo.json._
       import play.api.libs.json._
+      import reactivemongo.json._
+
+      import scala.concurrent.ExecutionContext.Implicits.global
 
       it("return the whatIsRunningWhere for the given application name" ) {
 
+        val deployments1 = Set(
+          Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"),
+          Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2")
+        )
+
+        val deployments2 = Set(
+          Deployment(EnvironmentMapping("staging", "staging"), "datacentred", "0.0.3")
+        )
+
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
         "serviceName" -> "app-1" ,
-        "environments" -> Set(Environment("qa", "qa"), Environment("production", "production"))
+        "deployments" -> deployments1
       )))
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
         "serviceName" -> "app-2" ,
-        "environments" -> Set(Environment("qa", "qa"))
+        "deployments" -> deployments2
       )))
 
       val whatIsRunningWheres: Option[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getForService("app-1"))
 
       whatIsRunningWheres.value.serviceName shouldBe "app-1"
-      whatIsRunningWheres.value.environments shouldBe Set(Environment("qa", "qa"), Environment("production", "production"))
-
+      whatIsRunningWheres.value.deployments shouldBe deployments1
     }
   }
 
   describe("clearAllData") {
-    import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
-    import scala.concurrent.ExecutionContext.Implicits.global
-    import reactivemongo.json._
     import play.api.libs.json._
+    import reactivemongo.json._
+
+    import scala.concurrent.ExecutionContext.Implicits.global
 
     it("remove all the whatIsRunningWhere records") {
 
+      val deployments1 = Set(
+        Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"),
+        Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2")
+      )
+
+      val deployments2 = Set(
+        Deployment(EnvironmentMapping("staging", "staging"), "datacentred", "0.0.3")
+      )
+
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "serviceName" -> "app-1",
-        "environments" -> Seq("qa", "production")
+        "serviceName" -> "app-1" ,
+        "deployments" -> deployments1
       )))
       await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
-        "serviceName" -> "app-2",
-        "environments" -> Seq("qa")
+        "serviceName" -> "app-2" ,
+        "deployments" -> deployments2
       )))
 
       await(mongoWhatIsRunningWhereRepository.clearAllData)
