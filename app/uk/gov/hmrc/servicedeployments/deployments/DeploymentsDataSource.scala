@@ -30,9 +30,9 @@ case class Deployer(name: String, deploymentDate: LocalDateTime)
 
 object Deployer {
 
-  import JavaDateTimeJsonFormatter._
   import play.api.libs.functional.syntax._
   import play.api.libs.json._
+  import JavaDateTimeJsonFormatter._
 
   val deployerWrites = (
     (__ \ 'name).write[String] and

@@ -20,6 +20,7 @@ import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.OneAppPerTest
 import uk.gov.hmrc.mongo.MongoSpecSupport
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
 import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, WhatIsRunningWhere}
 import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
@@ -87,8 +88,10 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
 
 
   describe("getAll") {
-      import play.api.libs.json._
+      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
+      import scala.concurrent.ExecutionContext.Implicits.global
       import reactivemongo.json._
+      import play.api.libs.json._
 
       import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -130,6 +133,7 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
     }
 
     describe("allGroupedByName") {
+      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
       import play.api.libs.json._
       import reactivemongo.json._
 
@@ -168,6 +172,7 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
     }
 
   describe("getForApplication" ) {
+      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
       import play.api.libs.json._
       import reactivemongo.json._
 
@@ -201,6 +206,7 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
   }
 
   describe("clearAllData") {
+    import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
     import play.api.libs.json._
     import reactivemongo.json._
 

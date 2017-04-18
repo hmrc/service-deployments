@@ -46,8 +46,8 @@ object WhatIsRunningWhereModel {
     ) (WhatIsRunningWhereModel.apply _)
 
 
-  val whatIsRunningWhereWrites: Writes[WhatIsRunningWhereModel] = {
-
+  val whatIsRunningWhereWrites: OWrites[WhatIsRunningWhereModel] = {
+    import ReactiveMongoFormats.objectIdWrite
     Json.writes[WhatIsRunningWhereModel]
   }
 
