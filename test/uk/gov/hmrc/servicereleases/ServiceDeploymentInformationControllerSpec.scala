@@ -26,12 +26,12 @@ import play.api.mvc.{Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.servicedeployments.deployments.EnvironmentMapping
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
 import uk.gov.hmrc.servicedeployments.{WhatIsRunningWhereController, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
 
 import scala.concurrent.Future
 
-class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues{
+class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues{
 
   val whatIsRunningWhereRepo = mock[WhatIsRunningWhereRepository]
 
@@ -65,7 +65,7 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
           Seq(
             JsObject(
               Map(
-                "environmentMappings" -> JsObject(
+                "environmentMapping" -> JsObject(
                   Map(
                     "name" -> JsString("qa"),
                     "releasesAppId" -> JsString("qa")
@@ -76,7 +76,7 @@ class WhatIsRunningWhereControllerSpec extends PlaySpec with MockitoSugar with R
               )),
             JsObject(
               Map(
-                "environmentMappings" -> JsObject(
+                "environmentMapping" -> JsObject(
                   Map(
                     "name" -> JsString("production"),
                     "releasesAppId" -> JsString("production")

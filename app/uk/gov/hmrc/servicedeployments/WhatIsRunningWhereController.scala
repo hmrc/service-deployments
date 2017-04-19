@@ -21,8 +21,8 @@ import play.api.libs.json._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.format
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.format
 
 
 object WhatIsRunningWhereController extends WhatIsRunningWhereController with MongoDbConnection {
@@ -34,8 +34,8 @@ trait WhatIsRunningWhereController extends BaseController {
 
   def whatIsRunningWhereRepository: WhatIsRunningWhereRepository
 
-  private def fromWhatIsRunningWhereModel(w: WhatIsRunningWhereModel): WhatIsRunningWhere =
-    WhatIsRunningWhere(w.serviceName, w.deployments)
+  private def fromWhatIsRunningWhereModel(w: WhatIsRunningWhereModel): ServiceDeploymentInformation =
+    ServiceDeploymentInformation(w.serviceName, w.deployments)
 
   def forApplication(serviceName: String) = Action.async { implicit request =>
     whatIsRunningWhereRepository.getForService(serviceName).map {

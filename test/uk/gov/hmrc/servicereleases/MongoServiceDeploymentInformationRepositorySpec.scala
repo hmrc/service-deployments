@@ -21,8 +21,8 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.OneAppPerTest
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
-import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
+import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
 import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 
-class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with LoneElement with MongoSpecSupport with ScalaFutures with OptionValues with BeforeAndAfterEach with OneAppPerTest {
+class MongoServiceDeploymentInformationRepositorySpec extends FunSpec with Matchers with LoneElement with MongoSpecSupport with ScalaFutures with OptionValues with BeforeAndAfterEach with OneAppPerTest {
 
 
   def await[A](future: Future[A]) = Await.result(future, 5 seconds)
@@ -46,7 +46,7 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
     it("should update already existing items") {
 
       val whatIsRunningWhere =
-        WhatIsRunningWhere(
+        ServiceDeploymentInformation(
           "app-1",
           Set(
             Deployment(
@@ -97,7 +97,7 @@ class MongoWhatIsRunningWhereRepositorySpec extends FunSpec with Matchers with L
 
       it("return all the whatIsRunningWhere records") {
 
-        WhatIsRunningWhere(
+        ServiceDeploymentInformation(
           "app-1",
           Set(
             Deployment(

@@ -18,10 +18,10 @@ package uk.gov.hmrc.servicereleases.deployments
 
 import org.scalatest.{FunSpec, Matchers}
 import play.api.libs.json.{JsError, Json}
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
-import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
+import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
 
-class WhatIsRunningWhereSpec extends FunSpec with Matchers {
+class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
 
   describe("parsing the json")  {
 
@@ -37,7 +37,7 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
                     |}""".stripMargin
 
 
-      val whatIsRunningWhere = Json.parse(json).as[WhatIsRunningWhere]
+      val whatIsRunningWhere = Json.parse(json).as[ServiceDeploymentInformation]
       whatIsRunningWhere.serviceName shouldBe "app123"
       whatIsRunningWhere.deployments should contain theSameElementsAs Set(
         Deployment(EnvironmentMapping("staging", "staging"), "datacentred-sal01", "0.90.0"),
@@ -55,7 +55,7 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
                 |}""".stripMargin
 
 
-      val whatIsRunningWhere = Json.parse(j).validate[WhatIsRunningWhere]
+      val whatIsRunningWhere = Json.parse(j).validate[ServiceDeploymentInformation]
 
       whatIsRunningWhere match {
         case JsError(e) => e.toString() should include("'an' (i.e. application name) field is missing in json")
@@ -69,9 +69,22 @@ class WhatIsRunningWhereSpec extends FunSpec with Matchers {
                 |}""".stripMargin
 
 
-      val whatIsRunningWhere = Json.parse(j).as[WhatIsRunningWhere]
+      val whatIsRunningWhere = Json.parse(j).as[ServiceDeploymentInformation]
 
-      whatIsRunningWhere shouldBe WhatIsRunningWhere("appName", Set.empty)
+      whatIsRunningWhere shouldBe ServiceDeploymentInformation("appName", Set.empty)
+    }
+
+    it("should ignore non-left environments when serialising") {
+      val json = """{
+                   | "an": "app123",
+                   | "staging-datacentred-sal01": "0.90.0",
+                   | "prod-right": "0.95.0"
+                   |}""".stripMargin
+      val whatIsRunningWhere = Json.parse(json).as[ServiceDeploymentInformation]
+      whatIsRunningWhere.serviceName shouldBe "app123"
+      whatIsRunningWhere.deployments shouldEqual Set(
+        Deployment(EnvironmentMapping("staging", "staging"), "datacentred-sal01", "0.90.0")
+      )
     }
   }
 }

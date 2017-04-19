@@ -24,7 +24,7 @@ import play.api.libs.json._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment, ServiceDeploymentInformation}
 
 import scala.concurrent.Future
 import scala.io.Source
@@ -100,7 +100,7 @@ trait DeploymentsController extends BaseController {
         override def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
 
         // noop
-        override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = Future.successful(Nil)
+        override def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]] = Future.successful(Nil)
       }
     }
 

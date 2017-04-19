@@ -187,12 +187,7 @@ class ReleasesAppConnectorSpec extends WordSpec with Matchers with WireMockSpec 
       val results = connector.whatIsRunningWhere.futureValue
       results.size shouldBe 2
       results(0).serviceName shouldBe "app-1"
-      //      results(0).environments should contain theSameElementsAs Set(
-      //        EnvironmentMapping("staging", "staging"),
-      //        EnvironmentMapping("production", "production"),
-      //        EnvironmentMapping("qa", "qa"),
-      //        EnvironmentMapping("external test", "externaltest"))
-      results(0).deployments.map(_.environmentMappings) should contain theSameElementsAs Set(
+      results(0).deployments.map(_.environmentMapping) should contain theSameElementsAs Set(
         EnvironmentMapping("staging", "staging"),
         EnvironmentMapping("production", "production"),
         EnvironmentMapping("qa", "qa"),
@@ -200,7 +195,7 @@ class ReleasesAppConnectorSpec extends WordSpec with Matchers with WireMockSpec 
 
 
       results(1).serviceName shouldBe "app-2"
-      results(1).deployments.map(_.environmentMappings) should contain theSameElementsAs Set(
+      results(1).deployments.map(_.environmentMapping) should contain theSameElementsAs Set(
         EnvironmentMapping("staging", "staging"),
         EnvironmentMapping("production", "production"),
         EnvironmentMapping("qa", "qa"))
@@ -240,12 +235,12 @@ class ReleasesAppConnectorSpec extends WordSpec with Matchers with WireMockSpec 
           )))
 
 
-      import WhatIsRunningWhere.Deployment
+      import ServiceDeploymentInformation.Deployment
 
-      val results: Future[List[WhatIsRunningWhere]] = deploymentsApiConnector.whatIsRunningWhere
+      val results: Future[List[ServiceDeploymentInformation]] = deploymentsApiConnector.whatIsRunningWhere
 
       results.futureValue shouldBe List(
-        WhatIsRunningWhere(
+        ServiceDeploymentInformation(
           "bbsi-stubs",
           Set(
             Deployment(
@@ -257,7 +252,7 @@ class ReleasesAppConnectorSpec extends WordSpec with Matchers with WireMockSpec 
               "datacentred-sal01",
               "0.8.0"
             ))),
-        WhatIsRunningWhere(
+        ServiceDeploymentInformation(
           "benefits-stub",
           Set(
             Deployment(

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.servicedeployments
 
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
-import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, WhatIsRunningWhere}
+import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, ServiceDeploymentInformation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -23,14 +23,14 @@ import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 
 case class WhatIsRunningWhereModel(serviceName: String,
-                                   deployments: Set[WhatIsRunningWhere.Deployment],
+                                   deployments: Set[ServiceDeploymentInformation.Deployment],
                                    _id: Option[BSONObjectID] = None)
 
 object WhatIsRunningWhereModel {
@@ -41,7 +41,7 @@ object WhatIsRunningWhereModel {
 
   val whatIsRunningWhereReads: Reads[WhatIsRunningWhereModel] = (
     (__ \ "serviceName").read[String] and
-      (__ \ "deployments").read[Set[WhatIsRunningWhere.Deployment]] and
+      (__ \ "deployments").read[Set[ServiceDeploymentInformation.Deployment]] and
       (__ \ "_id").readNullable[BSONObjectID](ReactiveMongoFormats.objectIdRead)
     ) (WhatIsRunningWhereModel.apply _)
 
@@ -62,7 +62,7 @@ object WhatIsRunningWhereModel {
 
 trait WhatIsRunningWhereRepository {
 
-  def update(whatIsRunningWhere: WhatIsRunningWhere): Future[Boolean]
+  def update(whatIsRunningWhere: ServiceDeploymentInformation): Future[Boolean]
 
   def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]]
 
@@ -92,7 +92,7 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
 
 
   //!@ change the type to be the WhatIsRunningWhereModel
-  def update(deployment: WhatIsRunningWhere): Future[Boolean] = {
+  def update(deployment: ServiceDeploymentInformation): Future[Boolean] = {
 
     withTimerAndCounter("mongo.update") {
       for {

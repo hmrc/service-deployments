@@ -92,39 +92,46 @@ object EnvironmentMapping {
   )
 }
 
-import uk.gov.hmrc.servicedeployments.deployments.WhatIsRunningWhere.Deployment
+import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
 
-case class WhatIsRunningWhere(serviceName: String, deployments: Set[Deployment])
+case class ServiceDeploymentInformation(serviceName: String, deployments: Set[Deployment])
 
-object WhatIsRunningWhere {
+object ServiceDeploymentInformation {
 
-  case class Deployment(environmentMappings: EnvironmentMapping, datacentre: String, version: String)
+  case class Deployment(environmentMapping: EnvironmentMapping, datacentre: String, version: String)
 
   object Deployment {
     implicit val deploymentFormat: OFormat[Deployment] =
       Json.format[Deployment]
   }
 
-  implicit val reads = new Reads[WhatIsRunningWhere] {
-    override def reads(whatsRunningWhereJson: JsValue): JsResult[WhatIsRunningWhere] = {
-      val whatsRunningWhereMap = whatsRunningWhereJson.as[Map[String, String]]
-      val applicationName = whatsRunningWhereMap.get("an")
-      applicationName match {
-        case Some(appName) =>
-          JsSuccess(WhatIsRunningWhere(appName, getDeployments(whatsRunningWhereMap)))
-        case None => JsError(s"'an' (i.e. application name) field is missing in json ${whatsRunningWhereJson.toString()}")
+  implicit val reads = new Reads[ServiceDeploymentInformation] {
+    override def reads(serviceDeploymentJson: JsValue): JsResult[ServiceDeploymentInformation] = {
+      val deploymentsByServiceName = serviceDeploymentJson.as[Map[String, String]]
+      val serviceName = deploymentsByServiceName.get("an")
+      serviceName match {
+        case Some(name) =>
+          JsSuccess(ServiceDeploymentInformation(name, extractDeploymentInformation(deploymentsByServiceName)))
+        case None => JsError(s"'an' (i.e. application name) field is missing in json ${serviceDeploymentJson.toString()}")
       }
     }
 
-    private def getDeployments(whatsRunningWhereMap: Map[String, String]): Set[Deployment] = {
-      whatsRunningWhereMap
+    private def extractDeploymentInformation(serviceDeploymentInformation: Map[String, String]): Set[Deployment] = {
+      serviceDeploymentInformation
         .filterNot(_._1 == "an")
+        .filter {
+          case (datacentreWithEnvironment, version) =>
+            val environment = datacentreWithEnvironment.split("-").head
+            fullListOfEnvironments.exists(_.releasesAppId == environment)
+        }
         .map {
           case (datacentreWithEnvironment, version) =>
             val environment = datacentreWithEnvironment.split("-").head
             val datacentre = datacentreWithEnvironment.split("-").tail.mkString("-")
+            val maybeEnvironmentMapping = fullListOfEnvironments.find(_.releasesAppId == environment)
+
             Deployment(
-              fullListOfEnvironments.find(_.releasesAppId == environment).get,
+              maybeEnvironmentMapping.get,
               datacentreWithEnvironment.replaceAll("^\\w+-", ""),
               version
             )
@@ -132,9 +139,9 @@ object WhatIsRunningWhere {
     }
   }
 
-  implicit val writes = Json.writes[WhatIsRunningWhere]
+  implicit val writes = Json.writes[ServiceDeploymentInformation]
 
-  implicit val format: Format[WhatIsRunningWhere] =
+  implicit val format: Format[ServiceDeploymentInformation] =
     Format(reads, writes)
 
 
@@ -143,7 +150,7 @@ object WhatIsRunningWhere {
 
 trait DeploymentsDataSource {
   def getAll: Future[List[EnvironmentalDeployment]]
-  def whatIsRunningWhere: Future[List[WhatIsRunningWhere]]
+  def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]]
 }
 
 class ReleasesAppConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
@@ -166,15 +173,15 @@ class ReleasesAppConnector(deploymentsApiBase: String) extends DeploymentsDataSo
     }
   }
 
-  override def whatIsRunningWhere: Future[List[WhatIsRunningWhere]] = {
+  override def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]] = {
     Logger.info("Getting whatIsRunningWhere records.")
     HttpClient.getWithParsing(s"$deploymentsApiBase/whats-running-where", List("Accept"->"application/json")) {
       case JsArray(x) =>
         val (validRecords, inValidRecords) = x.partition { jsv =>
-          jsv.validate[WhatIsRunningWhere].isSuccess
+          jsv.validate[ServiceDeploymentInformation].isSuccess
         }
         inValidRecords.foreach(x => Logger.warn(s"Invalid whatIsRunningWhere record : ${x.toString()}"))
-        validRecords.map(_.as[WhatIsRunningWhere]).toList
+        validRecords.map(_.as[ServiceDeploymentInformation]).toList
 
       case _ =>
         Logger.warn(s"No whatIsRunningWhere records returned")
