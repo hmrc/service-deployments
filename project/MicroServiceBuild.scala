@@ -18,18 +18,18 @@ private object AppDependencies {
   import play.sbt.PlayImport._
   import play.core.PlayVersion
 
-  private val playJsonLoggerVersion = "3.0.0"
-  private val domainVersion = "3.7.0"
-  private val microserviceBootstrapVersion = "5.1.0"
+  private val playJsonLoggerVersion = "3.1.0"
+  private val domainVersion = "4.1.0"
+  private val microserviceBootstrapVersion = "5.16.0"
   private val playAuthVersion = "4.0.0"
   private val playHealthVersion = "2.0.0"
-  private val playUrlBindersVersion = "2.0.0"
+  private val playUrlBindersVersion = "2.1.0"
   private val playConfigVersion = "3.0.0"
   private val playReactivemongoVersion = "5.0.0"
-  private val githubClientVersion = "1.6.0"
+  private val githubClientVersion = "1.14.0"
   private val gitClientVersion = "0.6.0"
 
-  private val hmrcTestVersion = "2.0.0"
+  private val hmrcTestVersion = "2.3.0"
 
 
   val compile = Seq(
@@ -41,7 +41,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "play-json-logger" % playJsonLoggerVersion,
     "uk.gov.hmrc" %% "git-client" % gitClientVersion,
     "uk.gov.hmrc" %% "github-client" % githubClientVersion,
-    "uk.gov.hmrc" %% "mongo-lock" % "4.0.0",
+    "uk.gov.hmrc" %% "mongo-lock" % "4.1.0",
     "uk.gov.hmrc" %% "domain" % domainVersion,
     "uk.gov.hmrc" %% "play-reactivemongo" % playReactivemongoVersion
   )
@@ -59,7 +59,7 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % "1.5.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-        "uk.gov.hmrc" %% "reactivemongo-test" % "1.6.0" % scope,
+        "uk.gov.hmrc" %% "reactivemongo-test" % "2.0.0" % scope,
         "org.mockito" % "mockito-all" % "1.10.19" % scope
       )
     }.test
