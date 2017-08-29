@@ -16,21 +16,16 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.util.concurrent.TimeUnit
-
 import com.kenshoo.play.metrics.MetricsFilter
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 import play.api.mvc.{EssentialAction, EssentialFilter, Filters}
 import play.api.{Application, Configuration, GlobalSettings, Play}
 import uk.gov.hmrc.play.config.{ControllerConfig, RunMode}
-import uk.gov.hmrc.play.filters.{MicroserviceFilterSupport, NoCacheFilter, RecoveryFilter}
 import uk.gov.hmrc.play.graphite.GraphiteConfig
-import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.JsonErrorHandling
 import uk.gov.hmrc.play.microservice.bootstrap.Routing.RemovingOfTrailingSlashes
-
-import scala.concurrent.duration.FiniteDuration
+import uk.gov.hmrc.play.microservice.filters.{LoggingFilter, MicroserviceFilterSupport, NoCacheFilter, RecoveryFilter}
 
 
 object ControllerConfiguration extends ControllerConfig {
