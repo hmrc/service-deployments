@@ -20,6 +20,7 @@ import play.api.libs.json._
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
@@ -98,9 +99,12 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
       for {
         update <- collection.update(selector = Json.obj("serviceName" -> Json.toJson(deployment.serviceName)), update = deployment, upsert = true)
       } yield update match {
-        case lastError if lastError.inError => throw new RuntimeException(s"failed to persist $deployment")
         case _ => true
       }
+    } recover {
+      case lastError =>
+        logger.error(s"Could not update WhatIsRunningWhereRepository with ${deployment.serviceName}")
+        throw new RuntimeException(s"failed to persist $deployment")
     }
   }
 
@@ -118,7 +122,7 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
     }
   }
 
-  def clearAllData = super.removeAll().map(!_.hasErrors)
+  def clearAllData = super.removeAll().map(_.ok)
 
   def getAll: Future[Seq[WhatIsRunningWhereModel]] = {
     collection

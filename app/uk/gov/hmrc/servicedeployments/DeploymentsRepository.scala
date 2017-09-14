@@ -22,6 +22,7 @@ import play.api.libs.json._
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
@@ -110,9 +111,12 @@ class MongoDeploymentsRepository(mongo: () => DB)
   def add(deployment: Deployment): Future[Boolean] = {
     withTimerAndCounter("mongo.write") {
       insert(deployment) map {
-        case lastError if lastError.inError => throw lastError
         case _ => true
       }
+    } recover {
+      case lastError =>
+        logger.error(s"Could not insert ${deployment.name}", lastError)
+        throw lastError
     }
   }
 
@@ -123,9 +127,12 @@ class MongoDeploymentsRepository(mongo: () => DB)
         selector = Json.obj("_id" -> Json.toJson(deployment._id.get)(ReactiveMongoFormats.objectIdWrite)),
         update = Deployment.formats.writes(deployment)
       ).map {
-        case lastError if lastError.inError => throw lastError
         case _ => true
       }
+    } recover {
+      case lastError =>
+        logger.error(s"Could not update ${deployment.name}", lastError)
+        throw lastError
     }
   }
 
@@ -143,7 +150,7 @@ class MongoDeploymentsRepository(mongo: () => DB)
     }
   }
 
-  def clearAllData = super.removeAll().map(!_.hasErrors)
+  def clearAllData = super.removeAll().map(_.ok)
 
   def getAllDeployments: Future[Seq[Deployment]] = {
     collection
