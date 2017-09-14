@@ -16,15 +16,14 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.{LocalDateTime, ZoneOffset}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDateTime, ZoneOffset}
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterEach, LoneElement, OptionValues}
 import org.scalatestplus.play.OneAppPerTest
-import reactivemongo.bson.{BSONDocument, BSONLong, BSONObjectID, BSONString}
 import uk.gov.hmrc.mongo.MongoSpecSupport
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.servicedeployments.deployments.Deployer
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,10 +42,10 @@ class MongoDeploymentsRepositorySpec extends UnitSpec with LoneElement with Mong
     "return all the deployments when already saved deployments do not have 'deployers' " in {
 
 
-      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
-      import scala.concurrent.ExecutionContext.Implicits.global
       import play.api.libs.json._
-      import reactivemongo.json._
+      import reactivemongo.play.json._
+
+      import scala.concurrent.ExecutionContext.Implicits.global
 
       val now = LocalDateTime.now()
       implicit val dateWriteFormat =  Deployment.localDateTimeToEpochSecondsWrites

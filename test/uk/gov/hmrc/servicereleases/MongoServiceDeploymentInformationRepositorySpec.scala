@@ -20,7 +20,6 @@ import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.OneAppPerTest
 import uk.gov.hmrc.mongo.MongoSpecSupport
-import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
 import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
 import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
@@ -88,10 +87,8 @@ class MongoServiceDeploymentInformationRepositorySpec extends FunSpec with Match
 
 
   describe("getAll") {
-      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
-      import scala.concurrent.ExecutionContext.Implicits.global
-      import reactivemongo.json._
       import play.api.libs.json._
+      import reactivemongo.play.json._
 
       import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -133,9 +130,8 @@ class MongoServiceDeploymentInformationRepositorySpec extends FunSpec with Match
     }
 
     describe("allGroupedByName") {
-      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
       import play.api.libs.json._
-      import reactivemongo.json._
+      import reactivemongo.play.json._
 
       import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -172,9 +168,8 @@ class MongoServiceDeploymentInformationRepositorySpec extends FunSpec with Match
     }
 
   describe("getForApplication" ) {
-      import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
       import play.api.libs.json._
-      import reactivemongo.json._
+      import reactivemongo.play.json._
 
       import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -206,9 +201,8 @@ class MongoServiceDeploymentInformationRepositorySpec extends FunSpec with Match
   }
 
   describe("clearAllData") {
-    import uk.gov.hmrc.mongo.json.ReactiveMongoFormats._
     import play.api.libs.json._
-    import reactivemongo.json._
+    import reactivemongo.play.json._
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
