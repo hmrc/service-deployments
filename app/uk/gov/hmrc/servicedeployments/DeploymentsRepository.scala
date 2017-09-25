@@ -17,15 +17,16 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.time.{LocalDateTime, ZoneOffset}
+import javax.inject.{Inject, Singleton}
 
 import play.api.libs.json._
+import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
 import uk.gov.hmrc.servicedeployments.deployments.Deployer
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -79,25 +80,26 @@ object Deployment {
 
 }
 
-trait DeploymentsRepository {
-  def add(deployment: Deployment): Future[Boolean]
+//trait DeploymentsRepository {
+//  def add(deployment: Deployment): Future[Boolean]
+//
+//  def update(deployment: Deployment): Future[Boolean]
+//
+//  def allServicedeployments: Future[Map[String, Seq[Deployment]]]
+//
+//  def getAllDeployments: Future[Seq[Deployment]]
+//
+//  def getForService(serviceName: String): Future[Option[Seq[Deployment]]]
+//
+//  def clearAllData: Future[Boolean]
+//}
 
-  def update(deployment: Deployment): Future[Boolean]
-
-  def allServicedeployments: Future[Map[String, Seq[Deployment]]]
-
-  def getAllDeployments: Future[Seq[Deployment]]
-
-  def getForService(serviceName: String): Future[Option[Seq[Deployment]]]
-
-  def clearAllData: Future[Boolean]
-}
-
-class MongoDeploymentsRepository(mongo: () => DB)
+@Singleton
+class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpers: FutureHelpers )
   extends ReactiveRepository[Deployment, BSONObjectID](
     collectionName = "deployments",
-    mongo = mongo,
-    domainFormat = Deployment.formats) with DeploymentsRepository {
+    mongo = mongo.mongoConnector.db,
+    domainFormat = Deployment.formats) {
 
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
@@ -109,7 +111,7 @@ class MongoDeploymentsRepository(mongo: () => DB)
     )
 
   def add(deployment: Deployment): Future[Boolean] = {
-    withTimerAndCounter("mongo.write") {
+    futureHelpers.withTimerAndCounter("mongo.write") {
       insert(deployment) map {
         case _ => true
       }
@@ -122,7 +124,7 @@ class MongoDeploymentsRepository(mongo: () => DB)
 
   def update(deployment: Deployment): Future[Boolean] = {
     require(deployment._id.isDefined, "_id must be defined")
-    withTimerAndCounter("mongo.update") {
+    futureHelpers.withTimerAndCounter("mongo.update") {
       collection.update(
         selector = Json.obj("_id" -> Json.toJson(deployment._id.get)(ReactiveMongoFormats.objectIdWrite)),
         update = Deployment.formats.writes(deployment)
@@ -136,13 +138,13 @@ class MongoDeploymentsRepository(mongo: () => DB)
     }
   }
 
-  override def allServicedeployments: Future[Map[String, Seq[Deployment]]] = {
+  def allServicedeployments: Future[Map[String, Seq[Deployment]]] = {
     findAll().map { all => all.groupBy(_.name) }
   }
 
   def getForService(serviceName: String): Future[Option[Seq[Deployment]]] = {
 
-    withTimerAndCounter("mongo.read") {
+    futureHelpers.withTimerAndCounter("mongo.read") {
       find("name" -> BSONDocument("$eq" -> serviceName)) map {
         case Nil => None
         case data => Some(data.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)

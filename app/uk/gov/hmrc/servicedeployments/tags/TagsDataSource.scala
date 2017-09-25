@@ -19,9 +19,10 @@ package uk.gov.hmrc.servicedeployments.tags
 import java.time.{LocalDateTime, ZoneId}
 
 import uk.gov.hmrc.BlockingIOExecutionContext
-import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
+import uk.gov.hmrc.servicedeployments.FutureHelpers._
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
+import uk.gov.hmrc.servicedeployments.FutureHelpers
 
 import scala.concurrent.Future
 
@@ -46,8 +47,10 @@ trait TagsDataSource {
   def get(organisation: String, repoName: String): Future[List[Tag]]
 }
 
-class GitHubConnector(gitHubClient: GithubApiClient, identifier: String) extends TagsDataSource {
 
+class GitHubConnector(futureHelpers: FutureHelpers, gitHubClient: GithubApiClient, identifier: String) extends TagsDataSource {
+
+  import futureHelpers._
   import BlockingIOExecutionContext.executionContext
 
   def get(organisation: String, repoName: String) =
@@ -56,9 +59,10 @@ class GitHubConnector(gitHubClient: GithubApiClient, identifier: String) extends
     }
 }
 
-class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, identifier: String) extends TagsDataSource {
+class GitConnector(futureHelpers: FutureHelpers, gitClient: GitClient, githubApiClient: GithubApiClient, identifier: String) extends TagsDataSource {
 
   import BlockingIOExecutionContext.executionContext
+  import futureHelpers._
 
   def get(organisation: String, repoName: String) =
     getRepoTags(organisation, repoName).flatMap { x =>

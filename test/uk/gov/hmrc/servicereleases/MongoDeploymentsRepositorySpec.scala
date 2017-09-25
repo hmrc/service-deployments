@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class MongoDeploymentsRepositorySpec extends UnitSpec with LoneElement with MongoSpecSupport with ScalaFutures with OptionValues with BeforeAndAfterEach with OneAppPerTest {
 
 
-  val mongoDeploymentsRepository = new MongoDeploymentsRepository(mongo)
+  val mongoDeploymentsRepository = new DeploymentsRepository(mongo)
 
   override def beforeEach() {
     await(mongoDeploymentsRepository.drop)

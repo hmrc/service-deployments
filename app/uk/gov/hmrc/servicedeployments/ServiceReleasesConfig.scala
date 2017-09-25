@@ -17,12 +17,14 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.nio.file.{Files, Paths}
+import javax.inject.{Inject, Singleton}
 
-import play.api.{Logger, Play}
+import play.api.{Configuration, Logger, Play}
 
-object ServicedeploymentsConfig {
+@Singleton
+class ServiceDeploymentsConfig @Inject()(configuration: Configuration) {
 
-  val schedulerEnabled = Play.current.configuration.getBoolean("scheduler.enabled").getOrElse(false)
+  val schedulerEnabled = configuration.getBoolean("scheduler.enabled").getOrElse(false)
 
   lazy val deploymentsApiBase: String = config("deployments.api.url").get
   lazy val catalogueBaseUrl: String = config("catalogue.api.url").get

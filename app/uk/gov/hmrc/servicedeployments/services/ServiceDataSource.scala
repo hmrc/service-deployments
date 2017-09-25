@@ -16,25 +16,32 @@
 
 package uk.gov.hmrc.servicedeployments.services
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.Logger
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.HttpClient._
+import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 
 import scala.concurrent.Future
 
 case class GithubUrl(name: String, url: String)
 case class Service(name: String, githubUrls: List[GithubUrl])
 
-trait ServiceDataSource {
-  def getAll(): Future[List[Service]]
-}
+//trait ServiceDataSource {
+//  def getAll(): Future[List[Service]]
+//}
 
-class CatalogueConnector(apiBase: String) extends ServiceDataSource {
+@Singleton
+class CatalogueConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) {
+
+  val apiBase: String = serviceDeploymentsConfig.catalogueBaseUrl
+
   implicit val urlReads = Json.reads[GithubUrl]
   implicit val reads = Json.reads[Service]
 
-  override def getAll() = {
+  def getAll() = {
     Logger.info("Getting details of all the services.")
     get[List[Service]](s"$apiBase/services?details=true")
   }

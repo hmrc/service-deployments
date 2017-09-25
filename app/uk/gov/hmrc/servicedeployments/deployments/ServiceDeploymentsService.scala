@@ -17,6 +17,7 @@
 package uk.gov.hmrc.servicedeployments.deployments
 
 import java.time.{LocalDateTime, ZoneOffset}
+import javax.inject.{Inject, Singleton}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -24,11 +25,12 @@ import scala.concurrent.Future
 case class ServiceDeployment(version: String, deploymentdAt: LocalDateTime, deployers : Seq[Deployer] = Seq.empty )
 
 
-trait ServiceDeploymentsService {
-  def getAll(): Future[Map[String, Seq[ServiceDeployment]]]
-}
+//trait ServiceDeploymentsService {
+//  def getAll(): Future[Map[String, Seq[ServiceDeployment]]]
+//}
 
-class DefaultServiceDeploymentsService(dataSource: DeploymentsDataSource) extends ServiceDeploymentsService {
+@Singleton
+class ServiceDeploymentsService @Inject()(dataSource: DeploymentsDataSource)  {
 
   def getAll(): Future[Map[String, Seq[ServiceDeployment]]] =
     dataSource.getAll.map { deployments =>

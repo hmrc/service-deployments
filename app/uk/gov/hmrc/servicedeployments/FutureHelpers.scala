@@ -17,6 +17,8 @@
 package uk.gov.hmrc.servicedeployments
 
 
+import javax.inject.{Inject, Singleton}
+
 import com.kenshoo.play.metrics.{Metrics, MetricsImpl}
 import play.api.Play
 
@@ -24,13 +26,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-trait DefaultMetricsRegistry {
-   private val metrics: Metrics = Play.current.injector.instanceOf[Metrics]
-   val defaultMetricsRegistry = metrics.defaultRegistry
-}
+//trait DefaultMetricsRegistry {
+//   private val metrics: Metrics = Play.current.injector.instanceOf[Metrics]
+//   val defaultMetricsRegistry = metrics.defaultRegistry
+//}
 
-object FutureHelpers extends DefaultMetricsRegistry{
+@Singleton
+class FutureHelpers @Inject()(metrics: Metrics) {
 
+  val defaultMetricsRegistry = metrics.defaultRegistry
 
   def withTimerAndCounter[T](name: String)(f: Future[T]) = {
     val t = defaultMetricsRegistry.timer(s"$name.timer").time()
@@ -43,7 +47,9 @@ object FutureHelpers extends DefaultMetricsRegistry{
         defaultMetricsRegistry.counter(s"$name.failure").inc()
     }
   }
+}
 
+object FutureHelpers {
   implicit class FutureExtender[A](f: Future[A]) {
     def andAlso(fn: A => Unit): Future[A] = {
       f.flatMap { r =>

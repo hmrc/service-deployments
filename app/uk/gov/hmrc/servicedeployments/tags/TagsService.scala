@@ -17,6 +17,7 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
+import javax.inject.{Inject, Singleton}
 
 import play.api.Logger
 
@@ -31,7 +32,8 @@ trait TagsService {
   def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]]
 }
 
-class DefaultTagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource)
+
+class DefaultTagsService (gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource)
   extends TagsService {
 
   def get(org: String, name: String, repoType: String) =

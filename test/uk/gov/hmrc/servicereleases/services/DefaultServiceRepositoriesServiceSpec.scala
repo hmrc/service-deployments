@@ -30,7 +30,7 @@ class DefaultServiceRepositoriesServiceSpec extends WordSpec with Matchers with 
   "getAll" should {
 
     val dataSource = mock[ServiceDataSource]
-    val service = new DefaultServiceRepositoriesService(dataSource)
+    val service = new ServiceRepositoriesService(dataSource)
 
     "Convert to ServiceRepositories" in {
       val data = List(

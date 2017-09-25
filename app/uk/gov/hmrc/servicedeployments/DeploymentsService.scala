@@ -18,10 +18,11 @@ package uk.gov.hmrc.servicedeployments
 
 import java.time.{Duration, LocalDateTime, ZoneOffset}
 import java.util.ServiceConfigurationError
+import javax.inject.{Inject, Singleton}
 
 import play.api.Logger
-import FutureHelpers._
-import uk.gov.hmrc.servicedeployments.DeploymentOperation.{Update, Add}
+import uk.gov.hmrc.servicedeployments.DeploymentOperation.{Add, Update}
+import uk.gov.hmrc.servicedeployments.FutureHelpers.FutureIterable
 import uk.gov.hmrc.servicedeployments.deployments.{ServiceDeployment, ServiceDeploymentsService}
 import uk.gov.hmrc.servicedeployments.services.{Repository, ServiceRepositoriesService}
 import uk.gov.hmrc.servicedeployments.tags.{Tag, TagsService}
@@ -34,10 +35,12 @@ trait DeploymentsService {
   def updateModel(): Future[Iterable[Boolean]]
 }
 
-class DefaultDeploymentsService(serviceRepositoriesService: ServiceRepositoriesService,
-                             deploymentsService: ServiceDeploymentsService,
-                             tagsService: TagsService,
-                             repository: DeploymentsRepository) extends DeploymentsService {
+
+@Singleton
+class DefaultDeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositoriesService,
+                                deploymentsService: ServiceDeploymentsService,
+                                tagsService: TagsService,
+                                repository: DeploymentsRepository) extends DeploymentsService {
 
   def updateModel(): Future[Iterable[Boolean]] =
     for {

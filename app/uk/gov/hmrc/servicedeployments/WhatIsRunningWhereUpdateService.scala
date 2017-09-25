@@ -16,18 +16,21 @@
 
 package uk.gov.hmrc.servicedeployments
 
+import javax.inject.{Inject, Singleton}
+
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
 import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, ServiceDeploymentInformation}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait WhatIsRunningWhereUpdateService {
-  def updateModel(): Future[Iterable[Boolean]] //!@ revisit return type
-}
+//trait WhatIsRunningWhereUpdateService {
+//  def updateModel(): Future[Iterable[Boolean]] //!@ revisit return type
+//}
 
-class DefaultWhatIsRunningWhereUpdateService(whatIsRunningWhereDataSource: DeploymentsDataSource,
-                                             repository: WhatIsRunningWhereRepository) extends WhatIsRunningWhereUpdateService {
+@Singleton
+class WhatIsRunningWhereUpdateService @Inject()(whatIsRunningWhereDataSource: DeploymentsDataSource,
+                                                repository: WhatIsRunningWhereRepository) {
 
   def updateModel() =
     for {

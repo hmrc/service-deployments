@@ -22,7 +22,7 @@ import org.scalatestplus.play.OneAppPerTest
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
 import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
-import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
+import uk.gov.hmrc.servicedeployments.{WhatIsRunningWhereRepository, WhatIsRunningWhereModel}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -35,7 +35,7 @@ class MongoServiceDeploymentInformationRepositorySpec extends FunSpec with Match
   def await[A](future: Future[A]) = Await.result(future, 5 seconds)
 
 
-  val mongoWhatIsRunningWhereRepository = new MongoWhatIsRunningWhereRepository(mongo)
+  val mongoWhatIsRunningWhereRepository = new WhatIsRunningWhereRepository(mongo)
 
   override def beforeEach() {
     await(mongoWhatIsRunningWhereRepository.drop)
