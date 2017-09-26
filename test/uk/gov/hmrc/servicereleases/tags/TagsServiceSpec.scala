@@ -32,7 +32,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneA
   trait SetUp {
     val gitEnterpriseTagDataSource = mock[TagsDataSource]
     val gitOpenTagDataSource = mock[TagsDataSource]
-    val compositeTagsSource = new DefaultTagsService(gitEnterpriseTagDataSource, gitOpenTagDataSource)
+    val compositeTagsSource = new TagsService(gitEnterpriseTagDataSource, gitOpenTagDataSource)
   }
 
   "getAll" should {

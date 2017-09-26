@@ -19,6 +19,7 @@ package uk.gov.hmrc.servicedeployments
 import java.nio.file.{Files, Paths}
 import javax.inject.{Inject, Singleton}
 
+
 import play.api.{Configuration, Logger, Play}
 
 @Singleton
@@ -40,7 +41,7 @@ class ServiceDeploymentsConfig @Inject()(configuration: Configuration) {
   lazy val gitOpenStorePath: String = storePath("open-local-git-store")
   lazy val gitEnterpriseStorePath: String = storePath("enterprise-local-git-store")
 
-  private def config(path: String) = Play.current.configuration.getString(s"$path")
+  private def config(path: String) = configuration.getString(s"$path")
 
   private def storePath(prefix: String) = {
     val path = config("git.client.store.path")

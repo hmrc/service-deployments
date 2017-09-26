@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.{Duration, LocalDateTime, ZoneOffset}
-import java.util.ServiceConfigurationError
+import java.time.{LocalDateTime, ZoneOffset}
 import javax.inject.{Inject, Singleton}
 
 import play.api.Logger
@@ -25,7 +24,7 @@ import uk.gov.hmrc.servicedeployments.DeploymentOperation.{Add, Update}
 import uk.gov.hmrc.servicedeployments.FutureHelpers.FutureIterable
 import uk.gov.hmrc.servicedeployments.deployments.{ServiceDeployment, ServiceDeploymentsService}
 import uk.gov.hmrc.servicedeployments.services.{Repository, ServiceRepositoriesService}
-import uk.gov.hmrc.servicedeployments.tags.{Tag, TagsService}
+import uk.gov.hmrc.servicedeployments.tags.{TagsService, Tag}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -38,9 +37,9 @@ trait DeploymentsService {
 
 @Singleton
 class DefaultDeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositoriesService,
-                                deploymentsService: ServiceDeploymentsService,
-                                tagsService: TagsService,
-                                repository: DeploymentsRepository) extends DeploymentsService {
+                                          deploymentsService: ServiceDeploymentsService,
+                                          tagsService: TagsService,
+                                          repository: DeploymentsRepository) extends DeploymentsService {
 
   def updateModel(): Future[Iterable[Boolean]] =
     for {
@@ -49,7 +48,6 @@ class DefaultDeploymentsService @Inject()(serviceRepositoriesService: ServiceRep
       maybeTagDates <- tryGetTagDatesFor(service)
       success <- processDeployments(service, maybeTagDates)
     } yield success
-
 
 
   private def getServiceRepositoryDeployments = {
@@ -63,7 +61,7 @@ class DefaultDeploymentsService @Inject()(serviceRepositoriesService: ServiceRep
         knownReleases <- allKnownReleasesF
         serviceRepositories <- allServiceRepositoriesF
       } yield
-      serviceRepositories.map(Service(_, knownDeployments, knownReleases))
+        serviceRepositories.map(Service(_, knownDeployments, knownReleases))
     )
 
   }
@@ -119,8 +117,9 @@ class DefaultDeploymentsService @Inject()(serviceRepositoriesService: ServiceRep
     Logger.debug(s"total deploymentsRequiringUpdates for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.deploymentsRequiringUpdates.size}")
 
     serviceRepositoryDeployments.deploymentsRequiringUpdates.foreach {
-      d => Logger.debug(
-        s"deployment ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.deploymentdAt} needs update")
+      d =>
+        Logger.debug(
+          s"deployment ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.deploymentdAt} needs update")
     }
 
     Future.successful(Unit)

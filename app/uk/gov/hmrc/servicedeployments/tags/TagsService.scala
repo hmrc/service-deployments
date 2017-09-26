@@ -20,21 +20,15 @@ import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
 
 import play.api.Logger
-
-import scala.concurrent.Future
-import scala.util.Try
-import RepoType.{Enterprise, Open}
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
+import uk.gov.hmrc.servicedeployments.tags.RepoType.{Enterprise, Open}
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 
-trait TagsService {
-  def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]]
-}
 
-
-class DefaultTagsService (gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource)
-  extends TagsService {
+@Singleton
+class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen,
+                            gitEnterpriseTagDataSource: GitConnectorEnterprise) {
 
   def get(org: String, name: String, repoType: String) =
     RepoType.from(repoType) match {
@@ -47,3 +41,4 @@ class DefaultTagsService (gitEnterpriseTagDataSource: TagsDataSource, gitOpenTag
         continueOnError(gitOpenTagDataSource.get(org, name))
     }
 }
+

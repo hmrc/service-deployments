@@ -17,6 +17,8 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
+import javax.inject
+import javax.inject.{Inject, Named}
 
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
@@ -42,28 +44,35 @@ object Tag {
   private def getVersionNumber(tag: String): String = versionNumber.findFirstIn(tag).getOrElse(tag)
 }
 
-trait TagsDataSource {
-  def get(organisation: String, repoName: String): Future[List[Tag]]
-}
+//trait TagsDataSource {
+//  def get(organisation: String, repoName: String): Future[List[Tag]]
+//}
 
 
-class GitHubConnector(futureHelpers: FutureHelpers, gitHubClient: GithubApiClient, identifier: String) extends TagsDataSource {
+//@Named("gitConnectorOpen")
+@inject.Singleton
+class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClient: GithubApiClient, identifier: String) {
 
   import futureHelpers._
   import BlockingIOExecutionContext.executionContext
 
-  def get(organisation: String, repoName: String) =
+  def get(organisation: String, repoName: String): Future[List[Tag]] =
     withTimerAndCounter(s"git.api.$identifier") {
       gitHubClient.getReleases(organisation, repoName).map(identity(_))
     }
 }
 
-class GitConnector(futureHelpers: FutureHelpers, gitClient: GitClient, githubApiClient: GithubApiClient, identifier: String) extends TagsDataSource {
+@inject.Singleton
+//@Named("gitConnectorEnterprise")
+class GitConnectorEnterprise @Inject()(futureHelpers: FutureHelpers,
+                                       gitClient: GitClient,
+                                       githubApiClient: GithubApiClient,
+                                       identifier: String) {
 
   import BlockingIOExecutionContext.executionContext
   import futureHelpers._
 
-  def get(organisation: String, repoName: String) =
+  def get(organisation: String, repoName: String): Future[List[Tag]] =
     getRepoTags(organisation, repoName).flatMap { x =>
       val (withCreatedAt, withoutCreatedAt) = x.partition(_.createdAt.isDefined)
       val serviceDeployment: List[Tag] = withCreatedAt

@@ -36,7 +36,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "github-client" % githubClientVersion,
     "uk.gov.hmrc" %% "mongo-lock" % "5.0.0",
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "play-reactivemongo" % playReactivemongoVersion
+    "uk.gov.hmrc" %% "play-reactivemongo" % "6.0.0-0-g0000000"
   )
 
   trait TestDependencies {

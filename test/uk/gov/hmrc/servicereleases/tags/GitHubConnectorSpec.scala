@@ -32,7 +32,7 @@ import scala.concurrent.Future
 
 class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerTest{
   private val githubApiClient = mock[GithubApiClient]
-  private val connector = new GitHubConnector(githubApiClient, "")
+  private val connector = new GitConnectorOpen(githubApiClient, "")
 
   "getServiceRepoDeploymentTags" should {
 

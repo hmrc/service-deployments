@@ -17,7 +17,7 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.util.concurrent.TimeUnit
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 
 import akka.actor.ActorSystem
 import com.kenshoo.play.metrics.Metrics
@@ -25,24 +25,27 @@ import org.joda.time.Duration
 import play.Logger
 import play.libs.Akka
 import play.modules.reactivemongo.{MongoDbConnection, ReactiveMongoComponent}
-import uk.gov.hmrc.gitclient.Git
+import uk.gov.hmrc.gitclient.{Git, GitClient}
 import uk.gov.hmrc.githubclient.GithubApiClient
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, ReleasesAppConnector, ServiceDeploymentsService}
 import uk.gov.hmrc.servicedeployments.services.{CatalogueConnector, ServiceRepositoriesService}
-import uk.gov.hmrc.servicedeployments.tags.{DefaultTagsService, GitConnector, GitHubConnector}
+import uk.gov.hmrc.servicedeployments.tags.{TagsService, GitConnectorEnterprise, GitConnectorOpen}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 sealed trait JobResult
-case class Error(message: String, ex : Throwable) extends JobResult {
+
+case class Error(message: String, ex: Throwable) extends JobResult {
   Logger.error(message, ex)
 }
+
 case class Warn(message: String) extends JobResult {
   Logger.warn(message)
 }
+
 case class Info(message: String) extends JobResult {
   Logger.info(message)
 }
@@ -147,43 +150,53 @@ case class Info(message: String) extends JobResult {
 ////  }
 //}
 
-@Singleton
-case class UpdateScheduler @Inject() (deploymentsDataSource: DeploymentsDataSource,
-                                 serviceDeploymentsConfig: ServiceDeploymentsConfig,
-                                 akkaSystem : ActorSystem,
-                                 reactiveMongoComponent: ReactiveMongoComponent,
-                                 metrics:Metrics,
-                                      serviceRepositoriesService: ServiceRepositoriesService,
-                                      serviceDeploymentsService: ServiceDeploymentsService,
-                                      deploymentsRepository: DeploymentsRepository,
-//                                      whatIsRunningWhereRepository: WhatIsRunningWhereRepository,
-                                      whatIsRunningWhereService:WhatIsRunningWhereUpdateService,
-                                      futureHelpers: FutureHelpers) {
+//trait GithubEnterpriseApiClient extends GithubApiClient
+//
+//trait GithubOpenApiClient extends GithubApiClient
 
-  import serviceDeploymentsConfig._
+@Singleton
+case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSource,
+//                                     serviceDeploymentsConfig: ServiceDeploymentsConfig,
+                                     akkaSystem: ActorSystem,
+                                     reactiveMongoComponent: ReactiveMongoComponent,
+                                     metrics: Metrics,
+//                                     serviceRepositoriesService: ServiceRepositoriesService,
+//                                     serviceDeploymentsService: ServiceDeploymentsService,
+//                                     deploymentsRepository: DeploymentsRepository,
+                                     whatIsRunningWhereService: WhatIsRunningWhereUpdateService,
+//                                     githubEnterpriseApiClient: GithubEnterpriseApiClient,
+//                                     githubOpenApiClient: GithubOpenApiClient,
+//                                     gitClient: GitClient,
+//                                     futureHelpers: FutureHelpers,
+//                                     enterpriseDataSource:GitConnectorEnterprise,
+//                                     openDataSource: GitConnectorOpen,
+                                     deploymentsService:DefaultDeploymentsService
+                                    ) {
+
+//  import serviceDeploymentsConfig._
 
   val defaultMetricsRegistry = metrics.defaultRegistry
 
-  private val enterpriseDataSource = new GitConnector(futureHelpers,
-    Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true),
-    GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken),
-    "enterprise")
+//  //  private val gitClient = Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true)
+//  private val enterpriseDataSource =
+//    new GitConnectorEnterprise(futureHelpers, gitClient, githubEnterpriseApiClient, "enterprise")
+//
+//  private val openDataSource =
+//    new GitConnectorOpen(futureHelpers, githubOpenApiClient, "open")
 
-  private val openDataSource = new GitHubConnector(futureHelpers,
-    GithubApiClient(gitOpenApiUrl, gitOpenToken),
-    "open")
 
-  lazy val deploymentsService = new DefaultDeploymentsService(
-    serviceRepositoriesService,
-    serviceDeploymentsService,
-    new DefaultTagsService(enterpriseDataSource, openDataSource),
-    deploymentsRepository)
+//  lazy val deploymentsService = new DefaultDeploymentsService(
+//    serviceRepositoriesService,
+//    serviceDeploymentsService,
+//    new DefaultTagsService(enterpriseDataSource, openDataSource),
+//    deploymentsRepository)
 
-//  lazy val whatIsRunningWhereService = new WhatIsRunningWhereUpdateService(
-//    deploymentsDataSource,
-//    whatIsRunningWhereRepository)
+  //  lazy val whatIsRunningWhereService = new WhatIsRunningWhereUpdateService(
+  //    deploymentsDataSource,
+  //    whatIsRunningWhereRepository)
 
   def lockRepository: LockRepository = LockMongoRepository(reactiveMongoComponent.mongoConnector.db)
+
   val lockTimeout: Duration = Duration.standardMinutes(15)
 
   val whatsRunningWhereLock = buildLock(lockRepository, "what-is-running-where-job", lockTimeout)
@@ -251,17 +264,17 @@ case class UpdateScheduler @Inject() (deploymentsDataSource: DeploymentsDataSour
 
   //  override def lockId: String = lockName
 
-//  override val deploymentsDataSource = new ReleasesAppConnector(serviceDeploymentsConfig.deploymentsApiBase)
+  //  override val deploymentsDataSource = new ReleasesAppConnector(serviceDeploymentsConfig.deploymentsApiBase)
 
 
   def buildLock(lockRepository: LockRepository, theLockId: String, lockTimeout: Duration): LockKeeper = {
-     new LockKeeper {
-       override def repo = lockRepository
+    new LockKeeper {
+      override def repo = lockRepository
 
-       override def lockId = theLockId
+      override def lockId = theLockId
 
-       override val forceLockReleaseAfter: Duration = lockTimeout
-     }
+      override val forceLockReleaseAfter: Duration = lockTimeout
+    }
   }
 }
 
