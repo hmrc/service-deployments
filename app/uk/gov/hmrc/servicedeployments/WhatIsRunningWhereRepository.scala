@@ -59,7 +59,6 @@ object WhatIsRunningWhereModel {
 
     override def writes(o: WhatIsRunningWhereModel): JsObject = whatIsRunningWhereWrites.writes(o).as[JsObject]
   }
-
 }
 
 //trait WhatIsRunningWhereRepository {

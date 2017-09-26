@@ -19,7 +19,6 @@ package uk.gov.hmrc.servicedeployments.tags
 import java.time.{LocalDateTime, ZoneId}
 
 import uk.gov.hmrc.BlockingIOExecutionContext
-import uk.gov.hmrc.servicedeployments.FutureHelpers._
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 import uk.gov.hmrc.servicedeployments.FutureHelpers
