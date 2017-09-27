@@ -80,20 +80,6 @@ object Deployment {
 
 }
 
-//trait DeploymentsRepository {
-//  def add(deployment: Deployment): Future[Boolean]
-//
-//  def update(deployment: Deployment): Future[Boolean]
-//
-//  def allServicedeployments: Future[Map[String, Seq[Deployment]]]
-//
-//  def getAllDeployments: Future[Seq[Deployment]]
-//
-//  def getForService(serviceName: String): Future[Option[Seq[Deployment]]]
-//
-//  def clearAllData: Future[Boolean]
-//}
-
 @Singleton
 class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpers: FutureHelpers )
   extends ReactiveRepository[Deployment, BSONObjectID](

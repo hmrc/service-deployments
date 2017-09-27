@@ -25,10 +25,6 @@ import scala.concurrent.Future
 case class ServiceDeployment(version: String, deploymentdAt: LocalDateTime, deployers : Seq[Deployer] = Seq.empty )
 
 
-//trait ServiceDeploymentsService {
-//  def getAll(): Future[Map[String, Seq[ServiceDeployment]]]
-//}
-
 @Singleton
 class ServiceDeploymentsService @Inject()(dataSource: DeploymentsDataSource)  {
 

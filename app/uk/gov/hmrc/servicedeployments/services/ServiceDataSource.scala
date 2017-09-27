@@ -29,10 +29,6 @@ import scala.concurrent.Future
 case class GithubUrl(name: String, url: String)
 case class Service(name: String, githubUrls: List[GithubUrl])
 
-//trait ServiceDataSource {
-//  def getAll(): Future[List[Service]]
-//}
-
 @Singleton
 class CatalogueConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) {
 

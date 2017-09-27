@@ -55,16 +55,10 @@ object DeploymentResult {
 
 }
 
-//object DeploymentsController extends DeploymentsController with MongoDbConnection {
-//  override def deploymentsRepository = new MongoDeploymentsRepository(db)
-//}
-
 @Singleton
 class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deploymentsRepository: DeploymentsRepository) extends BaseController {
 
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
-
-//  def deploymentsRepository: DeploymentsRepository
 
   def forService(serviceName: String) = Action.async { implicit request =>
     deploymentsRepository.getForService(serviceName).map {
@@ -109,33 +103,6 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
       case Error(message, ex) => InternalServerError(message)
     }
   }
-
-  //  def importRaw() = Action.async(parse.temporaryFile) { request =>
-//
-//    import EnvironmentalDeployment._
-//
-//    val source = Source.fromFile(request.body.file, "UTF-8")
-//    val jsons = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
-//
-//    val scheduler = new Scheduler with DefaultSchedulerDependencies {
-//      override def lockId: String = "service-deployments-scheduled-job"
-//
-//      override val deploymentsDataSource:DeploymentsDataSource = new DeploymentsDataSource {
-//        override def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
-//
-//        // noop
-//        override def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]] = Future.successful(Nil)
-//      }
-//    }
-//
-//    updateScheduler.updateDeploymentServiceModel
-//
-//    scheduler.updateDeploymentServiceModel.map {
-//      case Info(message) => Ok(message)
-//      case Warn(message) => Ok(message)
-//      case Error(message, ex) => InternalServerError(message)
-//    }
-//  }
 
   def clear() = Action.async { implicit request =>
     deploymentsRepository.clearAllData map { r =>

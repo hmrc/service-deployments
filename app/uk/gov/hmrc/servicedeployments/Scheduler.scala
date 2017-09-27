@@ -55,8 +55,6 @@ case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSourc
                                      deploymentsService:DeploymentsService
                                     ) {
 
-//  import serviceDeploymentsConfig._
-
   val defaultMetricsRegistry = metrics.defaultRegistry
 
 

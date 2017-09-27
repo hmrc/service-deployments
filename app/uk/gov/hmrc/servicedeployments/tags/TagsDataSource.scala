@@ -21,7 +21,6 @@ import javax.inject.Singleton
 
 import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen}
 
-//import javax.inject
 import javax.inject.Inject
 
 import uk.gov.hmrc.BlockingIOExecutionContext
@@ -48,12 +47,6 @@ object Tag {
   private def getVersionNumber(tag: String): String = versionNumber.findFirstIn(tag).getOrElse(tag)
 }
 
-//trait TagsDataSource {
-//  def get(organisation: String, repoName: String): Future[List[Tag]]
-//}
-
-
-//@Named("gitConnectorOpen")
 @Singleton
 class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClientOpen: GithubApiClientOpen, identifier: String) {
 
@@ -67,7 +60,6 @@ class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClientOpen:
 }
 
 @Singleton
-//@Named("gitConnectorEnterprise")
 class GitConnectorEnterprise @Inject()(futureHelpers: FutureHelpers,
                                        gitClient: GitClient,
                                        githubApiClientEnterprise: GithubApiClientEnterprise,

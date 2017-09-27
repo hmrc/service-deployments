@@ -48,7 +48,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
+import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, ServiceDeploymentsConfig}
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
@@ -56,13 +56,13 @@ import scala.concurrent.Future
 
 class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerSuite with IntegrationPatience {
   val mockedGitClient = mock[GitClient]
-  val mockedGithubApiClient = mock[GithubApiClient]
+  val mockedGithubApiClientEnterprise = mock[GithubApiClientEnterprise]
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .overrides(
       bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig()),
       bind[GitClient].toInstance(mockedGitClient),
-      bind[GithubApiClient].toInstance(mockedGithubApiClient)
+      bind[GithubApiClientEnterprise].toInstance(mockedGithubApiClientEnterprise)
     ).build()
 
   val connector = app.injector.instanceOf[GitConnectorEnterprise]
@@ -91,7 +91,7 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
       val repoName = "repoName"
       val org = "HMRC"
 
-      when(mockedGithubApiClient.getReleases("HMRC", "repoName")(BlockingIOExecutionContext.executionContext)).thenReturn(
+      when(mockedGithubApiClientEnterprise.getReleases("HMRC", "repoName")(BlockingIOExecutionContext.executionContext)).thenReturn(
         Future.successful(List(
           GhRepoRelease(123, "someRandomTagName", Date.from(now.toInstant)),
           GhRepoRelease(124, "deployment/9.102.0", Date.from(now.toInstant)))))

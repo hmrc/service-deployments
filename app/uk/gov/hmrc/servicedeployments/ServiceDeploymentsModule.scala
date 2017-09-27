@@ -71,32 +71,10 @@ abstract class AbstractGithubApiClient() extends GithubApiClient {
 
 
 
-//@Singleton
-//@Named("githubEnterpriseApiClientProvider")
-//class GithubEnterpriseApiClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
-//
-//  import config._
-//
-//  override def get() = GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken)
-//}
-//
-////
-//@Singleton
-//@Named("githubOpenApiClientProvider")
-//class GithubOpenApiClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
-//
-//  import config._
-//
-//  override def get() = GithubApiClient(gitOpenApiUrl, gitOpenToken)
-//}
-
-
 @Singleton
 class GitConnectorOpenProvider @Inject()(config: ServiceDeploymentsConfig,
                                          futureHelpers: FutureHelpers,
                                          githubApiClientOpen: GithubApiClientOpen) extends Provider[GitConnectorOpen] {
-
-  import config._
 
   override def get() =
     new GitConnectorOpen(futureHelpers, githubApiClientOpen, "open")

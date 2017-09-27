@@ -27,11 +27,6 @@ import FutureHelpers._
 
 case class Repository(org: String, repoType: String)
 
-
-//trait ServiceRepositoriesService {
-//  def getAll(): Future[Map[String, Seq[Repository]]]
-//}
-
 @Singleton
 class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnector, futureHelpers: FutureHelpers) {
 

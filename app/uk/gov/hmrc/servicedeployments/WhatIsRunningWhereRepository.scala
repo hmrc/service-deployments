@@ -61,22 +61,6 @@ object WhatIsRunningWhereModel {
   }
 }
 
-//trait WhatIsRunningWhereRepository {
-//
-//  def update(whatIsRunningWhere: ServiceDeploymentInformation): Future[Boolean]
-//
-//  def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]]
-//
-//  def getAll: Future[Seq[WhatIsRunningWhereModel]]
-//
-//  def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]]
-//
-//  def clearAllData: Future[Boolean]
-//}
-
-
-
-
 @Singleton
 class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpers: FutureHelpers)
   extends ReactiveRepository[WhatIsRunningWhereModel, BSONObjectID](

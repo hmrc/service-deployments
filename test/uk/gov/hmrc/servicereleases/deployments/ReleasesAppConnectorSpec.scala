@@ -166,13 +166,6 @@ class ReleasesAppConnectorSpec
 
       val results = connector.getAll.futureValue
       results.size shouldBe 1
-      //      results.head shouldBe EnvironmentalDeployment(
-      //        "prod-something", "appA", "11.0.0", LocalDateTime.ofEpochSecond(`deployment 11.0.0 date`, 0, ZoneOffset.UTC))
-      //
-      //      val expectedDate: LocalDateTime = LocalDateTime.ofEpochSecond(`deployment 8.3.0 date`, 0, ZoneOffset.UTC)
-      //      results.last shouldBe EnvironmentalDeployment(
-      //        "prod-something", "appA", "8.3.0", expectedDate, Seq(Deployer(name ="abc.xyz", deploymentDate = expectedDate )))
-
 
     }
 

@@ -24,10 +24,6 @@ import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, Servic
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-//trait WhatIsRunningWhereUpdateService {
-//  def updateModel(): Future[Iterable[Boolean]] //!@ revisit return type
-//}
-
 @Singleton
 class WhatIsRunningWhereUpdateService @Inject()(whatIsRunningWhereDataSource: DeploymentsDataSource,
                                                 repository: WhatIsRunningWhereRepository) {

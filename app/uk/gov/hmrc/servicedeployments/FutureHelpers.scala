@@ -26,11 +26,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-//trait DefaultMetricsRegistry {
-//   private val metrics: Metrics = Play.current.injector.instanceOf[Metrics]
-//   val defaultMetricsRegistry = metrics.defaultRegistry
-//}
-
 @Singleton
 class FutureHelpers @Inject()(metrics: Metrics) {
 
