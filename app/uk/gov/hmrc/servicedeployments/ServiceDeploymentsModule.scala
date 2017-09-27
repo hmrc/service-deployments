@@ -21,8 +21,10 @@ import javax.inject.{Inject, Named, Provider, Singleton}
 import play.api.inject.Module
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.gitclient.{Git, GitClient}
-import uk.gov.hmrc.githubclient.GithubApiClient
+import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 import uk.gov.hmrc.servicedeployments.tags.{GitConnectorEnterprise, GitConnectorOpen}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 
 class ServiceDeploymentsModule extends Module {
@@ -46,15 +48,39 @@ class GitClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Prov
 
 
 @Singleton
-@Named("githubEnterpriseApiClientProvider")
-class GithubEnterpriseApiClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
-
-  import config._
-
-  override def get() = GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken)
+class GithubApiClientOpen @Inject()(config: ServiceDeploymentsConfig) extends AbstractGithubApiClient {
+  override val client =  GithubApiClient(config.gitOpenApiUrl, config.gitOpenToken)
 }
 
+
+@Singleton
+class GithubApiClientEnterprise @Inject()(config: ServiceDeploymentsConfig) extends AbstractGithubApiClient {
+  override val client =  GithubApiClient(config.gitEnterpriseApiUrl, config.gitEnterpriseToken)
+}
+
+abstract class AbstractGithubApiClient() extends GithubApiClient {
+
+  val client: GithubApiClient
+
+  override lazy val orgService = client.orgService
+  override lazy val teamService = client.teamService
+  override lazy val repositoryService = client.repositoryService
+  override lazy val contentsService = client.contentsService
+  override lazy val releaseService = client.releaseService
+}
+
+
+
+//@Singleton
+//@Named("githubEnterpriseApiClientProvider")
+//class GithubEnterpriseApiClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
 //
+//  import config._
+//
+//  override def get() = GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken)
+//}
+//
+////
 //@Singleton
 //@Named("githubOpenApiClientProvider")
 //class GithubOpenApiClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
@@ -67,21 +93,22 @@ class GithubEnterpriseApiClientProvider @Inject()(config: ServiceDeploymentsConf
 
 @Singleton
 class GitConnectorOpenProvider @Inject()(config: ServiceDeploymentsConfig,
-                                         futureHelpers: FutureHelpers) extends Provider[GitConnectorOpen] {
+                                         futureHelpers: FutureHelpers,
+                                         githubApiClientOpen: GithubApiClientOpen) extends Provider[GitConnectorOpen] {
 
   import config._
 
   override def get() =
-    new GitConnectorOpen(futureHelpers, GithubApiClient(gitOpenApiUrl, gitOpenToken), "open")
+    new GitConnectorOpen(futureHelpers, githubApiClientOpen, "open")
 }
 
 @Singleton
 class GitConnectorEnterpriseProvider @Inject()(config: ServiceDeploymentsConfig,
                                                gitClient: GitClient,
-                                               futureHelpers: FutureHelpers) extends Provider[GitConnectorEnterprise] {
+                                               futureHelpers: FutureHelpers,
+                                               githubApiClientEnterprise: GithubApiClientEnterprise) extends Provider[GitConnectorEnterprise] {
 
-  import config._
 
   override def get() =
-    new GitConnectorEnterprise(futureHelpers, gitClient, GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken), "enterprise")
+    new GitConnectorEnterprise(futureHelpers, gitClient, githubApiClientEnterprise, "enterprise")
 }

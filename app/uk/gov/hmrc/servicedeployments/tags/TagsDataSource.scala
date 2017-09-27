@@ -18,6 +18,9 @@ package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
 import javax.inject.Singleton
+
+import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen}
+
 //import javax.inject
 import javax.inject.Inject
 
@@ -52,14 +55,14 @@ object Tag {
 
 //@Named("gitConnectorOpen")
 @Singleton
-class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClient: GithubApiClient, identifier: String) {
+class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClientOpen: GithubApiClientOpen, identifier: String) {
 
   import BlockingIOExecutionContext.executionContext
   import futureHelpers._
 
   def get(organisation: String, repoName: String): Future[List[Tag]] =
     withTimerAndCounter(s"git.api.$identifier") {
-      gitHubClient.getReleases(organisation, repoName).map(identity(_))
+      gitHubClientOpen.getReleases(organisation, repoName).map(identity(_))
     }
 }
 
@@ -67,7 +70,7 @@ class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClient: Git
 //@Named("gitConnectorEnterprise")
 class GitConnectorEnterprise @Inject()(futureHelpers: FutureHelpers,
                                        gitClient: GitClient,
-                                       githubApiClient: GithubApiClient,
+                                       githubApiClientEnterprise: GithubApiClientEnterprise,
                                        identifier: String) {
 
   import BlockingIOExecutionContext.executionContext
@@ -94,6 +97,6 @@ class GitConnectorEnterprise @Inject()(futureHelpers: FutureHelpers,
 
   private def getApiTags(organisation: String, repoName: String) =
     withTimerAndCounter(s"git.api.$identifier") {
-      githubApiClient.getReleases(organisation, repoName)
+      githubApiClientEnterprise.getReleases(organisation, repoName)
     }
 }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /*
  * Copyright 2017 HM Revenue & Customs
  *
@@ -45,7 +44,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
+import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen, ServiceDeploymentsConfig}
 import uk.gov.hmrc.servicedeployments.services.CatalogueConnector
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
@@ -56,29 +55,45 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
-  private val githubApiClient = mock[GithubApiClient]
+  private val githubApiClientEnterprise = mock[GithubApiClientEnterprise]
+  private val githubApiClientOpen = mock[GithubApiClientOpen]
 
   override def newAppForTest(testData: TestData) =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
-        bind[GithubApiClient].toInstance(githubApiClient)
+        bind[GithubApiClientEnterprise].toInstance(githubApiClientEnterprise),
+        bind[GithubApiClientOpen].toInstance(githubApiClientOpen)
       ).build()
 
 
-  lazy val connector = app.injector.instanceOf[GitConnectorOpen]//new GitConnectorOpen(githubApiClient, "")
+  lazy val githubOpenConnector = app.injector.instanceOf[GitConnectorOpen]
+  lazy val githubEnterpriseConnector = app.injector.instanceOf[GitConnectorEnterprise]
 
   "getServiceRepoDeploymentTags" should {
 
-    "get repo deployment tags from git hub deployments" in {
+    "get repo deployment tags from github open deployments" in {
       val now: LocalDateTime = LocalDateTime.now()
       val deployments = List(
         GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
 
-      when(githubApiClient.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
+      when(githubApiClientOpen.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(deployments))
 
-      val tags = connector.get("OrgA", "repoA")
+      val tags = githubOpenConnector.get("OrgA", "repoA")
+
+      tags.futureValue shouldBe List(Tag("1.9.0", now))
+    }
+    
+    "get repo deployment tags from github enterprise deployments" in {
+      val now: LocalDateTime = LocalDateTime.now()
+      val deployments = List(
+        GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
+
+      when(githubApiClientEnterprise.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
+        .thenReturn(Future.successful(deployments))
+
+      val tags = githubEnterpriseConnector.get("OrgA", "repoA")
 
       tags.futureValue shouldBe List(Tag("1.9.0", now))
     }
