@@ -23,6 +23,9 @@ import play.api.Logger
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
 import uk.gov.hmrc.servicedeployments.tags.RepoType.{Enterprise, Open}
 
+import scala.concurrent.Future
+import scala.util.Try
+
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 
 
@@ -30,7 +33,7 @@ case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen,
                             gitEnterpriseTagDataSource: GitConnectorEnterprise) {
 
-  def get(org: String, name: String, repoType: String) =
+  def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]] =
     RepoType.from(repoType) match {
       case Enterprise =>
         Logger.debug(s"$name org : $org get Enterprise Repo deployment tags")

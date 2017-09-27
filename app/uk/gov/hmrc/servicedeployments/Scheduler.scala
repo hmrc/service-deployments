@@ -52,7 +52,7 @@ case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSourc
                                      reactiveMongoComponent: ReactiveMongoComponent,
                                      metrics: Metrics,
                                      whatIsRunningWhereService: WhatIsRunningWhereUpdateService,
-                                     deploymentsService:DefaultDeploymentsService
+                                     deploymentsService:DeploymentsService
                                     ) {
 
 //  import serviceDeploymentsConfig._

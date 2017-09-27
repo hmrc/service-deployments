@@ -30,16 +30,16 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-trait DeploymentsService {
-  def updateModel(): Future[Iterable[Boolean]]
-}
+//trait DeploymentsService {
+//  def updateModel(): Future[Iterable[Boolean]]
+//}
 
 
 @Singleton
-class DefaultDeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositoriesService,
-                                          deploymentsService: ServiceDeploymentsService,
-                                          tagsService: TagsService,
-                                          repository: DeploymentsRepository) extends DeploymentsService {
+class DeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositoriesService,
+                                   deploymentsService: ServiceDeploymentsService,
+                                   tagsService: TagsService,
+                                   repository: DeploymentsRepository) {
 
   def updateModel(): Future[Iterable[Boolean]] =
     for {

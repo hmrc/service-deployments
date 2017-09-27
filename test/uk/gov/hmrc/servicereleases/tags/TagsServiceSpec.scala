@@ -37,18 +37,30 @@ import java.time.LocalDateTime
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{Matchers, TestData, WordSpec}
 import org.scalatestplus.play.OneAppPerTest
+import play.api.Application
+import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
+import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+
 class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneAppPerTest with ScalaFutures {
 
+  implicit override def newAppForTest(testData: TestData): Application =
+    new GuiceApplicationBuilder()
+      .overrides(
+        bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())
+      ).build()
+
   trait SetUp {
-    val gitEnterpriseTagDataSource = mock[TagsDataSource]
-    val gitOpenTagDataSource = mock[TagsDataSource]
-    val compositeTagsSource = new TagsService(gitEnterpriseTagDataSource, gitOpenTagDataSource)
+    val gitEnterpriseTagDataSource = mock[GitConnectorEnterprise]
+    val gitOpenTagDataSource = mock[GitConnectorOpen]
+    val compositeTagsSource = new TagsService(gitOpenTagDataSource, gitEnterpriseTagDataSource)
   }
 
   "getAll" should {
