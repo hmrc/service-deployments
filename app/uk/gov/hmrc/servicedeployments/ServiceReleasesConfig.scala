@@ -19,8 +19,7 @@ package uk.gov.hmrc.servicedeployments
 import java.nio.file.{Files, Paths}
 import javax.inject.{Inject, Singleton}
 
-
-import play.api.{Configuration, Logger, Play}
+import play.api.{Configuration, Logger}
 
 @Singleton
 class ServiceDeploymentsConfig @Inject()(configuration: Configuration) {

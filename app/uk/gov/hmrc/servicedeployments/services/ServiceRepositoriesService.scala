@@ -33,12 +33,12 @@ case class Repository(org: String, repoType: String)
 //}
 
 @Singleton
-class ServiceRepositoriesService @Inject()(dataSource: CatalogueConnector, futureHelpers: FutureHelpers) {
+class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnector, futureHelpers: FutureHelpers) {
 
 
 
   def getAll(): Future[Map[String, Seq[Repository]]] =
-    dataSource.getAll().map { services =>
+    catalogueConnector.getAll().map { services =>
       services.map { service =>
         service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.name, u.url))
       } toMap

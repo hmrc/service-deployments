@@ -17,8 +17,9 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
-import javax.inject
-import javax.inject.{Inject, Named}
+import javax.inject.Singleton
+//import javax.inject
+import javax.inject.Inject
 
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
@@ -50,11 +51,11 @@ object Tag {
 
 
 //@Named("gitConnectorOpen")
-@inject.Singleton
+@Singleton
 class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClient: GithubApiClient, identifier: String) {
 
-  import futureHelpers._
   import BlockingIOExecutionContext.executionContext
+  import futureHelpers._
 
   def get(organisation: String, repoName: String): Future[List[Tag]] =
     withTimerAndCounter(s"git.api.$identifier") {
@@ -62,7 +63,7 @@ class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClient: Git
     }
 }
 
-@inject.Singleton
+@Singleton
 //@Named("gitConnectorEnterprise")
 class GitConnectorEnterprise @Inject()(futureHelpers: FutureHelpers,
                                        gitClient: GitClient,

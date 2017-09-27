@@ -17,20 +17,15 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.util.concurrent.TimeUnit
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 
 import akka.actor.ActorSystem
 import com.kenshoo.play.metrics.Metrics
 import org.joda.time.Duration
 import play.Logger
-import play.libs.Akka
-import play.modules.reactivemongo.{MongoDbConnection, ReactiveMongoComponent}
-import uk.gov.hmrc.gitclient.{Git, GitClient}
-import uk.gov.hmrc.githubclient.GithubApiClient
+import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, ReleasesAppConnector, ServiceDeploymentsService}
-import uk.gov.hmrc.servicedeployments.services.{CatalogueConnector, ServiceRepositoriesService}
-import uk.gov.hmrc.servicedeployments.tags.{TagsService, GitConnectorEnterprise, GitConnectorOpen}
+import uk.gov.hmrc.servicedeployments.deployments.DeploymentsDataSource
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -50,126 +45,13 @@ case class Info(message: String) extends JobResult {
   Logger.info(message)
 }
 
-//trait DefaultSchedulerDependencies extends MongoDbConnection  {
-////  import ServicedeploymentsConfig._
-//
-//  def deploymentsDataSource: DeploymentsDataSource
-//
-////  private val enterpriseDataSource = new GitConnector(
-////    Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true),
-////    GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken),
-////    "enterprise")
-////
-////  private val openDataSource = new GitHubConnector(
-////    GithubApiClient(gitOpenApiUrl, gitOpenToken),
-////    "open")
-//
-////  val akkaSystem = Akka.system()
-////  lazy val deploymentsService = new DefaultDeploymentsService(
-////    new ServiceRepositoriesService(new CatalogueConnector(catalogueBaseUrl)),
-////    new DefaultServiceDeploymentsService(deploymentsDataSource),
-////    new DefaultTagsService(enterpriseDataSource, openDataSource),
-////    new MongoDeploymentsRepository(db))
-//
-////  lazy val whatIsRunningWhereService = new  DefaultWhatIsRunningWhereUpdateService(
-////    deploymentsDataSource,
-////    new MongoWhatIsRunningWhereRepository(db)
-////  )
-//
-//}
-
-//private[servicedeployments] abstract class Scheduler extends LockKeeper with DefaultMetricsRegistry {
-//  self: MongoDbConnection  =>
-//
-//  def akkaSystem: ActorSystem
-//  def deploymentsDataSource: DeploymentsDataSource
-//  def deploymentsService: DeploymentsService
-//  def whatIsRunningWhereService: WhatIsRunningWhereUpdateService
-//
-////  override def repo: LockRepository = LockMongoRepository(db)
-//
-////  override val forceLockReleaseAfter: Duration = Duration.standardMinutes(15)
-//
-////  def startUpdatingDeploymentServiceModel(interval: FiniteDuration): Unit = {
-////    Logger.info(s"Initialising mongo update (for DeploymentServiceModel) every $interval")
-////
-////    akkaSystem.scheduler.schedule(FiniteDuration(1, TimeUnit.SECONDS), interval) {
-////      updateDeploymentServiceModel
-////    }
-////  }
-////
-////  def startUpdatingWhatIsRunningWhereModel(interval: FiniteDuration): Unit = {
-////    Logger.info(s"Initialising mongo update (for WhatIsRunningWhere) every $interval")
-////
-////    akkaSystem.scheduler.schedule(FiniteDuration(1, TimeUnit.SECONDS), interval) {
-////      updateWhatIsRunningWhereModel
-////    }
-////  }
-////
-////  def updateDeploymentServiceModel: Future[JobResult] = {
-////    tryLock {
-////      Logger.info(s"Starting mongo update")
-////
-////      deploymentsService.updateModel().map { result =>
-////        val total = result.toList.length
-////        val failureCount = result.count(r => !r)
-////        val successCount = total - failureCount
-////
-////        defaultMetricsRegistry.counter("scheduler.success").inc(successCount)
-////        defaultMetricsRegistry.counter("scheduler.failure").inc(failureCount)
-////
-////        Info(s"Added/updated $successCount deployments and encountered $failureCount failures")
-////      }.recover { case ex =>
-////        Error(s"Something went wrong during the mongo update:", ex)
-////      }
-////    } map { resultOrLocked =>
-////      resultOrLocked getOrElse {
-////        Warn("Failed to obtain lock. Another process may have it.")
-////      }
-////    }
-////  }
-////
-////  def updateWhatIsRunningWhereModel: Future[JobResult] = {
-////    tryLock {
-////      Logger.info(s"Starting mongo update")
-////
-////      whatIsRunningWhereService.updateModel().map { result =>
-////        val total = result.toList.length
-////
-////        defaultMetricsRegistry.counter("scheduler.success").inc(total)
-////
-////        Info(s"Added/updated $total WhatIsRunningWhere")
-////      }.recover { case ex =>
-////        Error(s"Something went wrong during the mongo update:", ex)
-////      }
-////    } map { resultOrLocked =>
-////      resultOrLocked getOrElse {
-////        Warn("Failed to obtain lock. Another process may have it.")
-////      }
-////    }
-////  }
-//}
-
-//trait GithubEnterpriseApiClient extends GithubApiClient
-//
-//trait GithubOpenApiClient extends GithubApiClient
 
 @Singleton
 case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSource,
-//                                     serviceDeploymentsConfig: ServiceDeploymentsConfig,
                                      akkaSystem: ActorSystem,
                                      reactiveMongoComponent: ReactiveMongoComponent,
                                      metrics: Metrics,
-//                                     serviceRepositoriesService: ServiceRepositoriesService,
-//                                     serviceDeploymentsService: ServiceDeploymentsService,
-//                                     deploymentsRepository: DeploymentsRepository,
                                      whatIsRunningWhereService: WhatIsRunningWhereUpdateService,
-//                                     githubEnterpriseApiClient: GithubEnterpriseApiClient,
-//                                     githubOpenApiClient: GithubOpenApiClient,
-//                                     gitClient: GitClient,
-//                                     futureHelpers: FutureHelpers,
-//                                     enterpriseDataSource:GitConnectorEnterprise,
-//                                     openDataSource: GitConnectorOpen,
                                      deploymentsService:DefaultDeploymentsService
                                     ) {
 
@@ -177,23 +59,6 @@ case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSourc
 
   val defaultMetricsRegistry = metrics.defaultRegistry
 
-//  //  private val gitClient = Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true)
-//  private val enterpriseDataSource =
-//    new GitConnectorEnterprise(futureHelpers, gitClient, githubEnterpriseApiClient, "enterprise")
-//
-//  private val openDataSource =
-//    new GitConnectorOpen(futureHelpers, githubOpenApiClient, "open")
-
-
-//  lazy val deploymentsService = new DefaultDeploymentsService(
-//    serviceRepositoriesService,
-//    serviceDeploymentsService,
-//    new DefaultTagsService(enterpriseDataSource, openDataSource),
-//    deploymentsRepository)
-
-  //  lazy val whatIsRunningWhereService = new WhatIsRunningWhereUpdateService(
-  //    deploymentsDataSource,
-  //    whatIsRunningWhereRepository)
 
   def lockRepository: LockRepository = LockMongoRepository(reactiveMongoComponent.mongoConnector.db)
 
@@ -261,10 +126,6 @@ case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSourc
       }
     }
   }
-
-  //  override def lockId: String = lockName
-
-  //  override val deploymentsDataSource = new ReleasesAppConnector(serviceDeploymentsConfig.deploymentsApiBase)
 
 
   def buildLock(lockRepository: LockRepository, theLockId: String, lockTimeout: Duration): LockKeeper = {

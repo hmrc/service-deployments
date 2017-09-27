@@ -45,14 +45,15 @@ class GitClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Prov
 }
 
 
-//@Singleton
-//@Named("githubEnterpriseApiClientProvider")
-//class GithubEnterpriseApiClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
-//
-//  import config._
-//
-//  override def get() = GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken)
-//}
+@Singleton
+@Named("githubEnterpriseApiClientProvider")
+class GithubEnterpriseApiClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
+
+  import config._
+
+  override def get() = GithubApiClient(gitEnterpriseApiUrl, gitEnterpriseToken)
+}
+
 //
 //@Singleton
 //@Named("githubOpenApiClientProvider")
@@ -64,12 +65,12 @@ class GitClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Prov
 //}
 
 
-
 @Singleton
 class GitConnectorOpenProvider @Inject()(config: ServiceDeploymentsConfig,
                                          futureHelpers: FutureHelpers) extends Provider[GitConnectorOpen] {
 
-    import config._
+  import config._
+
   override def get() =
     new GitConnectorOpen(futureHelpers, GithubApiClient(gitOpenApiUrl, gitOpenToken), "open")
 }

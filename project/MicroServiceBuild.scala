@@ -36,7 +36,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "github-client" % githubClientVersion,
     "uk.gov.hmrc" %% "mongo-lock" % "5.0.0",
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "play-reactivemongo" % "6.0.0-0-g0000000"
+    "uk.gov.hmrc" %% "play-reactivemongo" % "6.1.0"
   )
 
   trait TestDependencies {
@@ -49,6 +49,7 @@ private object AppDependencies {
       override lazy val test = Seq(
         "uk.gov.hmrc" %% "hmrctest" % hmrcTestVersion % scope,
         "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.0" % scope,
+//        "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.1" % "test",
         "org.pegdown" % "pegdown" % "1.5.0" % scope,
         "com.github.tomakehurst" % "wiremock" % "1.52" % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
