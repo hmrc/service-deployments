@@ -16,20 +16,12 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import javax.inject.{Inject, Singleton}
+import com.google.inject.AbstractModule
 
-import akka.actor.ActorSystem
+class SchedulerModule() extends AbstractModule {
 
-import scala.concurrent.duration._
-
-
-
-@Singleton
-class DataReloadScheduler @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig,
-                                    updateScheduler: UpdateScheduler) {
-
-  if (serviceDeploymentsConfig.schedulerEnabled) {
-    updateScheduler.startUpdatingWhatIsRunningWhereModel(10 minutes)
-    updateScheduler.startUpdatingDeploymentServiceModel(20 minutes)
+  override def configure(): Unit = {
+    bind(classOf[DataReloadScheduler]).asEagerSingleton()
   }
+
 }
