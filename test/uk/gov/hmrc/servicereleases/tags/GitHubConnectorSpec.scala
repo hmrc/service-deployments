@@ -32,7 +32,7 @@
 
 package uk.gov.hmrc.servicedeployments.tags
 
-import java.time.{LocalDateTime, ZoneId}
+import java.time.{LocalDateTime, ZoneId, ZoneOffset}
 import java.util.Date
 
 import org.mockito.Mockito._
@@ -43,6 +43,7 @@ import org.scalatestplus.play.OneAppPerTest
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
+import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
 import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen, ServiceDeploymentsConfig}
 import uk.gov.hmrc.servicedeployments.services.CatalogueConnector
@@ -57,11 +58,13 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
   private val githubApiClientEnterprise = mock[GithubApiClientEnterprise]
   private val githubApiClientOpen = mock[GithubApiClientOpen]
+  private val mockedGitClient = mock[GitClient]
 
   override def newAppForTest(testData: TestData) =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
+        bind[GitClient].toInstance(mockedGitClient),
         bind[GithubApiClientEnterprise].toInstance(githubApiClientEnterprise),
         bind[GithubApiClientOpen].toInstance(githubApiClientOpen)
       ).build()
@@ -92,6 +95,10 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
       when(githubApiClientEnterprise.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(deployments))
+
+      when(mockedGitClient.getGitRepoTags("repoA", "OrgA")(BlockingIOExecutionContext.executionContext))
+        .thenReturn(Future.successful(List(GitTag("1.9.0", Some(now.atZone(ZoneOffset.UTC))))))
+
 
       val tags = githubEnterpriseConnector.get("OrgA", "repoA")
 
