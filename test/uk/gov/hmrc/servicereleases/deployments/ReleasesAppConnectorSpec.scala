@@ -16,19 +16,44 @@
 
 package uk.gov.hmrc.servicedeployments.deployments
 
+import java.io.File
 import java.time.{LocalDateTime, ZoneOffset}
 
 import com.github.tomakehurst.wiremock.http.RequestMethod
+import com.typesafe.config.ConfigFactory
+import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpec}
-import org.scalatestplus.play.OneAppPerTest
-import uk.gov.hmrc.servicedeployments.{DefaultPatienceConfig, WireMockSpec}
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{Matchers, TestData, WordSpec}
+import org.scalatestplus.play.{OneAppPerSuite, OneAppPerTest}
+import play.api.{Application, Configuration}
+import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.servicedeployments.{DefaultPatienceConfig, ServiceDeploymentsConfig, WireMockSpec}
 
 import scala.concurrent.Future
+import play.api.inject.bind
+import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
-class ReleasesAppConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerTest with DefaultPatienceConfig {
+import scala.io.Source
 
-  val connector = new ReleasesAppConnector(endpointMockUrl)
+
+class ReleasesAppConnectorSpec
+  extends WordSpec
+    with Matchers
+    with WireMockSpec
+    with ScalaFutures
+    with OneAppPerSuite
+    with DefaultPatienceConfig
+    with MockitoSugar {
+
+  implicit override lazy val app: Application =
+    new GuiceApplicationBuilder()
+      .overrides(bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig(Map("deployments.api.url" -> endpointMockUrl))))
+      .disable(classOf[com.kenshoo.play.metrics.Metrics])
+
+      .build()
+
+  lazy val connector = app.injector.instanceOf[ReleasesAppConnector]
 
   "Get All" should {
 
@@ -141,13 +166,6 @@ class ReleasesAppConnectorSpec extends WordSpec with Matchers with WireMockSpec 
 
       val results = connector.getAll.futureValue
       results.size shouldBe 1
-      //      results.head shouldBe EnvironmentalDeployment(
-      //        "prod-something", "appA", "11.0.0", LocalDateTime.ofEpochSecond(`deployment 11.0.0 date`, 0, ZoneOffset.UTC))
-      //
-      //      val expectedDate: LocalDateTime = LocalDateTime.ofEpochSecond(`deployment 8.3.0 date`, 0, ZoneOffset.UTC)
-      //      results.last shouldBe EnvironmentalDeployment(
-      //        "prod-something", "appA", "8.3.0", expectedDate, Seq(Deployer(name ="abc.xyz", deploymentDate = expectedDate )))
-
 
     }
 
@@ -210,7 +228,7 @@ class ReleasesAppConnectorSpec extends WordSpec with Matchers with WireMockSpec 
     "deserialize objects from the releases app API" in {
       val deploymentsApiBase = endpointMockUrl
 
-      val deploymentsApiConnector = new ReleasesAppConnector(deploymentsApiBase)
+      val deploymentsApiConnector = app.injector.instanceOf[ReleasesAppConnector] //new ReleasesAppConnector(deploymentsApiBase)
 
       givenRequestExpects(
         method = RequestMethod.GET,

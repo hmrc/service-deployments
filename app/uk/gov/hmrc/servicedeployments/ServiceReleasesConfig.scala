@@ -17,12 +17,14 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.nio.file.{Files, Paths}
+import javax.inject.{Inject, Singleton}
 
-import play.api.{Logger, Play}
+import play.api.{Configuration, Logger}
 
-object ServicedeploymentsConfig {
+@Singleton
+class ServiceDeploymentsConfig @Inject()(configuration: Configuration) {
 
-  val schedulerEnabled = Play.current.configuration.getBoolean("scheduler.enabled").getOrElse(false)
+  val schedulerEnabled = configuration.getBoolean("scheduler.enabled").getOrElse(false)
 
   lazy val deploymentsApiBase: String = config("deployments.api.url").get
   lazy val catalogueBaseUrl: String = config("catalogue.api.url").get
@@ -38,7 +40,7 @@ object ServicedeploymentsConfig {
   lazy val gitOpenStorePath: String = storePath("open-local-git-store")
   lazy val gitEnterpriseStorePath: String = storePath("enterprise-local-git-store")
 
-  private def config(path: String) = Play.current.configuration.getString(s"$path")
+  private def config(path: String) = configuration.getString(s"$path")
 
   private def storePath(prefix: String) = {
     val path = config("git.client.store.path")

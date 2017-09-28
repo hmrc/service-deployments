@@ -17,11 +17,16 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
+import javax.inject.Singleton
+
+import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen}
+
+import javax.inject.Inject
 
 import uk.gov.hmrc.BlockingIOExecutionContext
-import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
 import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
+import uk.gov.hmrc.servicedeployments.FutureHelpers
 
 import scala.concurrent.Future
 
@@ -42,25 +47,28 @@ object Tag {
   private def getVersionNumber(tag: String): String = versionNumber.findFirstIn(tag).getOrElse(tag)
 }
 
-trait TagsDataSource {
-  def get(organisation: String, repoName: String): Future[List[Tag]]
-}
-
-class GitHubConnector(gitHubClient: GithubApiClient, identifier: String) extends TagsDataSource {
+@Singleton
+class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClientOpen: GithubApiClientOpen, identifier: String) {
 
   import BlockingIOExecutionContext.executionContext
+  import futureHelpers._
 
-  def get(organisation: String, repoName: String) =
+  def get(organisation: String, repoName: String): Future[List[Tag]] =
     withTimerAndCounter(s"git.api.$identifier") {
-      gitHubClient.getReleases(organisation, repoName).map(identity(_))
+      gitHubClientOpen.getReleases(organisation, repoName).map(identity(_))
     }
 }
 
-class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, identifier: String) extends TagsDataSource {
+@Singleton
+class GitConnectorEnterprise @Inject()(futureHelpers: FutureHelpers,
+                                       gitClient: GitClient,
+                                       githubApiClientEnterprise: GithubApiClientEnterprise,
+                                       identifier: String) {
 
   import BlockingIOExecutionContext.executionContext
+  import futureHelpers._
 
-  def get(organisation: String, repoName: String) =
+  def get(organisation: String, repoName: String): Future[List[Tag]] =
     getRepoTags(organisation, repoName).flatMap { x =>
       val (withCreatedAt, withoutCreatedAt) = x.partition(_.createdAt.isDefined)
       val serviceDeployment: List[Tag] = withCreatedAt
@@ -81,6 +89,6 @@ class GitConnector(gitClient: GitClient, githubApiClient: GithubApiClient, ident
 
   private def getApiTags(organisation: String, repoName: String) =
     withTimerAndCounter(s"git.api.$identifier") {
-      githubApiClient.getReleases(organisation, repoName)
+      githubApiClientEnterprise.getReleases(organisation, repoName)
     }
 }

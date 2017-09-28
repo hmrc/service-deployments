@@ -17,24 +17,23 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
+import javax.inject.{Inject, Singleton}
 
 import play.api.Logger
+import uk.gov.hmrc.servicedeployments.FutureHelpers._
+import uk.gov.hmrc.servicedeployments.tags.RepoType.{Enterprise, Open}
 
 import scala.concurrent.Future
 import scala.util.Try
-import RepoType.{Enterprise, Open}
-import uk.gov.hmrc.servicedeployments.FutureHelpers._
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 
-trait TagsService {
-  def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]]
-}
 
-class DefaultTagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagDataSource: TagsDataSource)
-  extends TagsService {
+@Singleton
+class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen,
+                            gitEnterpriseTagDataSource: GitConnectorEnterprise) {
 
-  def get(org: String, name: String, repoType: String) =
+  def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]] =
     RepoType.from(repoType) match {
       case Enterprise =>
         Logger.debug(s"$name org : $org get Enterprise Repo deployment tags")
@@ -45,3 +44,4 @@ class DefaultTagsService(gitEnterpriseTagDataSource: TagsDataSource, gitOpenTagD
         continueOnError(gitOpenTagDataSource.get(org, name))
     }
 }
+

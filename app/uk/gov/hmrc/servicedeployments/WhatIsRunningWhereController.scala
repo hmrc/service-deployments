@@ -16,23 +16,27 @@
 
 package uk.gov.hmrc.servicedeployments
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.format
 
 
-object WhatIsRunningWhereController extends WhatIsRunningWhereController with MongoDbConnection {
-  override def whatIsRunningWhereRepository = new MongoWhatIsRunningWhereRepository(db)
-}
 
-trait WhatIsRunningWhereController extends BaseController {
+//object WhatIsRunningWhereController extends WhatIsRunningWhereController with MongoDbConnection {
+//  override def whatIsRunningWhereRepository = new WhatIsRunningWhereRepository(db)
+//}
+
+@Singleton
+class WhatIsRunningWhereController @Inject() (whatIsRunningWhereRepository :WhatIsRunningWhereRepository, updateScheduler: UpdateScheduler) extends BaseController {
 
 
-  def whatIsRunningWhereRepository: WhatIsRunningWhereRepository
+//  def whatIsRunningWhereRepository: WhatIsRunningWhereRepository
 
   private def fromWhatIsRunningWhereModel(w: WhatIsRunningWhereModel): ServiceDeploymentInformation =
     ServiceDeploymentInformation(w.serviceName, w.deployments)
@@ -52,7 +56,7 @@ trait WhatIsRunningWhereController extends BaseController {
   }
 
   def update() = Action.async { implicit request =>
-    new UpdateScheduler("what-is-running-where-job").updateWhatIsRunningWhereModel.map {
+    updateScheduler.updateWhatIsRunningWhereModel.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message, ex) => InternalServerError(message)

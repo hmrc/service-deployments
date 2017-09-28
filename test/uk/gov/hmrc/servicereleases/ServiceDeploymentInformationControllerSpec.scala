@@ -27,7 +27,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.servicedeployments.deployments.EnvironmentMapping
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
-import uk.gov.hmrc.servicedeployments.{WhatIsRunningWhereController, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
+import uk.gov.hmrc.servicedeployments.{UpdateScheduler, WhatIsRunningWhereController, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
 
 import scala.concurrent.Future
 
@@ -35,9 +35,7 @@ class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSu
 
   val whatIsRunningWhereRepo = mock[WhatIsRunningWhereRepository]
 
-  val controller = new WhatIsRunningWhereController {
-    override def whatIsRunningWhereRepository: WhatIsRunningWhereRepository = whatIsRunningWhereRepo
-  }
+  val controller = new WhatIsRunningWhereController(whatIsRunningWhereRepo, mock[UpdateScheduler]) 
 
 
   "WhatIsRunningWhereController.forApplication" should {

@@ -16,21 +16,24 @@
 
 package uk.gov.hmrc.servicedeployments.services
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.Logger
+import uk.gov.hmrc.servicedeployments.FutureHelpers
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.servicedeployments.FutureHelpers._
+import FutureHelpers._
 
 case class Repository(org: String, repoType: String)
 
-trait ServiceRepositoriesService {
-  def getAll(): Future[Map[String, Seq[Repository]]]
-}
+@Singleton
+class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnector, futureHelpers: FutureHelpers) {
 
-class DefaultServiceRepositoriesService(dataSource: ServiceDataSource) extends ServiceRepositoriesService {
-  override def getAll(): Future[Map[String, Seq[Repository]]] =
-    dataSource.getAll().map { services =>
+
+
+  def getAll(): Future[Map[String, Seq[Repository]]] =
+    catalogueConnector.getAll().map { services =>
       services.map { service =>
         service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.name, u.url))
       } toMap

@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.servicedeployments
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.libs.json._
-import reactivemongo.api.DB
+import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import uk.gov.hmrc.servicedeployments.FutureHelpers.withTimerAndCounter
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -58,30 +59,14 @@ object WhatIsRunningWhereModel {
 
     override def writes(o: WhatIsRunningWhereModel): JsObject = whatIsRunningWhereWrites.writes(o).as[JsObject]
   }
-
 }
 
-trait WhatIsRunningWhereRepository {
-
-  def update(whatIsRunningWhere: ServiceDeploymentInformation): Future[Boolean]
-
-  def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]]
-
-  def getAll: Future[Seq[WhatIsRunningWhereModel]]
-
-  def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]]
-
-  def clearAllData: Future[Boolean]
-}
-
-
-
-
-class MongoWhatIsRunningWhereRepository(mongo: () => DB)
+@Singleton
+class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpers: FutureHelpers)
   extends ReactiveRepository[WhatIsRunningWhereModel, BSONObjectID](
     collectionName = "WhatIsRunningWhere", //!@ rename to start lower case
-    mongo = mongo,
-    domainFormat = WhatIsRunningWhereModel.format) with WhatIsRunningWhereRepository {
+    mongo = mongo.mongoConnector.db,
+    domainFormat = WhatIsRunningWhereModel.format)  {
 
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
@@ -95,7 +80,7 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
   //!@ change the type to be the WhatIsRunningWhereModel
   def update(deployment: ServiceDeploymentInformation): Future[Boolean] = {
 
-    withTimerAndCounter("mongo.update") {
+    futureHelpers.withTimerAndCounter("mongo.update") {
       for {
         update <- collection.update(selector = Json.obj("serviceName" -> Json.toJson(deployment.serviceName)), update = deployment, upsert = true)
       } yield update match {
@@ -108,13 +93,14 @@ class MongoWhatIsRunningWhereRepository(mongo: () => DB)
     }
   }
 
-  override def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]] = {
+
+  def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]] = {
     findAll().map { all => all.groupBy(_.serviceName) }
   }
 
   def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]] = {
 
-    withTimerAndCounter("mongo.read") {
+    futureHelpers.withTimerAndCounter("mongo.read") {
       find("serviceName" -> BSONDocument("$eq" -> serviceName)) map {
         case Nil => None
         case data => data.headOption

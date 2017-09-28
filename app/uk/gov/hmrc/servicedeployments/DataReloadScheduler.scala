@@ -18,20 +18,18 @@ package uk.gov.hmrc.servicedeployments
 
 import javax.inject.{Inject, Singleton}
 
-import uk.gov.hmrc.servicedeployments.FutureHelpers._
-import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, ServiceDeploymentInformation}
+import akka.actor.ActorSystem
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration._
+
+
 
 @Singleton
-class WhatIsRunningWhereUpdateService @Inject()(whatIsRunningWhereDataSource: DeploymentsDataSource,
-                                                repository: WhatIsRunningWhereRepository) {
+class DataReloadScheduler @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig,
+                                    updateScheduler: UpdateScheduler) {
 
-  def updateModel() =
-    for {
-      whatsRunningWhere <- whatIsRunningWhereDataSource.whatIsRunningWhere
-      success <- Future.sequence(whatsRunningWhere.map(repository.update))
-    } yield success
-
+  if (serviceDeploymentsConfig.schedulerEnabled) {
+    updateScheduler.startUpdatingWhatIsRunningWhereModel(10 minutes)
+    updateScheduler.startUpdatingDeploymentServiceModel(20 minutes)
+  }
 }
