@@ -21,37 +21,33 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
 import play.api.mvc.Action
-import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.format
 
 
-
-//object WhatIsRunningWhereController extends WhatIsRunningWhereController with MongoDbConnection {
-//  override def whatIsRunningWhereRepository = new WhatIsRunningWhereRepository(db)
-//}
-
 @Singleton
 class WhatIsRunningWhereController @Inject() (whatIsRunningWhereRepository :WhatIsRunningWhereRepository, updateScheduler: UpdateScheduler) extends BaseController {
-
-
-//  def whatIsRunningWhereRepository: WhatIsRunningWhereRepository
 
   private def fromWhatIsRunningWhereModel(w: WhatIsRunningWhereModel): ServiceDeploymentInformation =
     ServiceDeploymentInformation(w.serviceName, w.deployments)
 
   def forApplication(serviceName: String) = Action.async { implicit request =>
     whatIsRunningWhereRepository.getForService(serviceName).map {
-      case Some(data) => Ok(Json.toJson(fromWhatIsRunningWhereModel(data)))
-      case None => NotFound
+      case Some(data) =>
+        val filteredData = data.copy(deployments = data.deployments.filterNot(_.datacentre.contains("datacentred")))
+        Ok(Json.toJson(fromWhatIsRunningWhereModel(filteredData)))
+      case _ => NotFound
     }
   }
 
 
   def getAll() = Action.async { implicit request =>
     whatIsRunningWhereRepository.getAll.map { deployments =>
-      Ok(Json.toJson(deployments.map(fromWhatIsRunningWhereModel)))
+      val filteredDeployments = deployments.map { data =>
+        data.copy(deployments = data.deployments.filterNot(_.datacentre.contains("datacentred")))
+      }
+      Ok(Json.toJson(filteredDeployments.map(fromWhatIsRunningWhereModel)))
     }
   }
 

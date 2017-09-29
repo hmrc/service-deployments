@@ -39,9 +39,10 @@ class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSu
 
 
   "WhatIsRunningWhereController.forApplication" should {
-    "retrieve list of all WhatsRunningWhere for an application" in {
+    "retrieve list of all WhatsRunningWhere for an application without datacentered" in {
 
       val deployments = Set(
+        Deployment(EnvironmentMapping("dev", "dev-app"), "aws", "0.1.0"),
         Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"),
         Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2")
       )
@@ -65,12 +66,12 @@ class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSu
               Map(
                 "environmentMapping" -> JsObject(
                   Map(
-                    "name" -> JsString("qa"),
-                    "releasesAppId" -> JsString("qa")
+                    "name" -> JsString("dev"),
+                    "releasesAppId" -> JsString("dev-app")
                   )
                 ),
-                "datacentre" -> JsString("datacentred"),
-                "version" -> JsString("0.0.1")
+                "datacentre" -> JsString("aws"),
+                "version" -> JsString("0.1.0")
               )),
             JsObject(
               Map(
