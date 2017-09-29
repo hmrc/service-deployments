@@ -32,10 +32,13 @@ class WhatIsRunningWhereController @Inject() (whatIsRunningWhereRepository :What
   private def fromWhatIsRunningWhereModel(w: WhatIsRunningWhereModel): ServiceDeploymentInformation =
     ServiceDeploymentInformation(w.serviceName, w.deployments)
 
+  private def filterDcdFromData(data: WhatIsRunningWhereModel): WhatIsRunningWhereModel =
+    data.copy(deployments = data.deployments.filterNot(_.datacentre.contains("datacentred")))
+
   def forApplication(serviceName: String) = Action.async { implicit request =>
     whatIsRunningWhereRepository.getForService(serviceName).map {
       case Some(data) =>
-        val filteredData = data.copy(deployments = data.deployments.filterNot(_.datacentre.contains("datacentred")))
+        val filteredData = filterDcdFromData(data)
         Ok(Json.toJson(fromWhatIsRunningWhereModel(filteredData)))
       case _ => NotFound
     }
@@ -44,9 +47,7 @@ class WhatIsRunningWhereController @Inject() (whatIsRunningWhereRepository :What
 
   def getAll() = Action.async { implicit request =>
     whatIsRunningWhereRepository.getAll.map { deployments =>
-      val filteredDeployments = deployments.map { data =>
-        data.copy(deployments = data.deployments.filterNot(_.datacentre.contains("datacentred")))
-      }
+      val filteredDeployments = deployments.map(filterDcdFromData)
       Ok(Json.toJson(filteredDeployments.map(fromWhatIsRunningWhereModel)))
     }
   }
