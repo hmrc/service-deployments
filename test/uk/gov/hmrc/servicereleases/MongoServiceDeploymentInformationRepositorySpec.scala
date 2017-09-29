@@ -14,28 +14,77 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright 2017 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.servicereleases
 
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
+import org.mockito.Mockito
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.OneAppPerTest
-import uk.gov.hmrc.mongo.MongoSpecSupport
+import play.api.Application
+import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.modules.reactivemongo.ReactiveMongoComponent
+import uk.gov.hmrc.mongo.{MongoConnector, MongoSpecSupport}
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
 import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
-import uk.gov.hmrc.servicedeployments.{MongoWhatIsRunningWhereRepository, WhatIsRunningWhereModel}
+import uk.gov.hmrc.servicedeployments.{FutureHelpers, ServiceDeploymentsConfig, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 
-class MongoServiceDeploymentInformationRepositorySpec extends FunSpec with Matchers with LoneElement with MongoSpecSupport with ScalaFutures with OptionValues with BeforeAndAfterEach with OneAppPerTest {
+class MongoServiceDeploymentInformationRepositorySpec
+  extends FunSpec
+    with Matchers
+    with LoneElement
+    with MongoSpecSupport
+    with ScalaFutures
+    with OptionValues
+    with BeforeAndAfterEach
+    with OneAppPerTest
+    with MockitoSugar {
+
+  implicit override def newAppForTest(testData: TestData): Application =
+    new GuiceApplicationBuilder().overrides(bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())).build()
 
 
   def await[A](future: Future[A]) = Await.result(future, 5 seconds)
 
+  val mockedConnector = mock[MongoConnector]
+  Mockito.when(mockedConnector.db).thenReturn(mongo)
 
-  val mongoWhatIsRunningWhereRepository = new MongoWhatIsRunningWhereRepository(mongo)
+  val reactiveMongoComponent = new ReactiveMongoComponent {
+    override def mongoConnector: MongoConnector = {
+      mockedConnector
+    }
+  }
+
+  private val metrics: Metrics = new Metrics() {
+    override def defaultRegistry = new MetricRegistry
+    override def toJson = "XxX"
+  }
+
+  val mongoWhatIsRunningWhereRepository = new WhatIsRunningWhereRepository(reactiveMongoComponent, new FutureHelpers((metrics)))
 
   override def beforeEach() {
     await(mongoWhatIsRunningWhereRepository.drop)

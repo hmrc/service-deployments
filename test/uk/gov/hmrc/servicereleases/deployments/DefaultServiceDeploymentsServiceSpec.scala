@@ -29,7 +29,7 @@ class DefaultServiceDeploymentsServiceSpec extends WordSpec with Matchers with M
   
   val dataSource = mock[DeploymentsDataSource]
 
-  val service = new DefaultServiceDeploymentsService(dataSource)
+  val service = new ServiceDeploymentsService(dataSource)
   val now = LocalDateTime.now()
 
   "Get all" should {

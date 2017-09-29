@@ -17,10 +17,13 @@
 package uk.gov.hmrc.servicedeployments.deployments
 
 import java.time.LocalDateTime
+import javax.inject.{Inject, Singleton}
 
+import com.google.inject.ImplementedBy
 import play.api.Logger
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 import uk.gov.hmrc.servicedeployments.deployments.EnvironmentMapping.fullListOfEnvironments
 import uk.gov.hmrc.{HttpClient, JavaDateTimeJsonFormatter}
 
@@ -148,13 +151,16 @@ object ServiceDeploymentInformation {
 }
 
 
+@ImplementedBy(classOf[ReleasesAppConnector])
 trait DeploymentsDataSource {
   def getAll: Future[List[EnvironmentalDeployment]]
   def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]]
 }
 
-class ReleasesAppConnector(deploymentsApiBase: String) extends DeploymentsDataSource {
+@Singleton
+class ReleasesAppConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) extends DeploymentsDataSource {
 
+  val deploymentsApiBase: String = serviceDeploymentsConfig.deploymentsApiBase
   def getAll: Future[List[EnvironmentalDeployment]] = {
 
     Logger.info("Getting all the deployments.")

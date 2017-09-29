@@ -17,13 +17,14 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.time.{LocalDateTime, Period}
+import javax.inject.{Inject, Singleton}
 
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import play.api.mvc.Action
 import play.modules.reactivemongo.MongoDbConnection
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment, ServiceDeploymentInformation}
 
 import scala.concurrent.Future
@@ -54,15 +55,10 @@ object DeploymentResult {
 
 }
 
-object DeploymentsController extends DeploymentsController with MongoDbConnection {
-  override def deploymentsRepository = new MongoDeploymentsRepository(db)
-}
-
-trait DeploymentsController extends BaseController {
+@Singleton
+class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deploymentsRepository: DeploymentsRepository) extends BaseController {
 
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
-
-  def deploymentsRepository: DeploymentsRepository
 
   def forService(serviceName: String) = Action.async { implicit request =>
     deploymentsRepository.getForService(serviceName).map {
@@ -79,7 +75,7 @@ trait DeploymentsController extends BaseController {
   }
 
   def update() = Action.async { implicit request =>
-    new UpdateScheduler("service-deployments-scheduled-job").updateDeploymentServiceModel.map {
+    updateScheduler.updateDeploymentServiceModel.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message, ex) => InternalServerError(message)
@@ -88,23 +84,20 @@ trait DeploymentsController extends BaseController {
 
   def importRaw() = Action.async(parse.temporaryFile) { request =>
 
-    import EnvironmentalDeployment._
+    val deploymentsDataSource = new DeploymentsDataSource {
 
-    val source = Source.fromFile(request.body.file, "UTF-8")
-    val jsons = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
+      import EnvironmentalDeployment._
 
-    val scheduler = new Scheduler with DefaultSchedulerDependencies {
-      override def lockId: String = "service-deployments-scheduled-job"
+      val source = Source.fromFile(request.body.file, "UTF-8")
+      val jsons = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
 
-      override val deploymentsDataSource:DeploymentsDataSource = new DeploymentsDataSource {
-        override def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
+      override def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
 
-        // noop
-        override def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]] = Future.successful(Nil)
-      }
+      // noop
+      override def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]] = Future.successful(Nil)
     }
 
-    scheduler.updateDeploymentServiceModel.map {
+    updateScheduler.copy(deploymentsDataSource = deploymentsDataSource).updateDeploymentServiceModel.map {
       case Info(message) => Ok(message)
       case Warn(message) => Ok(message)
       case Error(message, ex) => InternalServerError(message)
@@ -117,3 +110,4 @@ trait DeploymentsController extends BaseController {
     }
   }
 }
+

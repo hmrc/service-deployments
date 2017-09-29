@@ -25,17 +25,17 @@ private object AppDependencies {
   private val githubClientVersion = "1.14.0"
   private val gitClientVersion = "0.6.0"
 
-  private val hmrcTestVersion = "2.3.0"
+  private val hmrcTestVersion = "2.4.0"
 
 
   val compile = Seq(
     ws,
-    "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
+    "uk.gov.hmrc" %% "bootstrap-play-25" % "0.10.0",
     "uk.gov.hmrc" %% "git-client" % gitClientVersion,
     "uk.gov.hmrc" %% "github-client" % githubClientVersion,
     "uk.gov.hmrc" %% "mongo-lock" % "5.0.0",
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "play-reactivemongo" % playReactivemongoVersion
+    "uk.gov.hmrc" %% "play-reactivemongo" % "6.1.0"
   )
 
   trait TestDependencies {
