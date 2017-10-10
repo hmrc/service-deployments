@@ -19,12 +19,13 @@ package uk.gov.hmrc.servicedeployments
 import java.time.{LocalDateTime, ZoneOffset}
 import javax.inject.{Inject, Singleton}
 
+import org.eclipse.egit.github.core.client.RequestException
 import play.api.Logger
 import uk.gov.hmrc.servicedeployments.DeploymentOperation.{Add, Update}
 import uk.gov.hmrc.servicedeployments.FutureHelpers.FutureIterable
 import uk.gov.hmrc.servicedeployments.deployments.{ServiceDeployment, ServiceDeploymentsService}
 import uk.gov.hmrc.servicedeployments.services.{Repository, ServiceRepositoriesService}
-import uk.gov.hmrc.servicedeployments.tags.{TagsService, Tag}
+import uk.gov.hmrc.servicedeployments.tags.{Tag, TagsService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -81,9 +82,12 @@ class DeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositori
   private def convertTagsToMap(tags: Seq[Tag]) =
     tags.map { x => x.version -> x.createdAt } toMap
 
-  private def processDeployments(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]) =
+  private def processDeployments(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]): Future[Iterable[Boolean]] =
     maybeTagDates match {
       case Success(td) => createOrUpdateDeploymentsFromDeploymentsAndTags(service, td)
+      case Failure(ex: RequestException) if ex.getStatus == 404 =>
+        Logger.debug(s"Could not find any tags for ${service.serviceName}, most likely caused by an app created in the open manually without our jenkins jobs")
+        FutureIterable(Seq(Future.successful(false)))
       case Failure(ex) =>
         Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}", ex)
         FutureIterable(Seq(Future.successful(false)))
