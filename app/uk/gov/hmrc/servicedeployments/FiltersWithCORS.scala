@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc
+package uk.gov.hmrc.servicedeployments
 
 import javax.inject.Inject
 
-import _root_.play.api.http.DefaultHttpFilters
-import _root_.play.filters.cors.CORSFilter
+import play.api.http.DefaultHttpFilters
+import play.filters.cors.CORSFilter
 import uk.gov.hmrc.play.bootstrap.filters.MicroserviceFilters
 
 class FiltersWithCORS @Inject()(defaultFilters : MicroserviceFilters, corsFilter: CORSFilter)
