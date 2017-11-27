@@ -33,7 +33,8 @@ class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
                     | "qa-datacentred-sal01": "0.93.0",
                     | "production-datacentred-sal01": "0.94.0",
                     | "an": "app123",
-                    | "externaltest-datacentred-sal01": "0.95.0"
+                    | "externaltest-datacentred-sal01": "0.95.0",
+                    | "development-aws-london": "8.46.0-1-g223c499"
                     |}""".stripMargin
 
 
@@ -45,7 +46,9 @@ class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
         Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.92.0"),
         Deployment(EnvironmentMapping("qa", "qa"), "datacentred-sal01", "0.93.0"),
         Deployment(EnvironmentMapping("production", "production"), "datacentred-sal01", "0.94.0"),
-        Deployment(EnvironmentMapping("external test", "externaltest"), "datacentred-sal01", "0.95.0"))
+        Deployment(EnvironmentMapping("external test", "externaltest"), "datacentred-sal01", "0.95.0"),
+        Deployment(EnvironmentMapping("development", "development"), "aws-london", "8.46.0-1-g223c499")
+      )
     }
 
     it("should error if app name is missing in payload") {

@@ -88,6 +88,7 @@ final case class EnvironmentMapping(name: String, releasesAppId: String)
 object EnvironmentMapping {
   implicit val environmentFormat = Json.format[EnvironmentMapping]
   val fullListOfEnvironments = Set(
+    EnvironmentMapping("development" , "development"),
     EnvironmentMapping("qa" , "qa"),
     EnvironmentMapping("staging" , "staging"),
     EnvironmentMapping("external test" , "externaltest"),
