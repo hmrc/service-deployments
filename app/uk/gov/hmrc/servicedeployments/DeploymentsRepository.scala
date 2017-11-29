@@ -23,7 +23,7 @@ import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.DB
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.bson.{BSONDocument, BSONObjectID, BSONRegex}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -131,7 +131,7 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
   def getForService(serviceName: String): Future[Option[Seq[Deployment]]] = {
 
     futureHelpers.withTimerAndCounter("mongo.read") {
-      find("name" -> BSONDocument("$eq" -> serviceName)) map {
+      find("name" -> BSONRegex("^" + serviceName + "$", "i")) map {
         case Nil => None
         case data => Some(data.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)
       }

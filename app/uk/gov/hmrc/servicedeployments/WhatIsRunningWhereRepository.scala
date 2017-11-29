@@ -21,7 +21,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.bson.{BSONDocument, BSONObjectID, BSONRegex}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -101,7 +101,7 @@ class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futu
   def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]] = {
 
     futureHelpers.withTimerAndCounter("mongo.read") {
-      find("serviceName" -> BSONDocument("$eq" -> serviceName)) map {
+      find("serviceName" -> BSONRegex("^" + serviceName + "$", "i")) map {
         case Nil => None
         case data => data.headOption
       }

@@ -247,6 +247,23 @@ class MongoServiceDeploymentInformationRepositorySpec
       whatIsRunningWheres.value.serviceName shouldBe "app-1"
       whatIsRunningWheres.value.deployments shouldBe deployments1
     }
+
+    it("be case insensitive" ) {
+
+      val deployments1 = Set(
+        Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1")
+      )
+
+      await(mongoWhatIsRunningWhereRepository.collection.insert(Json.obj(
+        "serviceName" -> "app-1" ,
+        "deployments" -> deployments1
+      )))
+
+      val whatIsRunningWheres: Option[WhatIsRunningWhereModel] = await(mongoWhatIsRunningWhereRepository.getForService("APP-1"))
+
+      whatIsRunningWheres shouldBe defined
+      whatIsRunningWheres.value.serviceName shouldBe "app-1"
+    }
   }
 
   describe("clearAllData") {

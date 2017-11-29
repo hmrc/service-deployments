@@ -163,6 +163,17 @@ class MongoDeploymentsRepositorySpec
       deployments.get.map(_.version) shouldBe List("v4", "v3", "v2", "v1")
 
     }
+    "be case insensitive" in {
+      val now: LocalDateTime = LocalDateTime.now()
+
+      await(mongoDeploymentsRepository.add(Deployment("randomService", "vSomeOther1", None, now, Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
+
+      val deployments: Option[Seq[Deployment]] = await(mongoDeploymentsRepository.getForService("TEST"))
+
+      deployments shouldBe defined
+
+    }
   }
 
 
