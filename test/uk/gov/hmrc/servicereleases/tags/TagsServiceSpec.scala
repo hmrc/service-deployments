@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,53 +48,41 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-
 class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneAppPerTest with ScalaFutures {
 
   implicit override def newAppForTest(testData: TestData): Application =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())
-      ).build()
+      )
+      .build()
 
   trait SetUp {
-    val gitEnterpriseTagDataSource = mock[GitConnectorEnterprise]
     val gitOpenTagDataSource = mock[GitConnectorOpen]
-    val compositeTagsSource = new TagsService(gitOpenTagDataSource, gitEnterpriseTagDataSource)
+    val compositeTagsSource  = new TagsService(gitOpenTagDataSource)
   }
 
   "getAll" should {
 
     val repoName = "service"
-    val org = "org"
-
-    "use enterprise data source if RepoType is Enterprise" in new SetUp {
-      val repoType = "github-enterprise"
-      val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
-      when(gitEnterpriseTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
-
-      compositeTagsSource.get(org, repoName, repoType).futureValue shouldBe Success(repoTags)
-      verifyZeroInteractions(gitOpenTagDataSource)
-    }
+    val org      = "org"
 
     "use open data source if RepoType is Open" in new SetUp {
-      val repoType = "github-com"
+      val repoType            = "github-com"
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
 
       compositeTagsSource.get(org, repoName, repoType).futureValue shouldBe Success(repoTags)
-      verifyZeroInteractions(gitEnterpriseTagDataSource)
     }
 
     "should fail gracefull by setting the Try to Failure state rather than the future" in new SetUp {
-      val repoType = "github-com"
+      val repoType            = "github-com"
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
-      val ex =  new RuntimeException("Bleeuurgh")
+      val ex                  = new RuntimeException("Bleeuurgh")
 
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.failed(ex))
 
       compositeTagsSource.get(org, repoName, repoType).futureValue shouldBe Failure(ex)
-      verifyZeroInteractions(gitEnterpriseTagDataSource)
     }
 
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,23 +57,34 @@ object HttpClient {
     withErrorHandling("GET", url)(header) {
       case s if s.status >= 200 && s.status < 300 => s.body
       case res =>
-        throw new RuntimeException(s"Unexpected response status : ${res.status}  calling url : $url response body : ${res.body}")
+        throw new RuntimeException(
+          s"Unexpected response status : ${res.status}  calling url : $url response body : ${res.body}")
     }
 
-  private def withErrorHandling[T](method: String, url: String, body: Option[JsValue] = None)(headers: Seq[(String, String)])(f: WSResponse => T)(implicit ec: ExecutionContext): Future[T] =
-    buildCall(method, url, body, headers).execute().transform(
-      f,
-      _ => throw new RuntimeException(s"Error connecting  $url")
-    )
+  private def withErrorHandling[T](method: String, url: String, body: Option[JsValue] = None)(
+    headers: Seq[(String, String)])(f: WSResponse => T)(implicit ec: ExecutionContext): Future[T] =
+    buildCall(method, url, body, headers)
+      .execute()
+      .transform(
+        f,
+        _ => throw new RuntimeException(s"Error connecting  $url")
+      )
 
-  private def buildCall(method: String, url: String, body: Option[JsValue] = None, headers: Seq[(String, String)] = List()) = {
-    val req = WS.client.url(url)
+  private def buildCall(
+    method: String,
+    url: String,
+    body: Option[JsValue]          = None,
+    headers: Seq[(String, String)] = List()) = {
+    val req = WS.client
+      .url(url)
       .withMethod(method)
       .withHeaders(headers: _*)
 
-    body.map { b =>
-      req.withBody(b)
-    }.getOrElse(req)
+    body
+      .map { b =>
+        req.withBody(b)
+      }
+      .getOrElse(req)
   }
 
 }

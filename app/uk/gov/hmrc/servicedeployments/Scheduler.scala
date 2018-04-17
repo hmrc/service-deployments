@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,27 +44,23 @@ case class Warn(message: String) extends JobResult {
 case class Info(message: String) extends JobResult {
   Logger.info(message)
 }
-
-
 @Singleton
-case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSource,
-                                     akkaSystem: ActorSystem,
-                                     reactiveMongoComponent: ReactiveMongoComponent,
-                                     metrics: Metrics,
-                                     whatIsRunningWhereService: WhatIsRunningWhereUpdateService,
-                                     deploymentsService:DeploymentsService
-                                    ) {
+case class UpdateScheduler @Inject()(
+  deploymentsDataSource: DeploymentsDataSource,
+  akkaSystem: ActorSystem,
+  reactiveMongoComponent: ReactiveMongoComponent,
+  metrics: Metrics,
+  whatIsRunningWhereService: WhatIsRunningWhereUpdateService,
+  deploymentsService: DeploymentsService) {
 
   val defaultMetricsRegistry = metrics.defaultRegistry
-
 
   def lockRepository: LockRepository = LockMongoRepository(reactiveMongoComponent.mongoConnector.db)
 
   val lockTimeout: Duration = Duration.standardMinutes(15)
 
-  val whatsRunningWhereLock = buildLock(lockRepository, "what-is-running-where-job", lockTimeout)
+  val whatsRunningWhereLock  = buildLock(lockRepository, "what-is-running-where-job", lockTimeout)
   val serviceDeploymentsLock = buildLock(lockRepository, "service-deployments-scheduled-job", lockTimeout)
-
 
   def startUpdatingDeploymentServiceModel(interval: FiniteDuration): Unit = {
     Logger.info(s"Initialising mongo update (for DeploymentServiceModel) every $interval")
@@ -82,51 +78,56 @@ case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSourc
     }
   }
 
-  def updateDeploymentServiceModel: Future[JobResult] = {
+  def updateDeploymentServiceModel: Future[JobResult] =
     serviceDeploymentsLock.tryLock {
       Logger.info(s"Starting mongo update")
 
-      deploymentsService.updateModel().map { result =>
-        val total = result.toList.length
-        val failureCount = result.count(r => !r)
-        val successCount = total - failureCount
+      deploymentsService
+        .updateModel()
+        .map { result =>
+          val total        = result.toList.length
+          val failureCount = result.count(r => !r)
+          val successCount = total - failureCount
 
-        defaultMetricsRegistry.counter("scheduler.success").inc(successCount)
-        defaultMetricsRegistry.counter("scheduler.failure").inc(failureCount)
+          defaultMetricsRegistry.counter("scheduler.success").inc(successCount)
+          defaultMetricsRegistry.counter("scheduler.failure").inc(failureCount)
 
-        Info(s"Added/updated $successCount deployments and encountered $failureCount failures")
-      }.recover { case ex =>
-        Error(s"Something went wrong during the mongo update:", ex)
-      }
+          Info(s"Added/updated $successCount deployments and encountered $failureCount failures")
+        }
+        .recover {
+          case ex =>
+            Error(s"Something went wrong during the mongo update:", ex)
+        }
     } map { resultOrLocked =>
       resultOrLocked getOrElse {
         Warn("Failed to obtain lock. Another process may have it.")
       }
     }
-  }
 
-  def updateWhatIsRunningWhereModel: Future[JobResult] = {
+  def updateWhatIsRunningWhereModel: Future[JobResult] =
     whatsRunningWhereLock.tryLock {
       Logger.info(s"Starting mongo update")
 
-      whatIsRunningWhereService.updateModel().map { result =>
-        val total = result.toList.length
+      whatIsRunningWhereService
+        .updateModel()
+        .map { result =>
+          val total = result.toList.length
 
-        defaultMetricsRegistry.counter("scheduler.success").inc(total)
+          defaultMetricsRegistry.counter("scheduler.success").inc(total)
 
-        Info(s"Added/updated $total WhatIsRunningWhere")
-      }.recover { case ex =>
-        Error(s"Something went wrong during the mongo update:", ex)
-      }
+          Info(s"Added/updated $total WhatIsRunningWhere")
+        }
+        .recover {
+          case ex =>
+            Error(s"Something went wrong during the mongo update:", ex)
+        }
     } map { resultOrLocked =>
       resultOrLocked getOrElse {
         Warn("Failed to obtain lock. Another process may have it.")
       }
     }
-  }
 
-
-  def buildLock(lockRepository: LockRepository, theLockId: String, lockTimeout: Duration): LockKeeper = {
+  def buildLock(lockRepository: LockRepository, theLockId: String, lockTimeout: Duration): LockKeeper =
     new LockKeeper {
       override def repo = lockRepository
 
@@ -134,6 +135,4 @@ case class UpdateScheduler @Inject()(deploymentsDataSource: DeploymentsDataSourc
 
       override val forceLockReleaseAfter: Duration = lockTimeout
     }
-  }
 }
-

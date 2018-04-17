@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,23 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
-import uk.gov.hmrc.servicedeployments.tags.RepoType.{Enterprise, Open}
+import uk.gov.hmrc.servicedeployments.tags.RepoType.Open
 
 import scala.concurrent.Future
 import scala.util.Try
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
-
-
 @Singleton
-class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen,
-                            gitEnterpriseTagDataSource: GitConnectorEnterprise) {
+class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen) {
 
   def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]] =
     RepoType.from(repoType) match {
-      case Enterprise =>
-        Logger.debug(s"$name org : $org get Enterprise Repo deployment tags")
-        continueOnError(gitEnterpriseTagDataSource.get(org, name))
-
       case Open =>
         Logger.debug(s"$name org : $org get Open Repo deployment tags")
         continueOnError(gitOpenTagDataSource.get(org, name))
     }
 }
-

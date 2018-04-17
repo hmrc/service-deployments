@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class WhatIsRunningWhereUpdateService @Inject()(whatIsRunningWhereDataSource: DeploymentsDataSource,
-                                                repository: WhatIsRunningWhereRepository) {
+class WhatIsRunningWhereUpdateService @Inject()(
+  whatIsRunningWhereDataSource: DeploymentsDataSource,
+  repository: WhatIsRunningWhereRepository) {
 
   def updateModel() =
     for {
       whatsRunningWhere <- whatIsRunningWhereDataSource.whatIsRunningWhere
-      success <- Future.sequence(whatsRunningWhere.map(repository.update))
+      success           <- Future.sequence(whatsRunningWhere.map(repository.update))
     } yield success
 
 }

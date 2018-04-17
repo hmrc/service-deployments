@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
-
 trait FuturesCache[K, V] {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
 
@@ -39,7 +38,8 @@ trait FuturesCache[K, V] {
 
   lazy val cache = {
 
-    CacheBuilder.newBuilder()
+    CacheBuilder
+      .newBuilder()
       .refreshAfterWrite(refreshTimeInMillis.toMillis, TimeUnit.MILLISECONDS)
       .build(
         new CacheLoader[K, Future[V]] {

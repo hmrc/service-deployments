@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import uk.gov.hmrc.servicedeployments.deployments.Deployer
 
 import scala.concurrent.Future
 
-class DeploymentControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues{
+class DeploymentControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues {
 
   val timestamp = LocalDateTime.of(2016, 4, 5, 12, 57, 10)
 
@@ -55,29 +55,62 @@ class DeploymentControllerSpec extends PlaySpec with MockitoSugar with Results w
 
   val controller = new DeploymentsController(mock[UpdateScheduler], deploymentRepo)
 
-
   "forService" should {
     "retrieve list of all deployments for a service" in {
 
       val now: LocalDateTime = LocalDateTime.now()
 
-      when(deploymentRepo.getForService("serviceName")).thenReturn(
-        Future.successful(Some(Seq(
-          Deployment(name = "serviceName", version = "1", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
-          Deployment(name = "serviceName", version = "2", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate)),
-          Deployment(name = "serviceName", version = "3", creationDate = Some(now), productionDate = now, _id = Some(BSONObjectID.generate), deployers = Seq(Deployer("xyz.abc", now)))
-        ))
-        ))
+      when(deploymentRepo.getForService("serviceName")).thenReturn(Future.successful(Some(Seq(
+        Deployment(
+          name           = "serviceName",
+          version        = "1",
+          creationDate   = Some(now),
+          productionDate = now,
+          _id            = Some(BSONObjectID.generate)),
+        Deployment(
+          name           = "serviceName",
+          version        = "2",
+          creationDate   = Some(now),
+          productionDate = now,
+          _id            = Some(BSONObjectID.generate)),
+        Deployment(
+          name           = "serviceName",
+          version        = "3",
+          creationDate   = Some(now),
+          productionDate = now,
+          _id            = Some(BSONObjectID.generate),
+          deployers      = Seq(Deployer("xyz.abc", now)))
+      ))))
 
       val result: Future[Result] = controller.forService("serviceName")(FakeRequest())
 
       val jsonResult: Seq[JsObject] = contentAsJson(result).as[Seq[JsObject]]
 
-      jsonResult.size mustBe  3
+      jsonResult.size mustBe 3
       jsonResult.map(_.value) mustBe Seq(
-        Map("name" -> JsString("serviceName"), "version" -> JsString("1"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(List.empty)),
-        Map("name" -> JsString("serviceName"), "version" -> JsString("2"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(List.empty)),
-        Map("name" -> JsString("serviceName"), "version" -> JsString("3"), "creationDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)), "deployers" -> JsArray(Seq(Json.obj("name" -> JsString("xyz.abc"), "deploymentDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)))))))
+        Map(
+          "name"           -> JsString("serviceName"),
+          "version"        -> JsString("1"),
+          "creationDate"   -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)),
+          "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)),
+          "deployers"      -> JsArray(List.empty)
+        ),
+        Map(
+          "name"           -> JsString("serviceName"),
+          "version"        -> JsString("2"),
+          "creationDate"   -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)),
+          "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)),
+          "deployers"      -> JsArray(List.empty)
+        ),
+        Map(
+          "name"           -> JsString("serviceName"),
+          "version"        -> JsString("3"),
+          "creationDate"   -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)),
+          "productionDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)),
+          "deployers" -> JsArray(Seq(
+            Json.obj("name" -> JsString("xyz.abc"), "deploymentDate" -> JsNumber(now.toEpochSecond(ZoneOffset.UTC)))))
+        )
+      )
     }
   }
 }

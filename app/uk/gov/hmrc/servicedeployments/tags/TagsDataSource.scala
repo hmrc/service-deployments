@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,12 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
-import javax.inject.Singleton
 
-import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen}
-
-import javax.inject.Inject
-
+import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.BlockingIOExecutionContext
-import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.FutureHelpers
+import uk.gov.hmrc.gitclient.GitTag
+import uk.gov.hmrc.githubclient.GhRepoRelease
+import uk.gov.hmrc.servicedeployments.{FutureHelpers, GithubApiClientOpen}
 
 import scala.concurrent.Future
 
@@ -48,7 +44,10 @@ object Tag {
 }
 
 @Singleton
-class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClientOpen: GithubApiClientOpen, identifier: String) {
+class GitConnectorOpen @Inject()(
+  futureHelpers: FutureHelpers,
+  gitHubClientOpen: GithubApiClientOpen,
+  identifier: String) {
 
   import BlockingIOExecutionContext.executionContext
   import futureHelpers._
@@ -56,39 +55,5 @@ class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClientOpen:
   def get(organisation: String, repoName: String): Future[List[Tag]] =
     withTimerAndCounter(s"git.api.$identifier") {
       gitHubClientOpen.getReleases(organisation, repoName).map(identity(_))
-    }
-}
-
-@Singleton
-class GitConnectorEnterprise @Inject()(futureHelpers: FutureHelpers,
-                                       gitClient: GitClient,
-                                       githubApiClientEnterprise: GithubApiClientEnterprise,
-                                       identifier: String) {
-
-  import BlockingIOExecutionContext.executionContext
-  import futureHelpers._
-
-  def get(organisation: String, repoName: String): Future[List[Tag]] =
-    getRepoTags(organisation, repoName).flatMap { x =>
-      val (withCreatedAt, withoutCreatedAt) = x.partition(_.createdAt.isDefined)
-      val serviceDeployment: List[Tag] = withCreatedAt
-
-      tagsWithDeploymentDate(withoutCreatedAt, organisation, repoName).map(serviceDeployment ++ _)
-    }
-
-  private def tagsWithDeploymentDate(gitTags: List[GitTag], organisation: String, repoName: String): Future[List[Tag]] =
-    if (gitTags.nonEmpty)
-      for (rs <- getApiTags(organisation, repoName))
-        yield gitTags.flatMap { gitTag => rs.find(_.tagName == gitTag.name).map(Tag.apply) }
-    else Future.successful(Nil)
-
-  private def getRepoTags(organisation: String, repoName: String) =
-    withTimerAndCounter(s"git.clone.$identifier") {
-      gitClient.getGitRepoTags(repoName, organisation)
-    }
-
-  private def getApiTags(organisation: String, repoName: String) =
-    withTimerAndCounter(s"git.api.$identifier") {
-      githubApiClientEnterprise.getReleases(organisation, repoName)
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDe
 
 class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
 
-  describe("parsing the json")  {
+  describe("parsing the json") {
 
     it("should return appname and all environments correctly") {
       val json = """{
@@ -36,7 +36,6 @@ class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
                     | "externaltest-datacentred-sal01": "0.95.0",
                     | "development-aws-london": "8.46.0-1-g223c499"
                     |}""".stripMargin
-
 
       val whatIsRunningWhere = Json.parse(json).as[ServiceDeploymentInformation]
       whatIsRunningWhere.serviceName shouldBe "app123"
@@ -57,12 +56,11 @@ class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
                 |  "externaltest-datacentred-sal01": "0.98.0"
                 |}""".stripMargin
 
-
       val whatIsRunningWhere = Json.parse(j).validate[ServiceDeploymentInformation]
 
       whatIsRunningWhere match {
         case JsError(e) => e.toString() should include("'an' (i.e. application name) field is missing in json")
-        case _ => fail("was expecting a json error")
+        case _          => fail("was expecting a json error")
       }
     }
 
@@ -71,14 +69,13 @@ class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
                 |  "an": "appName"
                 |}""".stripMargin
 
-
       val whatIsRunningWhere = Json.parse(j).as[ServiceDeploymentInformation]
 
       whatIsRunningWhere shouldBe ServiceDeploymentInformation("appName", Set.empty)
     }
 
     it("should ignore non-left environments when serialising") {
-      val json = """{
+      val json               = """{
                    | "an": "app123",
                    | "staging-datacentred-sal01": "0.90.0",
                    | "prod-right": "0.95.0"

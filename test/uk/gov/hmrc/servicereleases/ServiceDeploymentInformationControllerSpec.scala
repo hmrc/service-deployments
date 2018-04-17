@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.servicereleases
 
-
 import org.mockito.Mockito._
 import org.scalatest.OptionValues
 import org.scalatest.mock.MockitoSugar
@@ -31,12 +30,11 @@ import uk.gov.hmrc.servicedeployments.{UpdateScheduler, WhatIsRunningWhereContro
 
 import scala.concurrent.Future
 
-class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues{
+class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues {
 
   val whatIsRunningWhereRepo = mock[WhatIsRunningWhereRepository]
 
-  val controller = new WhatIsRunningWhereController(whatIsRunningWhereRepo, mock[UpdateScheduler]) 
-
+  val controller = new WhatIsRunningWhereController(whatIsRunningWhereRepo, mock[UpdateScheduler])
 
   "WhatIsRunningWhereController.forApplication" should {
     "retrieve list of all WhatsRunningWhere for an application without datacentered" in {
@@ -48,43 +46,43 @@ class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSu
       )
 
       when(whatIsRunningWhereRepo.getForService("appName-1")).thenReturn(
-        Future.successful(Some(
-          WhatIsRunningWhereModel(serviceName = "appName-1", deployments = deployments)
-        ))
+        Future.successful(
+          Some(
+            WhatIsRunningWhereModel(serviceName = "appName-1", deployments = deployments)
+          ))
       )
 
       val result: Future[Result] = controller.forApplication("appName-1")(FakeRequest())
 
-      val json = contentAsJson(result)
+      val json                 = contentAsJson(result)
       val jsonResult: JsObject = json.as[JsObject]
 
-      jsonResult mustBe JsObject(Map(
-        "serviceName" -> JsString("appName-1"),
-        "deployments" -> JsArray(
-          Seq(
-            JsObject(
-              Map(
-                "environmentMapping" -> JsObject(
-                  Map(
-                    "name" -> JsString("dev"),
-                    "releasesAppId" -> JsString("dev-app")
-                  )
-                ),
-                "datacentre" -> JsString("aws"),
-                "version" -> JsString("0.1.0")
-              )),
-            JsObject(
-              Map(
-                "environmentMapping" -> JsObject(
-                  Map(
-                    "name" -> JsString("production"),
-                    "releasesAppId" -> JsString("production")
-                  )
-                ),
-                "datacentre" -> JsString("skyscape-farnborough"),
-                "version" -> JsString("0.0.2")
-              ))
-          ))))
+      jsonResult mustBe JsObject(
+        Map(
+          "serviceName" -> JsString("appName-1"),
+          "deployments" -> JsArray(Seq(
+            JsObject(Map(
+              "environmentMapping" -> JsObject(
+                Map(
+                  "name"          -> JsString("dev"),
+                  "releasesAppId" -> JsString("dev-app")
+                )
+              ),
+              "datacentre" -> JsString("aws"),
+              "version"    -> JsString("0.1.0")
+            )),
+            JsObject(Map(
+              "environmentMapping" -> JsObject(
+                Map(
+                  "name"          -> JsString("production"),
+                  "releasesAppId" -> JsString("production")
+                )
+              ),
+              "datacentre" -> JsString("skyscape-farnborough"),
+              "version"    -> JsString("0.0.2")
+            ))
+          ))
+        ))
     }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,15 @@ import uk.gov.hmrc.servicedeployments.deployments.Deployer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-case class Deployment(name: String, version: String,
-                      creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
-                      interval: Option[Long] = None, leadTime: Option[Long] = None,
-                      deployers: Seq[Deployer] = Seq.empty,
-                      _id: Option[BSONObjectID] = None
-                     )
+case class Deployment(
+  name: String,
+  version: String,
+  creationDate: Option[LocalDateTime],
+  productionDate: LocalDateTime,
+  interval: Option[Long]    = None,
+  leadTime: Option[Long]    = None,
+  deployers: Seq[Deployer]  = Seq.empty,
+  _id: Option[BSONObjectID] = None)
 
 object Deployment {
 
@@ -46,7 +49,9 @@ object Deployment {
   import play.api.libs.json._
 
   val localDateTimeRead: Reads[LocalDateTime] =
-    __.read[Long].map { dateTime => LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC) }
+    __.read[Long].map { dateTime =>
+      LocalDateTime.ofEpochSecond(dateTime, 0, ZoneOffset.UTC)
+    }
 
   val localDateTimeToEpochSecondsWrites = new Writes[LocalDateTime] {
     def writes(dateTime: LocalDateTime): JsValue = JsNumber(value = dateTime.atOffset(ZoneOffset.UTC).toEpochSecond)
@@ -61,15 +66,13 @@ object Deployment {
       (__ \ "leadTime").readNullable[Long] and
       (__ \ "deployers").readNullable[Seq[Deployer]].map(_.getOrElse(Seq.empty)) and
       (__ \ "_id").readNullable[BSONObjectID](ReactiveMongoFormats.objectIdRead)
-    ) (Deployment.apply _)
-
+  )(Deployment.apply _)
 
   val deploymentWrites: Writes[Deployment] = {
     import ReactiveMongoFormats.objectIdWrite
     implicit val localDateTimeWrite: Writes[LocalDateTime] = localDateTimeToEpochSecondsWrites
-      Json.writes[Deployment]
+    Json.writes[Deployment]
   }
-
 
   val formats = new OFormat[Deployment]() {
     override def writes(o: Deployment): JsObject = deploymentWrites.writes(o).as[JsObject]
@@ -77,26 +80,25 @@ object Deployment {
     override def reads(json: JsValue): JsResult[Deployment] = deploymentReads.reads(json)
   }
 
-
 }
 
 @Singleton
-class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpers: FutureHelpers )
-  extends ReactiveRepository[Deployment, BSONObjectID](
-    collectionName = "deployments",
-    mongo = mongo.mongoConnector.db,
-    domainFormat = Deployment.formats) {
-
+class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpers: FutureHelpers)
+    extends ReactiveRepository[Deployment, BSONObjectID](
+      collectionName = "deployments",
+      mongo          = mongo.mongoConnector.db,
+      domainFormat   = Deployment.formats) {
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
     Future.sequence(
       Seq(
-        collection.indexesManager.ensure(Index(Seq("productionDate" -> IndexType.Descending), name = Some("productionDateIdx"))),
-        collection.indexesManager.ensure(Index(Seq("name" -> IndexType.Hashed), name = Some("nameIdx")))
+        collection.indexesManager.ensure(
+          Index(Seq("productionDate"                      -> IndexType.Descending), name = Some("productionDateIdx"))),
+        collection.indexesManager.ensure(Index(Seq("name" -> IndexType.Hashed), name     = Some("nameIdx")))
       )
     )
 
-  def add(deployment: Deployment): Future[Boolean] = {
+  def add(deployment: Deployment): Future[Boolean] =
     futureHelpers.withTimerAndCounter("mongo.write") {
       insert(deployment) map {
         case _ => true
@@ -106,17 +108,18 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
         logger.error(s"Could not insert ${deployment.name}", lastError)
         throw lastError
     }
-  }
 
   def update(deployment: Deployment): Future[Boolean] = {
     require(deployment._id.isDefined, "_id must be defined")
     futureHelpers.withTimerAndCounter("mongo.update") {
-      collection.update(
-        selector = Json.obj("_id" -> Json.toJson(deployment._id.get)(ReactiveMongoFormats.objectIdWrite)),
-        update = Deployment.formats.writes(deployment)
-      ).map {
-        case _ => true
-      }
+      collection
+        .update(
+          selector = Json.obj("_id" -> Json.toJson(deployment._id.get)(ReactiveMongoFormats.objectIdWrite)),
+          update   = Deployment.formats.writes(deployment)
+        )
+        .map {
+          case _ => true
+        }
     } recover {
       case lastError =>
         logger.error(s"Could not update ${deployment.name}", lastError)
@@ -124,27 +127,25 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
     }
   }
 
-  def allServicedeployments: Future[Map[String, Seq[Deployment]]] = {
-    findAll().map { all => all.groupBy(_.name) }
-  }
+  def allServicedeployments: Future[Map[String, Seq[Deployment]]] =
+    findAll().map { all =>
+      all.groupBy(_.name)
+    }
 
-  def getForService(serviceName: String): Future[Option[Seq[Deployment]]] = {
-
+  def getForService(serviceName: String): Future[Option[Seq[Deployment]]] =
     futureHelpers.withTimerAndCounter("mongo.read") {
       find("name" -> BSONRegex("^" + serviceName + "$", "i")) map {
-        case Nil => None
+        case Nil  => None
         case data => Some(data.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)
       }
     }
-  }
 
   def clearAllData = super.removeAll().map(_.ok)
 
-  def getAllDeployments: Future[Seq[Deployment]] = {
+  def getAllDeployments: Future[Seq[Deployment]] =
     collection
       .find(BSONDocument.empty)
       .sort(Json.obj("productionDate" -> JsNumber(-1)))
       .cursor[Deployment]()
       .collect[List]()
-  }
 }

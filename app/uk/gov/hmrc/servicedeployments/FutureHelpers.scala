@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 package uk.gov.hmrc.servicedeployments
-
 
 import javax.inject.{Inject, Singleton}
 
@@ -46,12 +45,11 @@ class FutureHelpers @Inject()(metrics: Metrics) {
 
 object FutureHelpers {
   implicit class FutureExtender[A](f: Future[A]) {
-    def andAlso(fn: A => Unit): Future[A] = {
+    def andAlso(fn: A => Unit): Future[A] =
       f.flatMap { r =>
         fn(r)
         f
       }
-    }
   }
 
   implicit class FutureOfBoolean(f: Future[Boolean]) {
@@ -66,21 +64,21 @@ object FutureHelpers {
   }
 
   implicit class FutureIterable[A](futureList: Future[Iterable[A]]) {
-    def flatMap[B](fn: A => Future[Iterable[B]])(implicit ec: ExecutionContext) = {
-      futureList.flatMap { list =>
-        val listOfFutures = list.map { li =>
-          fn(li)
+    def flatMap[B](fn: A => Future[Iterable[B]])(implicit ec: ExecutionContext) =
+      futureList
+        .flatMap { list =>
+          val listOfFutures = list.map { li =>
+            fn(li)
+          }
+
+          Future.sequence(listOfFutures)
         }
+        .map(_.flatten)
 
-        Future.sequence(listOfFutures)
-      }.map(_.flatten)
-    }
-
-    def map[B](fn: A => B)(implicit ec: ExecutionContext): Future[Iterable[B]] = {
+    def map[B](fn: A => B)(implicit ec: ExecutionContext): Future[Iterable[B]] =
       futureList.map(_.map {
         fn
       })
-    }
 
     def filter[B](fn: A => Boolean)(implicit ec: ExecutionContext): Future[Iterable[A]] =
       futureList.map(_.filter(fn))

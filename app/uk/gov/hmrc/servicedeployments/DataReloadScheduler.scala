@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,10 @@ import javax.inject.{Inject, Singleton}
 import akka.actor.ActorSystem
 
 import scala.concurrent.duration._
-
-
-
 @Singleton
-class DataReloadScheduler @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig,
-                                    updateScheduler: UpdateScheduler) {
+class DataReloadScheduler @Inject()(
+  serviceDeploymentsConfig: ServiceDeploymentsConfig,
+  updateScheduler: UpdateScheduler) {
 
   if (serviceDeploymentsConfig.schedulerEnabled) {
     updateScheduler.startUpdatingWhatIsRunningWhereModel(10 minutes)

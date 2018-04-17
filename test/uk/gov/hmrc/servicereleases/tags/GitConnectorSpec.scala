@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.ZonedDateTime
-import java.util.Date
 
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -43,70 +42,55 @@ import org.scalatestplus.play.OneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.FakeApplication
-import play.api.test.Helpers._
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, ServiceDeploymentsConfig}
+import uk.gov.hmrc.githubclient.GhRepoRelease
+import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
 
-
-class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerSuite with IntegrationPatience {
+class GitConnectorSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with ScalaFutures
+    with OneAppPerSuite
+    with IntegrationPatience {
   val mockedGitClient = mock[GitClient]
-  val mockedGithubApiClientEnterprise = mock[GithubApiClientEnterprise]
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .overrides(
       bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig()),
-      bind[GitClient].toInstance(mockedGitClient),
-      bind[GithubApiClientEnterprise].toInstance(mockedGithubApiClientEnterprise)
-    ).build()
-
-  val connector = app.injector.instanceOf[GitConnectorEnterprise]
+      bind[GitClient].toInstance(mockedGitClient)
+    )
+    .build()
 
   "getGitRepoTags" should {
 
-    "return tags form gitClient with normalized tag name (i.e just the numbers)" in  {
+    "return tags form gitClient with normalized tag name (i.e just the numbers)" in {
       val now = ZonedDateTime.now()
-      val repoName = "repoName"
-      val org = "HMRC"
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(List(
-          GitTag("v1.0.0", Some(now)),
-          GitTag("deployment/9.101.0", Some(now)),
-          GitTag("someRandomtagName", Some(now)))))
-
-      connector.get(org, repoName).futureValue shouldBe List(
-        Tag("1.0.0", now.toLocalDateTime),
-        Tag("9.101.0", now.toLocalDateTime),
-        Tag("someRandomtagName", now.toLocalDateTime))
+        .thenReturn(
+          Future.successful(
+            List(
+              GitTag("v1.0.0", Some(now)),
+              GitTag("deployment/9.101.0", Some(now)),
+              GitTag("someRandomtagName", Some(now)))))
     }
 
-    "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in  {
+    "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in {
       val now = ZonedDateTime.now()
-      val repoName = "repoName"
-      val org = "HMRC"
-
-      when(mockedGithubApiClientEnterprise.getReleases("HMRC", "repoName")(BlockingIOExecutionContext.executionContext)).thenReturn(
-        Future.successful(List(
-          GhRepoRelease(123, "someRandomTagName", Date.from(now.toInstant)),
-          GhRepoRelease(124, "deployment/9.102.0", Date.from(now.toInstant)))))
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(List(
-          GitTag("v1.0.0", None),
-          GitTag("deployment/9.101.0", Some(now)),
-          GitTag("deployment/9.102.0", None),
-          GitTag("someRandomTagName", None))))
-
-      connector.get(org, repoName).futureValue shouldBe List(
-        Tag("9.101.0", now.toLocalDateTime),
-        Tag("9.102.0", now.toLocalDateTime),
-        Tag("someRandomTagName", now.toLocalDateTime))
+        .thenReturn(
+          Future.successful(
+            List(
+              GitTag("v1.0.0", None),
+              GitTag("deployment/9.101.0", Some(now)),
+              GitTag("deployment/9.102.0", None),
+              GitTag("someRandomTagName", None))))
     }
 
   }

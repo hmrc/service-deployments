@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,41 +44,42 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen, ServiceDeploymentsConfig}
-import uk.gov.hmrc.servicedeployments.services.CatalogueConnector
+import uk.gov.hmrc.githubclient.GhRepoRelease
+import uk.gov.hmrc.servicedeployments.{GithubApiClientOpen, ServiceDeploymentsConfig}
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
 
-
-class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerTest with IntegrationPatience {
+class GitHubConnectorSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with ScalaFutures
+    with OneAppPerTest
+    with IntegrationPatience {
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
-  private val githubApiClientEnterprise = mock[GithubApiClientEnterprise]
   private val githubApiClientOpen = mock[GithubApiClientOpen]
-  private val mockedGitClient = mock[GitClient]
+  private val mockedGitClient     = mock[GitClient]
 
   override def newAppForTest(testData: TestData) =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
         bind[GitClient].toInstance(mockedGitClient),
-        bind[GithubApiClientEnterprise].toInstance(githubApiClientEnterprise),
         bind[GithubApiClientOpen].toInstance(githubApiClientOpen)
-      ).build()
-
+      )
+      .build()
 
   lazy val githubOpenConnector = app.injector.instanceOf[GitConnectorOpen]
-  lazy val githubEnterpriseConnector = app.injector.instanceOf[GitConnectorEnterprise]
 
   "getServiceRepoDeploymentTags" should {
 
     "get repo deployment tags from github open deployments" in {
       val now: LocalDateTime = LocalDateTime.now()
-      val deployments = List(
-        GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
+      val deployments =
+        List(GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
 
       when(githubApiClientOpen.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(deployments))
@@ -87,22 +88,12 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
       tags.futureValue shouldBe List(Tag("1.9.0", now))
     }
-    
-    "get repo deployment tags from github enterprise deployments" in {
-      val now: LocalDateTime = LocalDateTime.now()
-      val deployments = List(
-        GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
 
-      when(githubApiClientEnterprise.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(deployments))
+    "get repo deployment tags from github open source deployments" in {
+      val now: LocalDateTime = LocalDateTime.now()
 
       when(mockedGitClient.getGitRepoTags("repoA", "OrgA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(GitTag("1.9.0", Some(now.atZone(ZoneOffset.UTC))))))
-
-
-      val tags = githubEnterpriseConnector.get("OrgA", "repoA")
-
-      tags.futureValue shouldBe List(Tag("1.9.0", now))
     }
 
   }

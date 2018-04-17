@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,22 +48,30 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
 
-class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with BeforeAndAfterEach with DefaultPatienceConfig with OneAppPerTest {
+class DeploymentsServiceSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with ScalaFutures
+    with BeforeAndAfterEach
+    with DefaultPatienceConfig
+    with OneAppPerTest {
 
   implicit override def newAppForTest(testData: TestData): Application =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())
-      ).build()
+      )
+      .build()
 
-
-  val servicesService = mock[ServiceRepositoriesService]
-  val deploymentsService = mock[ServiceDeploymentsService]
-  val tagsService = mock[TagsService]
+  val servicesService       = mock[ServiceRepositoriesService]
+  val deploymentsService    = mock[ServiceDeploymentsService]
+  val tagsService           = mock[TagsService]
   val deploymentsRepository = mock[DeploymentsRepository]
 
   val service = new DeploymentsService(servicesService, deploymentsService, tagsService, deploymentsRepository)
-  val configureMocks: (((String) => DeploymentsTestFixture) => Seq[DeploymentsTestFixture]) => Map[String, ServiceTestFixture] =
+  val configureMocks
+    : (((String) => DeploymentsTestFixture) => Seq[DeploymentsTestFixture]) => Map[String, ServiceTestFixture] =
     ServiceTestFixture.configureMocks(servicesService, deploymentsService, tagsService, deploymentsRepository)
 
   override def beforeEach() = {
@@ -77,20 +85,21 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
     when(deploymentsRepository.update(any())).thenReturn(Future.successful(true))
   }
 
-
-
   "updateModel" should {
 
     "Add any new deployments for known services to the mongo repository" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout("1.0.0", "2.0.0")
-          .deploymentsKnowsAbout("1.0.0", "2.0.0", "3.0.0")
-          .tagsServiceKnowsAbout("1.0.0", "2.0.0", "3.0.0"),
-        forService("another")
-          .repositoryKnowsAbout("1.0.0")
-          .deploymentsKnowsAbout("1.0.0", "1.1.0")
-          .tagsServiceKnowsAbout("1.0.0", "1.1.0")))
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout("1.0.0", "2.0.0")
+              .deploymentsKnowsAbout("1.0.0", "2.0.0", "3.0.0")
+              .tagsServiceKnowsAbout("1.0.0", "2.0.0", "3.0.0"),
+            forService("another")
+              .repositoryKnowsAbout("1.0.0")
+              .deploymentsKnowsAbout("1.0.0", "1.1.0")
+              .tagsServiceKnowsAbout("1.0.0", "1.1.0")
+        ))
 
       service.updateModel().futureValue
 
@@ -99,11 +108,13 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
     }
 
     "Add new deployments when a service has never been seen before" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout()
-          .deploymentsKnowsAbout("1.0.0")
-          .tagsServiceKnowsAbout("1.0.0")))
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout()
+              .deploymentsKnowsAbout("1.0.0")
+              .tagsServiceKnowsAbout("1.0.0")))
 
       service.updateModel().futureValue
 
@@ -111,11 +122,13 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
     }
 
     "Add new deployments with a blank tag date if only a lightweight tag is available" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout()
-          .deploymentsKnowsAbout("1.0.0")
-          .tagsServiceKnowsAbout()))
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout()
+              .deploymentsKnowsAbout("1.0.0")
+              .tagsServiceKnowsAbout()))
 
       val result = service.updateModel().futureValue
 
@@ -123,11 +136,13 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
     }
 
     "Cope with a scenario where there are no deployments at all for a service" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout()
-          .deploymentsKnowsAbout()
-          .tagsServiceKnowsAbout()))
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout()
+              .deploymentsKnowsAbout()
+              .tagsServiceKnowsAbout()))
 
       service.updateModel().futureValue
 
@@ -136,15 +151,18 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
     }
 
     "Ignore new deployments for services if we fail to fetch the tags" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout("1.0.0", "2.0.0")
-          .deploymentsKnowsAbout("1.0.0", "2.0.0", "3.0.0")
-          .tagsServiceKnowsAbout("1.0.0", "2.0.0", "3.0.0"),
-        forService("another")
-          .repositoryKnowsAbout("1.0.0")
-          .deploymentsKnowsAbout("1.0.0", "1.1.0")
-          .tagsServiceFailsWith("Error")))
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout("1.0.0", "2.0.0")
+              .deploymentsKnowsAbout("1.0.0", "2.0.0", "3.0.0")
+              .tagsServiceKnowsAbout("1.0.0", "2.0.0", "3.0.0"),
+            forService("another")
+              .repositoryKnowsAbout("1.0.0")
+              .deploymentsKnowsAbout("1.0.0", "1.1.0")
+              .tagsServiceFailsWith("Error")
+        ))
 
       service.updateModel().futureValue
 
@@ -154,14 +172,14 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
       verifyNoMoreInteractions(deploymentsRepository)
     }
 
-
     "Add new deployments when a service has never been seen before with correct deployment lead time interval" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout()
-          .deploymentsKnowsAbout(Map("1.0.0" -> "02-02-2016"))
-          .tagsServiceKnowsAbout(Map("1.0.0" -> "30-01-2016")))
-      )
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout()
+              .deploymentsKnowsAbout(Map("1.0.0" -> "02-02-2016"))
+              .tagsServiceKnowsAbout(Map("1.0.0" -> "30-01-2016"))))
 
       service.updateModel().futureValue
 
@@ -169,13 +187,13 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
     }
 
     "Add new deployments when a service has never been seen before with correct deployment interval" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout()
-          .deploymentsKnowsAbout(Map("1.0.0" -> "02-02-2016", "2.0.0" -> "04-02-2016"))
-      )
-
-      )
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout()
+              .deploymentsKnowsAbout(Map("1.0.0" -> "02-02-2016", "2.0.0" -> "04-02-2016"))
+        ))
 
       service.updateModel().futureValue
 
@@ -183,14 +201,15 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
       testData("service").verifyDeploymentWasAddedToMongoWithCorrectDeploymentInterval("2.0.0" -> Some(2))
     }
 
-
     "Add new deployments when a service has never been seen before and its the first deployment" in {
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout()
-          .deploymentsKnowsAbout("1.0.0")
-          .tagsServiceKnowsAbout("1.0.0")
-      ))
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout()
+              .deploymentsKnowsAbout("1.0.0")
+              .tagsServiceKnowsAbout("1.0.0")
+        ))
 
       service.updateModel().futureValue
 
@@ -199,29 +218,34 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
 
     "update existing deployments which we already know if there is a re-deployment of the same version" in {
 
-      val testData = configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAbout(Map("1.0.0" -> "06-02-2016"))
-          .deploymentsKnowsAboutWithDeployer(Map("0.1.0" -> "xyz.abc", "1.0.0" -> "user.name"))
-          .tagsServiceKnowsAbout("0.1.0", "1.0.0")
-      ))
+      val testData = configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAbout(Map("1.0.0" -> "06-02-2016"))
+              .deploymentsKnowsAboutWithDeployer(Map("0.1.0" -> "xyz.abc", "1.0.0" -> "user.name"))
+              .tagsServiceKnowsAbout("0.1.0", "1.0.0")
+        ))
 
       service.updateModel().futureValue
 
-      testData("service").verifyDeploymentWasAddedWithCorrectDeployers("0.1.0" -> Seq("xyz.abc"))
+      testData("service").verifyDeploymentWasAddedWithCorrectDeployers("0.1.0"   -> Seq("xyz.abc"))
       testData("service").verifyDeploymentWasUpdatedWithCorrectDeployers("1.0.0" -> Seq("user.name"))
     }
 
     "Not do anything if there are no new deployments and all existing deployments have the lead time interval" in {
-      configureMocks(forService => Seq(
-        forService("service")
-          .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.0.0" -> (Some(1l), Some(2l))))
-          .deploymentsKnowsAbout("1.0.0")
-          .tagsServiceKnowsAbout("1.0.0"),
-        forService("another")
-          .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.1.1" -> (Some(1l), Some(2l))))
-          .deploymentsKnowsAbout("1.1.1")
-          .tagsServiceKnowsAbout("1.1.1")))
+      configureMocks(
+        forService =>
+          Seq(
+            forService("service")
+              .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.0.0" -> (Some(1l), Some(2l))))
+              .deploymentsKnowsAbout("1.0.0")
+              .tagsServiceKnowsAbout("1.0.0"),
+            forService("another")
+              .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.1.1" -> (Some(1l), Some(2l))))
+              .deploymentsKnowsAbout("1.1.1")
+              .tagsServiceKnowsAbout("1.1.1")
+        ))
 
       service.updateModel().futureValue
 
@@ -229,7 +253,6 @@ class DeploymentsServiceSpec extends WordSpec with Matchers with MockitoSugar wi
       verify(deploymentsRepository, never).add(any())
       verify(deploymentsRepository, never).update(any())
     }
-
 
   }
 }
