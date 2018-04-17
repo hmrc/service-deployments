@@ -17,11 +17,11 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
-import uk.gov.hmrc.servicedeployments.tags.RepoType.{Enterprise, Open}
+import uk.gov.hmrc.servicedeployments.tags.RepoType.Open
 
 import scala.concurrent.Future
 import scala.util.Try

@@ -84,10 +84,8 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
       tags.futureValue shouldBe List(Tag("1.9.0", now))
     }
     
-    "get repo deployment tags from github enterprise deployments" in {
+    "get repo deployment tags from github open source deployments" in {
       val now: LocalDateTime = LocalDateTime.now()
-      val deployments = List(
-        GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
 
       when(mockedGitClient.getGitRepoTags("repoA", "OrgA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(GitTag("1.9.0", Some(now.atZone(ZoneOffset.UTC))))))

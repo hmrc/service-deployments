@@ -75,7 +75,7 @@ class ServiceRepositoriesServiceSpec extends WordSpec with Matchers with Mockito
           Repository("org2", "github-open")))
     }
 
-    "convert to serviceInfo when no gitenterprise url" in {
+    "convert to serviceInfo when no Git open source url" in {
       val data = List(
         Service("service-frontend", List(
           GithubUrl("github-open", "http://github.com/org2/service-frontend"))))
