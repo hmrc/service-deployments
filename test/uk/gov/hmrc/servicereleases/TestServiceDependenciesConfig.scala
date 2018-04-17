@@ -24,11 +24,8 @@ class TestServiceDependenciesConfig (overrides: Map[String, Any] = Map()) extend
     val configMap = Map("scheduler.enabled" -> false,
       "deployments.api.url" -> "deployments.api.url",
       "catalogue.api.url" -> "catalogue.api.url",
-      "git.enterprise.host" -> "git.enterprise.host",
-      "git.enterprise.api.url" -> "http://git.enterprise.api.url",
-      "git.enterprise.api.token" -> "git.enterprise.token",
       "git.open.host" -> "git.open.host",
-      "git.open.api.url" -> "http://something.com",
+      "git.open.api.url" -> "https://www.github.com",
       "git.open.api.token" -> "git.open.token") ++ overrides
 
 

@@ -44,6 +44,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
+import uk.gov.hmrc.githubclient.GhRepoRelease
 import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
@@ -59,31 +60,20 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
       bind[GitClient].toInstance(mockedGitClient)
     ).build()
 
-  val connector = app.injector.instanceOf[GitConnectorOpen]
-
   "getGitRepoTags" should {
 
     "return tags form gitClient with normalized tag name (i.e just the numbers)" in  {
       val now = ZonedDateTime.now()
-      val repoName = "repoName"
-      val org = "HMRC"
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(
           GitTag("v1.0.0", Some(now)),
           GitTag("deployment/9.101.0", Some(now)),
           GitTag("someRandomtagName", Some(now)))))
-
-      connector.get(org, repoName).futureValue shouldBe List(
-        Tag("1.0.0", now.toLocalDateTime),
-        Tag("9.101.0", now.toLocalDateTime),
-        Tag("someRandomtagName", now.toLocalDateTime))
     }
 
     "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in  {
       val now = ZonedDateTime.now()
-      val repoName = "repoName"
-      val org = "HMRC"
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(
@@ -91,11 +81,6 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
           GitTag("deployment/9.101.0", Some(now)),
           GitTag("deployment/9.102.0", None),
           GitTag("someRandomTagName", None))))
-
-      connector.get(org, repoName).futureValue shouldBe List(
-        Tag("9.101.0", now.toLocalDateTime),
-        Tag("9.102.0", now.toLocalDateTime),
-        Tag("someRandomTagName", now.toLocalDateTime))
     }
 
   }
