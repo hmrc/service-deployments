@@ -22,18 +22,18 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class ServiceDeployment(version: String, deploymentdAt: LocalDateTime, deployers : Seq[Deployer] = Seq.empty )
-
-
+case class ServiceDeployment(version: String, deploymentdAt: LocalDateTime, deployers: Seq[Deployer] = Seq.empty)
 @Singleton
-class ServiceDeploymentsService @Inject()(dataSource: DeploymentsDataSource)  {
+class ServiceDeploymentsService @Inject()(dataSource: DeploymentsDataSource) {
 
   def getAll(): Future[Map[String, Seq[ServiceDeployment]]] =
     dataSource.getAll.map { deployments =>
-        deployments
-          .filter { deployment => isProductionDeployment(deployment) }
-          .groupBy(_.name)
-          .asServiceDeployments()
+      deployments
+        .filter { deployment =>
+          isProductionDeployment(deployment)
+        }
+        .groupBy(_.name)
+        .asServiceDeployments()
     }
 
   private def isProductionDeployment(deployment: EnvironmentalDeployment): Boolean =
@@ -41,18 +41,22 @@ class ServiceDeploymentsService @Inject()(dataSource: DeploymentsDataSource)  {
 
   private class DeploymentMapWrapper(deployments: Map[String, Seq[EnvironmentalDeployment]]) {
     def asServiceDeployments(): Map[String, Seq[ServiceDeployment]] =
-      deployments.map { case (serviceName, list) =>
-        serviceName ->
-          firstDeploymentForEachVersionIn(list).sortBy(_.deploymentdAt.toEpochSecond(ZoneOffset.UTC)) }
+      deployments.map {
+        case (serviceName, list) =>
+          serviceName ->
+            firstDeploymentForEachVersionIn(list).sortBy(_.deploymentdAt.toEpochSecond(ZoneOffset.UTC))
+      }
 
     private def firstDeploymentForEachVersionIn(deployments: Seq[EnvironmentalDeployment]) =
-      deployments.sortBy(_.firstSeen.toEpochSecond(ZoneOffset.UTC))
+      deployments
+        .sortBy(_.firstSeen.toEpochSecond(ZoneOffset.UTC))
         .groupBy(_.version)
         .map { case (v, d) => ServiceDeployment(d.head.version, d.head.firstSeen, d.head.deployers) }
         .toSeq
   }
 
-  private implicit def DeploymentTraversableWrapper(deployments: Map[String, Seq[EnvironmentalDeployment]]) : DeploymentMapWrapper =
+  private implicit def DeploymentTraversableWrapper(
+    deployments: Map[String, Seq[EnvironmentalDeployment]]): DeploymentMapWrapper =
     new DeploymentMapWrapper(deployments)
 
 }

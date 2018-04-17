@@ -27,8 +27,6 @@ import scala.concurrent.Future
 import scala.util.Try
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
-
-
 @Singleton
 class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen) {
 

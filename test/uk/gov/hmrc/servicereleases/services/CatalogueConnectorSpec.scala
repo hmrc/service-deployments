@@ -45,7 +45,8 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerSuite {
 
-  private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig(Map("catalogue.api.url" -> endpointMockUrl))
+  private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig(
+    Map("catalogue.api.url" -> endpointMockUrl))
 
   implicit override lazy val app: Application =
     new GuiceApplicationBuilder()
@@ -62,10 +63,10 @@ class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec wi
 
       givenRequestExpects(
         method = GET,
-        url = s"$endpointMockUrl/services",
-        willRespondWith = (200,
-          Some(
-            """|[{
+        url    = s"$endpointMockUrl/services",
+        willRespondWith = (
+          200,
+          Some("""|[{
               |			"name": "serviceName",
               |			"githubUrls": [
               |				{
@@ -78,12 +79,16 @@ class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec wi
               |				}
               |			]
               |		}]
-            """.stripMargin)))
+            """.stripMargin))
+      )
 
       catalogueClient.getAll().futureValue shouldBe List(
-        Service("serviceName", List(
-          GithubUrl("github", "https://someGitHubHost/org1/serviceName"),
-          GithubUrl("github-open", "https://someOtherGitHubHost/org2/serviceName"))))
+        Service(
+          "serviceName",
+          List(
+            GithubUrl("github", "https://someGitHubHost/org1/serviceName"),
+            GithubUrl("github-open", "https://someOtherGitHubHost/org2/serviceName"))
+        ))
     }
   }
 }

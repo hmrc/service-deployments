@@ -32,7 +32,7 @@ class CatalogueConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsC
   val apiBase: String = serviceDeploymentsConfig.catalogueBaseUrl
 
   implicit val urlReads = Json.reads[GithubUrl]
-  implicit val reads = Json.reads[Service]
+  implicit val reads    = Json.reads[Service]
 
   def getAll() = {
     Logger.info("Getting details of all the services.")

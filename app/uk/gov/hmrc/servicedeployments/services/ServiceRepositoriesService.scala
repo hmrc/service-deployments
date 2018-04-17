@@ -30,8 +30,6 @@ case class Repository(org: String, repoType: String)
 @Singleton
 class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnector, futureHelpers: FutureHelpers) {
 
-
-
   def getAll(): Future[Map[String, Seq[Repository]]] =
     catalogueConnector.getAll().map { services =>
       services.map { service =>
@@ -40,12 +38,14 @@ class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnecto
     } andAlso (result => Logger.info(s"Found ${result.count(_ => true)} services"))
 
   private def toServiceRepo(service: String, repoType: String, repoUrl: String) =
-    extractOrg(repoUrl).map { org => Repository(org, repoType) }
+    extractOrg(repoUrl).map { org =>
+      Repository(org, repoType)
+    }
 
   val org = "^.*://.*(?<!/)/(.*)/.*(?<!/)$".r
 
   private def extractOrg(url: String) = url match {
     case org(o) => Some(o)
-    case _ => None
+    case _      => None
   }
 }

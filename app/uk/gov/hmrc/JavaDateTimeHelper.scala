@@ -20,6 +20,7 @@ import java.time.{Duration, LocalDateTime}
 
 object JavaDateTimeHelper {
 
-   def daysBetween(before: LocalDateTime, after: LocalDateTime): Long = Math.round(Duration.between(before, after).toHours / 24d)
+  def daysBetween(before: LocalDateTime, after: LocalDateTime): Long =
+    Math.round(Duration.between(before, after).toHours / 24d)
 
 }

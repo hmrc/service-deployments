@@ -23,14 +23,13 @@ import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
 
 class ServiceSpec extends WordSpec with Matchers {
 
-  val `31 July` = LocalDateTime.of(2016, 7, 31, 0, 0)
+  val `31 July`   = LocalDateTime.of(2016, 7, 31, 0, 0)
   val `23 August` = LocalDateTime.of(2016, 8, 23, 0, 0)
   val `26 August` = LocalDateTime.of(2016, 8, 26, 0, 0)
   val `27 August` = LocalDateTime.of(2016, 8, 27, 0, 0)
   val `28 August` = LocalDateTime.of(2016, 8, 28, 0, 0)
   val `29 August` = LocalDateTime.of(2016, 8, 29, 0, 0)
   val `30 August` = LocalDateTime.of(2016, 8, 30, 0, 0)
-
 
   "deploymentInterval" should {
 
@@ -40,7 +39,7 @@ class ServiceSpec extends WordSpec with Matchers {
         ServiceDeployment("1.0.0", `28 August`),
         ServiceDeployment("0.1.0", `26 August`),
         ServiceDeployment("0.0.1", `23 August`),
-        ServiceDeployment("2.0.0",`30 August`)
+        ServiceDeployment("2.0.0", `30 August`)
       )
 
       val service = Service("name", Seq(), deployments = deploymemts, Seq())
@@ -56,18 +55,20 @@ class ServiceSpec extends WordSpec with Matchers {
       val deploymemts = Seq(
         ServiceDeployment("0.1.0", `26 August`),
         ServiceDeployment("0.0.1", `23 August`),
-        ServiceDeployment("2.0.0",`30 August`)
+        ServiceDeployment("2.0.0", `30 August`)
       )
 
-      val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "1.0.0", None, `31 July`, Some(1), None)))
+      val service = Service(
+        "name",
+        Seq(),
+        deployments = deploymemts,
+        Seq(Deployment("name", "1.0.0", None, `31 July`, Some(1), None)))
 
       service.deploymentInterval("0.0.1") should be(Some(23))
 
     }
 
-
   }
-
 
   "deploymentsRequiringUpdates" should {
 
@@ -79,9 +80,14 @@ class ServiceSpec extends WordSpec with Matchers {
         ServiceDeployment("1.0.0", oldDeploymentDate, Seq(Deployer(name = "abc.xyz", `29 August`)))
       )
 
-      val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "1.0.0", None, oldDeploymentDate, Some(1), None)))
+      val service = Service(
+        "name",
+        Seq(),
+        deployments = deploymemts,
+        Seq(Deployment("name", "1.0.0", None, oldDeploymentDate, Some(1), None)))
 
-      service.deploymentsRequiringUpdates should contain(ServiceDeployment("1.0.0", oldDeploymentDate, Seq(Deployer(name = "abc.xyz", `29 August`))))
+      service.deploymentsRequiringUpdates should contain(
+        ServiceDeployment("1.0.0", oldDeploymentDate, Seq(Deployer(name = "abc.xyz", `29 August`))))
 
     }
 
@@ -90,21 +96,24 @@ class ServiceSpec extends WordSpec with Matchers {
       val deploymemts = Seq(
         ServiceDeployment("0.1.0", `26 August`),
         ServiceDeployment("0.0.1", `23 August`),
-        ServiceDeployment("2.0.0",`30 August`)
+        ServiceDeployment("2.0.0", `30 August`)
       )
 
       val oldDeploymentDate: LocalDateTime = LocalDateTime.now().minusDays(60)
-      val service = Service("name", Seq(), deployments = deploymemts, Seq(Deployment("name", "0.1.0", None, oldDeploymentDate, Some(1), None)))
+      val service = Service(
+        "name",
+        Seq(),
+        deployments = deploymemts,
+        Seq(Deployment("name", "0.1.0", None, oldDeploymentDate, Some(1), None)))
 
       service.deploymentsRequiringUpdates.size shouldBe 2
 
       service.deploymentsRequiringUpdates should be(
-        Seq(ServiceDeployment("0.0.1", `23 August`), ServiceDeployment("2.0.0",`30 August`))
+        Seq(ServiceDeployment("0.0.1", `23 August`), ServiceDeployment("2.0.0", `30 August`))
       )
 
     }
 
   }
-
 
 }

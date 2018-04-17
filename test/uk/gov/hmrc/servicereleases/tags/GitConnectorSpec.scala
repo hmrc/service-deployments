@@ -50,37 +50,47 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
 
-
-class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerSuite with IntegrationPatience {
+class GitConnectorSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with ScalaFutures
+    with OneAppPerSuite
+    with IntegrationPatience {
   val mockedGitClient = mock[GitClient]
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .overrides(
       bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig()),
       bind[GitClient].toInstance(mockedGitClient)
-    ).build()
+    )
+    .build()
 
   "getGitRepoTags" should {
 
-    "return tags form gitClient with normalized tag name (i.e just the numbers)" in  {
+    "return tags form gitClient with normalized tag name (i.e just the numbers)" in {
       val now = ZonedDateTime.now()
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(List(
-          GitTag("v1.0.0", Some(now)),
-          GitTag("deployment/9.101.0", Some(now)),
-          GitTag("someRandomtagName", Some(now)))))
+        .thenReturn(
+          Future.successful(
+            List(
+              GitTag("v1.0.0", Some(now)),
+              GitTag("deployment/9.101.0", Some(now)),
+              GitTag("someRandomtagName", Some(now)))))
     }
 
-    "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in  {
+    "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in {
       val now = ZonedDateTime.now()
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(List(
-          GitTag("v1.0.0", None),
-          GitTag("deployment/9.101.0", Some(now)),
-          GitTag("deployment/9.102.0", None),
-          GitTag("someRandomTagName", None))))
+        .thenReturn(
+          Future.successful(
+            List(
+              GitTag("v1.0.0", None),
+              GitTag("deployment/9.101.0", Some(now)),
+              GitTag("deployment/9.102.0", None),
+              GitTag("someRandomTagName", None))))
     }
 
   }

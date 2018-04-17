@@ -50,13 +50,18 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
 
-
-class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerTest with IntegrationPatience {
+class GitHubConnectorSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with ScalaFutures
+    with OneAppPerTest
+    with IntegrationPatience {
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
   private val githubApiClientOpen = mock[GithubApiClientOpen]
-  private val mockedGitClient = mock[GitClient]
+  private val mockedGitClient     = mock[GitClient]
 
   override def newAppForTest(testData: TestData) =
     new GuiceApplicationBuilder()
@@ -64,8 +69,8 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
         bind[GitClient].toInstance(mockedGitClient),
         bind[GithubApiClientOpen].toInstance(githubApiClientOpen)
-      ).build()
-
+      )
+      .build()
 
   lazy val githubOpenConnector = app.injector.instanceOf[GitConnectorOpen]
 
@@ -73,8 +78,8 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
     "get repo deployment tags from github open deployments" in {
       val now: LocalDateTime = LocalDateTime.now()
-      val deployments = List(
-        GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
+      val deployments =
+        List(GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
 
       when(githubApiClientOpen.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(deployments))
@@ -83,7 +88,7 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
       tags.futureValue shouldBe List(Tag("1.9.0", now))
     }
-    
+
     "get repo deployment tags from github open source deployments" in {
       val now: LocalDateTime = LocalDateTime.now()
 

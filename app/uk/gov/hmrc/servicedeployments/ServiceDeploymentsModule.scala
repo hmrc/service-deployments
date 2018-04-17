@@ -22,7 +22,6 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.githubclient.GithubApiClient
 import uk.gov.hmrc.servicedeployments.tags.GitConnectorOpen
 
-
 class ServiceDeploymentsModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration) =
@@ -30,27 +29,21 @@ class ServiceDeploymentsModule extends Module {
       bind[GitConnectorOpen].toProvider[GitConnectorOpenProvider]
     )
 }
-
-
-
 @Singleton
 class GithubApiClientOpen @Inject()(config: ServiceDeploymentsConfig) extends AbstractGithubApiClient {
-  override val client =  GithubApiClient(config.gitOpenApiUrl, config.gitOpenToken)
+  override val client = GithubApiClient(config.gitOpenApiUrl, config.gitOpenToken)
 }
 
 abstract class AbstractGithubApiClient() extends GithubApiClient {
 
   val client: GithubApiClient
 
-  override lazy val orgService = client.orgService
-  override lazy val teamService = client.teamService
+  override lazy val orgService        = client.orgService
+  override lazy val teamService       = client.teamService
   override lazy val repositoryService = client.repositoryService
-  override lazy val contentsService = client.contentsService
-  override lazy val releaseService = client.releaseService
+  override lazy val contentsService   = client.contentsService
+  override lazy val releaseService    = client.releaseService
 }
-
-
-
 @Singleton
 class GitConnectorOpenProvider @Inject()(
   config: ServiceDeploymentsConfig,

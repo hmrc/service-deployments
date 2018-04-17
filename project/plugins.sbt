@@ -1,4 +1,5 @@
-resolvers += Resolver.url("hmrc-sbt-plugin-deployments", url("https://dl.bintray.com/hmrc/sbt-plugin-deployments"))(Resolver.ivyStylePatterns)
+resolvers += Resolver.url("hmrc-sbt-plugin-deployments", url("https://dl.bintray.com/hmrc/sbt-plugin-deployments"))(
+  Resolver.ivyStylePatterns)
 
 resolvers += "Typesafe Deployments" at "http://repo.typesafe.com/typesafe/deployments/"
 

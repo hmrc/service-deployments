@@ -54,7 +54,7 @@ import play.api.inject.bind
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class MongoDeploymentsRepositorySpec
-  extends UnitSpec
+    extends UnitSpec
     with LoneElement
     with MongoSpecSupport
     with ScalaFutures
@@ -64,21 +64,21 @@ class MongoDeploymentsRepositorySpec
     with MockitoSugar {
 
   implicit override def newAppForTest(testData: TestData): Application =
-    new GuiceApplicationBuilder().overrides(bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())).build()
-
+    new GuiceApplicationBuilder()
+      .overrides(bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig()))
+      .build()
 
   val mockedConnector = mock[MongoConnector]
   Mockito.when(mockedConnector.db).thenReturn(mongo)
 
   val reactiveMongoComponent = new ReactiveMongoComponent {
-    override def mongoConnector: MongoConnector = {
+    override def mongoConnector: MongoConnector =
       mockedConnector
-    }
   }
 
   private val metrics: Metrics = new Metrics() {
     override def defaultRegistry = new MetricRegistry
-    override def toJson = "XxX"
+    override def toJson          = "XxX"
   }
   val mongoDeploymentsRepository = new DeploymentsRepository(reactiveMongoComponent, new FutureHelpers(metrics))
 
@@ -89,35 +89,35 @@ class MongoDeploymentsRepositorySpec
   "getAll" should {
     "return all the deployments when already saved deployments do not have 'deployers' " in {
 
-
       import play.api.libs.json._
       import reactivemongo.play.json._
 
       import scala.concurrent.ExecutionContext.Implicits.global
 
-      val now = LocalDateTime.now()
-      implicit val dateWriteFormat =  Deployment.localDateTimeToEpochSecondsWrites
+      val now                      = LocalDateTime.now()
+      implicit val dateWriteFormat = Deployment.localDateTimeToEpochSecondsWrites
 
-      await(mongoDeploymentsRepository.collection.insert(Json.obj(
-        "name" -> "nisp" ,
-        "version" -> "5.4.2" ,
-        "productionDate" -> now.toEpochSecond(ZoneOffset.UTC) ,
-        "interval" -> 1
-      )))
+      await(
+        mongoDeploymentsRepository.collection.insert(
+          Json.obj(
+            "name"           -> "nisp",
+            "version"        -> "5.4.2",
+            "productionDate" -> now.toEpochSecond(ZoneOffset.UTC),
+            "interval"       -> 1
+          )))
 
       val deployments: Seq[Deployment] = await(mongoDeploymentsRepository.getAllDeployments)
 
-      deployments.size shouldBe 1
-      deployments.head.creationDate shouldBe None
-      deployments.head.productionDate.toLocalDate shouldBe now.toLocalDate
+      deployments.size                                      shouldBe 1
+      deployments.head.creationDate                         shouldBe None
+      deployments.head.productionDate.toLocalDate           shouldBe now.toLocalDate
       deployments.head.productionDate.toLocalTime.getMinute shouldBe now.toLocalTime.getMinute
       deployments.head.productionDate.toLocalTime.getSecond shouldBe now.toLocalTime.getSecond
-      deployments.head.name shouldBe "nisp"
-      deployments.head.version shouldBe "5.4.2"
-      deployments.head.interval.get shouldBe 1
-      deployments.head.leadTime shouldBe None
-      deployments.head.deployers shouldBe Seq.empty
-
+      deployments.head.name                                 shouldBe "nisp"
+      deployments.head.version                              shouldBe "5.4.2"
+      deployments.head.interval.get                         shouldBe 1
+      deployments.head.leadTime                             shouldBe None
+      deployments.head.deployers                            shouldBe Seq.empty
 
     }
 
@@ -130,7 +130,9 @@ class MongoDeploymentsRepositorySpec
       await(mongoDeploymentsRepository.add(Deployment("test1", "v1", None, productionDate = now.minusDays(10))))
       await(mongoDeploymentsRepository.add(Deployment("test4", "v4", None, productionDate = now.minusDays(2))))
       await(mongoDeploymentsRepository.add(Deployment("test5", "vSomeOther1", None, now.minusDays(2), Some(1))))
-      await(mongoDeploymentsRepository.add(Deployment("test5", "vSomeOther2", None, now, Some(1), None, Seq(Deployer("xyz.abc", now)), None)))
+      await(
+        mongoDeploymentsRepository.add(
+          Deployment("test5", "vSomeOther2", None, now, Some(1), None, Seq(Deployer("xyz.abc", now)), None)))
 
       val result: Seq[Deployment] = await(mongoDeploymentsRepository.getAllDeployments)
 
@@ -151,8 +153,12 @@ class MongoDeploymentsRepositorySpec
       val now: LocalDateTime = LocalDateTime.now()
 
       await(mongoDeploymentsRepository.add(Deployment("randomService", "vSomeOther1", None, now, Some(1))))
-      await(mongoDeploymentsRepository.add(Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
-      await(mongoDeploymentsRepository.add(Deployment("test", "v2", None, productionDate = now.minusDays(6), interval = Some(1))))
+      await(
+        mongoDeploymentsRepository.add(
+          Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
+      await(
+        mongoDeploymentsRepository.add(
+          Deployment("test", "v2", None, productionDate                                  = now.minusDays(6), interval = Some(1))))
       await(mongoDeploymentsRepository.add(Deployment("test", "v3", None, productionDate = now.minusDays(5), Some(1))))
       await(mongoDeploymentsRepository.add(Deployment("test", "v4", None, productionDate = now.minusDays(2), Some(1))))
 
@@ -167,7 +173,9 @@ class MongoDeploymentsRepositorySpec
       val now: LocalDateTime = LocalDateTime.now()
 
       await(mongoDeploymentsRepository.add(Deployment("randomService", "vSomeOther1", None, now, Some(1))))
-      await(mongoDeploymentsRepository.add(Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
+      await(
+        mongoDeploymentsRepository.add(
+          Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
 
       val deployments: Option[Seq[Deployment]] = await(mongoDeploymentsRepository.getForService("TEST"))
 
@@ -175,7 +183,6 @@ class MongoDeploymentsRepositorySpec
 
     }
   }
-
 
   "add" should {
     "be able to insert a new record and update it as well" in {
@@ -186,10 +193,11 @@ class MongoDeploymentsRepositorySpec
       all.values.flatten.size shouldBe 1
       val savedDeployment: Deployment = all.values.flatten.loneElement
 
-      savedDeployment.name shouldBe "test"
-      savedDeployment.version shouldBe "v"
+      savedDeployment.name         shouldBe "test"
+      savedDeployment.version      shouldBe "v"
       savedDeployment.creationDate shouldBe None
-      savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe now.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
+      savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe now.format(
+        DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
       savedDeployment.leadTime shouldBe None
 
     }
@@ -210,10 +218,11 @@ class MongoDeploymentsRepositorySpec
       allUpdated.size shouldBe 1
       val updatedDeployment: Deployment = allUpdated.values.flatten.loneElement
 
-      updatedDeployment.name shouldBe savedDeployment.name
-      updatedDeployment.version shouldBe savedDeployment.version
+      updatedDeployment.name         shouldBe savedDeployment.name
+      updatedDeployment.version      shouldBe savedDeployment.version
       updatedDeployment.creationDate shouldBe savedDeployment.creationDate
-      savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
+      savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe savedDeployment.productionDate
+        .format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
       updatedDeployment.leadTime shouldBe Some(1)
     }
 

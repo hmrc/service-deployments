@@ -48,27 +48,27 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-
 class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneAppPerTest with ScalaFutures {
 
   implicit override def newAppForTest(testData: TestData): Application =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())
-      ).build()
+      )
+      .build()
 
   trait SetUp {
     val gitOpenTagDataSource = mock[GitConnectorOpen]
-    val compositeTagsSource = new TagsService(gitOpenTagDataSource)
+    val compositeTagsSource  = new TagsService(gitOpenTagDataSource)
   }
 
   "getAll" should {
 
     val repoName = "service"
-    val org = "org"
+    val org      = "org"
 
     "use open data source if RepoType is Open" in new SetUp {
-      val repoType = "github-com"
+      val repoType            = "github-com"
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
 
@@ -76,9 +76,9 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneA
     }
 
     "should fail gracefull by setting the Try to Failure state rather than the future" in new SetUp {
-      val repoType = "github-com"
+      val repoType            = "github-com"
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
-      val ex =  new RuntimeException("Bleeuurgh")
+      val ex                  = new RuntimeException("Bleeuurgh")
 
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.failed(ex))
 
