@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,6 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
 
   lazy val githubOpenConnector = app.injector.instanceOf[GitConnectorOpen]
-  lazy val githubEnterpriseConnector = app.injector.instanceOf[GitConnectorEnterprise]
 
   "getServiceRepoDeploymentTags" should {
 
@@ -98,11 +97,6 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
       when(mockedGitClient.getGitRepoTags("repoA", "OrgA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(GitTag("1.9.0", Some(now.atZone(ZoneOffset.UTC))))))
-
-
-      val tags = githubEnterpriseConnector.get("OrgA", "repoA")
-
-      tags.futureValue shouldBe List(Tag("1.9.0", now))
     }
 
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ object RepoType {
 
   def from(st: String): RepoType = {
     st match {
-      case "github-enterprise" => Enterprise
+      case "github-enterprise" => throw new RuntimeException(s"We no longer support GitHub enterprise")
       case "github-com" => Open
       case _ => throw new RuntimeException(s"Unknown repo type $st")
     }
