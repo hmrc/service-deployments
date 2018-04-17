@@ -33,7 +33,6 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.ZonedDateTime
-import java.util.Date
 
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -43,12 +42,9 @@ import org.scalatestplus.play.OneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.FakeApplication
-import play.api.test.Helpers._
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, ServiceDeploymentsConfig}
+import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
@@ -56,13 +52,11 @@ import scala.concurrent.Future
 
 class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerSuite with IntegrationPatience {
   val mockedGitClient = mock[GitClient]
-  val mockedGithubApiClientEnterprise = mock[GithubApiClientEnterprise]
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .overrides(
       bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig()),
-      bind[GitClient].toInstance(mockedGitClient),
-      bind[GithubApiClientEnterprise].toInstance(mockedGithubApiClientEnterprise)
+      bind[GitClient].toInstance(mockedGitClient)
     ).build()
 
   val connector = app.injector.instanceOf[GitConnectorOpen]
@@ -90,11 +84,6 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
       val now = ZonedDateTime.now()
       val repoName = "repoName"
       val org = "HMRC"
-
-      when(mockedGithubApiClientEnterprise.getReleases("HMRC", "repoName")(BlockingIOExecutionContext.executionContext)).thenReturn(
-        Future.successful(List(
-          GhRepoRelease(123, "someRandomTagName", Date.from(now.toInstant)),
-          GhRepoRelease(124, "deployment/9.102.0", Date.from(now.toInstant)))))
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(

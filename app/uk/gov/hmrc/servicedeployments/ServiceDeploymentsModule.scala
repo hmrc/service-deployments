@@ -48,12 +48,6 @@ class GithubApiClientOpen @Inject()(config: ServiceDeploymentsConfig) extends Ab
   override val client =  GithubApiClient(config.gitOpenApiUrl, config.gitOpenToken)
 }
 
-
-@Singleton
-class GithubApiClientEnterprise @Inject()(config: ServiceDeploymentsConfig) extends AbstractGithubApiClient {
-  override val client =  GithubApiClient(config.gitEnterpriseApiUrl, config.gitEnterpriseToken)
-}
-
 abstract class AbstractGithubApiClient() extends GithubApiClient {
 
   val client: GithubApiClient

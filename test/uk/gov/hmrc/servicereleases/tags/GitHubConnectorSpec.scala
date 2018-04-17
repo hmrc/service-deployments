@@ -44,9 +44,8 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen, ServiceDeploymentsConfig}
-import uk.gov.hmrc.servicedeployments.services.CatalogueConnector
+import uk.gov.hmrc.githubclient.GhRepoRelease
+import uk.gov.hmrc.servicedeployments.{GithubApiClientOpen, ServiceDeploymentsConfig}
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
@@ -56,7 +55,6 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
-  private val githubApiClientEnterprise = mock[GithubApiClientEnterprise]
   private val githubApiClientOpen = mock[GithubApiClientOpen]
   private val mockedGitClient = mock[GitClient]
 
@@ -65,7 +63,6 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
         bind[GitClient].toInstance(mockedGitClient),
-        bind[GithubApiClientEnterprise].toInstance(githubApiClientEnterprise),
         bind[GithubApiClientOpen].toInstance(githubApiClientOpen)
       ).build()
 
@@ -91,9 +88,6 @@ class GitHubConnectorSpec extends WordSpec with Matchers with MockitoSugar with 
       val now: LocalDateTime = LocalDateTime.now()
       val deployments = List(
         GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
-
-      when(githubApiClientEnterprise.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(deployments))
 
       when(mockedGitClient.getGitRepoTags("repoA", "OrgA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(GitTag("1.9.0", Some(now.atZone(ZoneOffset.UTC))))))

@@ -17,16 +17,12 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
-import javax.inject.Singleton
 
-import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen}
-
-import javax.inject.Inject
-
+import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.BlockingIOExecutionContext
-import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.FutureHelpers
+import uk.gov.hmrc.gitclient.GitTag
+import uk.gov.hmrc.githubclient.GhRepoRelease
+import uk.gov.hmrc.servicedeployments.{FutureHelpers, GithubApiClientOpen}
 
 import scala.concurrent.Future
 
