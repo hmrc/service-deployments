@@ -71,7 +71,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneA
       val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
 
-      compositeTagsSource.get(org, repoName, repoType).futureValue shouldBe Success(repoTags)
+      compositeTagsSource.get(org, repoName).futureValue shouldBe Success(repoTags)
     }
 
     "should fail gracefully by setting the Try to Failure state rather than the future" in new SetUp {
@@ -81,7 +81,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneA
 
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.failed(ex))
 
-      compositeTagsSource.get(org, repoName, repoType).futureValue shouldBe Failure(ex)
+      compositeTagsSource.get(org, repoName).futureValue shouldBe Failure(ex)
     }
 
     "should fail if repo type is other than github.com" in new SetUp {
@@ -91,7 +91,7 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneA
 
       when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
 
-      compositeTagsSource.get(org, repoName, repoType).futureValue.failure.exception.getMessage shouldBe ex.getMessage
+      compositeTagsSource.get(org, repoName).failed.futureValue.getMessage shouldBe ex.getMessage
     }
 
   }
