@@ -17,23 +17,21 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
-
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.servicedeployments.FutureHelpers._
-import uk.gov.hmrc.servicedeployments.tags.RepoType.Open
-
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 @Singleton
 class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen) {
 
   def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]] =
-    RepoType.from(repoType) match {
-      case Open =>
+    repoType match {
+      case "github-com" =>
         Logger.debug(s"$name org : $org get Open Repo deployment tags")
         continueOnError(gitOpenTagDataSource.get(org, name))
+      case _ => Future.successful(Failure(new RuntimeException(s"Unknown repo type: $repoType")))
     }
 }
