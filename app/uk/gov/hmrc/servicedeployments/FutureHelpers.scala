@@ -23,7 +23,7 @@ import javax.inject.{Inject, Singleton}
 import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class FutureHelpers @Inject()(metrics: Metrics) {
@@ -76,14 +76,9 @@ object FutureHelpers {
         .map(_.flatten)
 
     def map[B](fn: A => B)(implicit ec: ExecutionContext): Future[Iterable[B]] =
-      futureList.map(_.map {
-        fn
-      })
+      futureList.map(_.map(fn))
 
     def filter[B](fn: A => Boolean)(implicit ec: ExecutionContext): Future[Iterable[A]] =
       futureList.map(_.filter(fn))
   }
-
-  def continueOnError[A](f: Future[A]) =
-    f.map(Success(_)).recover { case x => Failure(x) }
 }

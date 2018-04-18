@@ -30,6 +30,7 @@ import uk.gov.hmrc.servicedeployments.tags.{Tag, TagsService}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
+import FutureHelpers._
 
 @Singleton
 class DeploymentsService @Inject()(
@@ -46,76 +47,67 @@ class DeploymentsService @Inject()(
       success       <- processDeployments(service, maybeTagDates)
     } yield success
 
-  private def getServiceRepositoryDeployments = {
-    val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] = deploymentsService.getAll()
-    val allKnownReleasesF: Future[Map[String, Seq[Deployment]]]           = repository.allServicedeployments
-    val allServiceRepositoriesF: Future[Map[String, Seq[Repository]]]     = serviceRepositoriesService.getAll()
-
+  private def getServiceRepositoryDeployments: FutureIterable[Service] = {
     FutureIterable(
       for {
-        knownDeployments    <- allKnownDeploymentsF
-        knownReleases       <- allKnownReleasesF
-        serviceRepositories <- allServiceRepositoriesF
+        knownDeployments    <- deploymentsService.getAll()
+        knownReleases       <- repository.allServicedeployments
+        serviceRepositories <- serviceRepositoriesService.getAll()
       } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases))
     )
-
   }
 
-  private def tryGetTagDatesFor(service: Service): Future[Try[Map[String, LocalDateTime]]] =
+  private def tryGetTagDatesFor(service: Service): Future[Map[String, LocalDateTime]] =
     getTagsForService(service).map { results =>
-      combineResultsOrFailIfAnyTryDoesNotSucceed(results)
-        .map(_.flatten)
+      results
         .map(_.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
         .map(convertTagsToMap)
+        .reduce(_ ++ _)
     }
 
   private def getTagsForService(service: Service): Future[Seq[Seq[Tag]]] = {
     if (service.deploymentsRequiringUpdates.nonEmpty) {
-      Future.sequence(service.repositories.map { r =>
+      service.repositories.map { r =>
         tagsService.get(r.org, service.serviceName)
-      })
+      } sequence
     } else {
       Future.successful(Seq.empty)
     }
   }
 
-  private def combineResultsOrFailIfAnyTryDoesNotSucceed[T](xs: Seq[Try[T]]): Try[Seq[T]] =
-    (Try(Seq[T]()) /: xs) { (a, b) =>
-      a flatMap (c => b map (d => c :+ d))
-    }
-
-  private def convertTagsToMap(tags: Seq[Tag]) =
-    tags.map { x =>
-      x.version -> x.createdAt
-    } toMap
+  private def convertTagsToMap(tags: Seq[Tag]): Map[String, LocalDateTime] =
+    tags.map { x => x.version -> x.createdAt } toMap
 
   private def processDeployments(
     service: Service,
-    maybeTagDates: Try[Map[String, LocalDateTime]]): Future[Iterable[Boolean]] =
-    maybeTagDates match {
-      case Success(td) => createOrUpdateDeploymentsFromDeploymentsAndTags(service, td)
+    maybeTagDates: Map[String, LocalDateTime]
+  ): Future[Seq[Boolean]] = {
+        /*
       case Failure(ex: RequestException) if ex.getStatus == 404 =>
         Logger.debug(
           s"Could not find any tags for ${service.serviceName}, most likely caused by an app created in the open manually without our jenkins jobs")
-        FutureIterable(Seq(Future.successful(false)))
+        Future.successful(Seq(false))
       case Failure(ex) =>
         Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}", ex)
-        FutureIterable(Seq(Future.successful(false)))
-    }
+        Future.successful(Seq(false))
+    }*/
+
+    createOrUpdateDeploymentsFromDeploymentsAndTags(service, maybeTagDates)
+  }
 
   private def createOrUpdateDeploymentsFromDeploymentsAndTags(
     service: Service,
-    tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] =
-    FutureIterable(
-      new DeploymentAndOperation(service, tagDates).get.map {
-        case (Add, r) =>
-          Logger.info(s"Adding deployment : ${r.version} for service ${r.name}")
-          repository.add(r)
-        case (Update, r) =>
-          Logger.info(s"Updating deployment : ${r.version} for service ${r.name}")
-          repository.update(r)
-      }
-    )
+    tagDates: Map[String, LocalDateTime]
+  ): Future[Seq[Boolean]] = {
+    new DeploymentAndOperation(service, tagDates).get.map {
+      case (Add, r) =>
+        Logger.info(s"Adding deployment : ${r.version} for service ${r.name}")
+        repository.add(r)
+      case (Update, r) =>
+        Logger.info(s"Updating deployment : ${r.version} for service ${r.name}")
+        repository.update(r)
+    } sequence
+  }
 
   private def log(serviceRepositoryDeployments: Service): Future[Unit] = {
     Logger.debug(s"Checking deployments for service: ${serviceRepositoryDeployments.serviceName}")
