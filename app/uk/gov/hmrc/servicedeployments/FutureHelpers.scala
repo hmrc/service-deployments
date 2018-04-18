@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.servicedeployments
 
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
 
-import com.kenshoo.play.metrics.{Metrics, MetricsImpl}
-import play.api.Play
-
+import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -28,9 +28,9 @@ import scala.util.{Failure, Success}
 @Singleton
 class FutureHelpers @Inject()(metrics: Metrics) {
 
-  val defaultMetricsRegistry = metrics.defaultRegistry
+  val defaultMetricsRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def withTimerAndCounter[T](name: String)(f: Future[T]) = {
+  def withTimerAndCounter[T](name: String)(f: Future[T]): Future[T] = {
     val t = defaultMetricsRegistry.timer(s"$name.timer").time()
     f.andThen {
       case Success(_) =>
@@ -44,13 +44,6 @@ class FutureHelpers @Inject()(metrics: Metrics) {
 }
 
 object FutureHelpers {
-  implicit class FutureExtender[A](f: Future[A]) {
-    def andAlso(fn: A => Unit): Future[A] =
-      f.flatMap { r =>
-        fn(r)
-        f
-      }
-  }
 
   implicit class FutureOfBoolean(f: Future[Boolean]) {
     def &&(f1: => Future[Boolean]): Future[Boolean] = f.flatMap { bv =>
@@ -59,6 +52,13 @@ object FutureHelpers {
     }
   }
 
+  implicit class FutureHelper[M[X] <: TraversableOnce[X], T](val col: M[Future[T]]) extends AnyVal {
+    def sequence(
+      implicit cbf: CanBuildFrom[M[Future[T]], T, M[T]]
+    ): Future[M[T]] = Future.sequence(col)
+  }
+
+  @deprecated("Can use traversables natively, we don't require more plumbing here", "1.0.0")
   object FutureIterable {
     def apply[A](listFuture: Iterable[Future[A]]) = Future.sequence(listFuture)
   }

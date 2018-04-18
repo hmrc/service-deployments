@@ -17,7 +17,6 @@
 package uk.gov.hmrc.servicedeployments.services
 
 import javax.inject.{Inject, Singleton}
-
 import play.api.Logger
 import uk.gov.hmrc.servicedeployments.FutureHelpers
 
@@ -25,7 +24,9 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import FutureHelpers._
 
-case class Repository(org: String, repoType: String)
+import scala.util.matching.Regex
+
+case class Repository(org: String)
 
 @Singleton
 class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnector, futureHelpers: FutureHelpers) {
@@ -33,16 +34,17 @@ class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnecto
   def getAll(): Future[Map[String, Seq[Repository]]] =
     catalogueConnector.getAll().map { services =>
       services.map { service =>
-        service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.name, u.url))
+        service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.url))
       } toMap
-    } andAlso (result => Logger.info(s"Found ${result.count(_ => true)} services"))
-
-  private def toServiceRepo(service: String, repoType: String, repoUrl: String) =
-    extractOrg(repoUrl).map { org =>
-      Repository(org, repoType)
+    } map { result =>
+      Logger.info(s"Found ${result.count(_ => true)} services")
+      result
     }
 
-  val org = "^.*://.*(?<!/)/(.*)/.*(?<!/)$".r
+  private def toServiceRepo(service: String, repoUrl: String) =
+    extractOrg(repoUrl).map(Repository.apply)
+
+  val org: Regex = "^.*://.*(?<!/)/(.*)/.*(?<!/)$".r
 
   private def extractOrg(url: String) = url match {
     case org(o) => Some(o)

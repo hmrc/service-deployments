@@ -27,11 +27,6 @@ case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 @Singleton
 class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen) {
 
-  def get(org: String, name: String, repoType: String): Future[Try[Seq[Tag]]] =
-    repoType match {
-      case "github-com" =>
-        Logger.debug(s"$name org : $org get Open Repo deployment tags")
-        continueOnError(gitOpenTagDataSource.get(org, name))
-      case _ => Future.successful(Failure(new RuntimeException(s"Unknown repo type: $repoType")))
-    }
+  def get(org: String, name: String): Future[Seq[Tag]] = gitOpenTagDataSource.get(org, name)
+
 }

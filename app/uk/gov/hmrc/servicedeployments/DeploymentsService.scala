@@ -69,14 +69,15 @@ class DeploymentsService @Inject()(
         .map(convertTagsToMap)
     }
 
-  private def getTagsForService(service: Service) =
-    Future.sequence(service.deploymentsRequiringUpdates match {
-      case Nil => Seq()
-      case _ =>
-        service.repositories.map { r =>
-          tagsService.get(r.org, service.serviceName, r.repoType)
-        }
-    })
+  private def getTagsForService(service: Service): Future[Seq[Seq[Tag]]] = {
+    if (service.deploymentsRequiringUpdates.nonEmpty) {
+      Future.sequence(service.repositories.map { r =>
+        tagsService.get(r.org, service.serviceName)
+      })
+    } else {
+      Future.successful(Seq.empty)
+    }
+  }
 
   private def combineResultsOrFailIfAnyTryDoesNotSucceed[T](xs: Seq[Try[T]]): Try[Seq[T]] =
     (Try(Seq[T]()) /: xs) { (a, b) =>
