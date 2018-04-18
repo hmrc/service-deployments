@@ -62,7 +62,9 @@ class DeploymentsService @Inject()(
       results
         .map(_.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
         .map(convertTagsToMap)
-        .reduce(_ ++ _)
+        .foldLeft(Map.empty[String, LocalDateTime]) { case (acc, el) =>
+          acc ++ el
+        }
     }
 
   private def getTagsForService(service: Service): Future[Seq[Seq[Tag]]] = {
