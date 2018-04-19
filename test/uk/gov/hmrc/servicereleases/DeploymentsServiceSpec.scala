@@ -146,7 +146,7 @@ class DeploymentsServiceSpec
 
       service.updateModel().futureValue
 
-      verify(tagsService, never).get(any(), any(), any())
+      verify(tagsService, never).get(any(), any())
       verify(deploymentsRepository, never).add(any())
     }
 
@@ -238,18 +238,18 @@ class DeploymentsServiceSpec
         forService =>
           Seq(
             forService("service")
-              .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.0.0" -> (Some(1l), Some(2l))))
+              .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.0.0" -> (Some(1l) -> Some(2l))))
               .deploymentsKnowsAbout("1.0.0")
               .tagsServiceKnowsAbout("1.0.0"),
             forService("another")
-              .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.1.1" -> (Some(1l), Some(2l))))
+              .repositoryKnowsAboutWithLeadTimeAndInterval(Map("1.1.1" -> (Some(1l) -> Some(2l))))
               .deploymentsKnowsAbout("1.1.1")
               .tagsServiceKnowsAbout("1.1.1")
         ))
 
       service.updateModel().futureValue
 
-      verify(tagsService, never).get(any(), any(), any())
+      verify(tagsService, never).get(any(), any())
       verify(deploymentsRepository, never).add(any())
       verify(deploymentsRepository, never).update(any())
     }
