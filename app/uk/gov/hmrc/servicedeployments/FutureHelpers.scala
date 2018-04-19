@@ -30,7 +30,7 @@ class FutureHelpers @Inject()(metrics: Metrics) {
 
   val defaultMetricsRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def withTimerAndCounter[T](name: String)(f: Future[T]): Future[T] = {
+  def withTimerAndCounter[T](name: => String)(f: Future[T]): Future[T] = {
     val t = defaultMetricsRegistry.timer(s"$name.timer").time()
     f.andThen {
       case Success(_) =>
