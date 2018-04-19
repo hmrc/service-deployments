@@ -52,26 +52,19 @@ class DeploymentsService @Inject()(
       for {
         knownDeployments    <- deploymentsService.getAll()
         knownReleases       <- repository.allServicedeployments
-        serviceRepositories <- serviceRepositoriesService.getAll()
+        serviceRepositories <- serviceRepositoriesService.getAll
       } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases))
     )
   }
 
   private def tryGetTagDatesFor(service: Service): Future[Map[String, LocalDateTime]] =
     getTagsForService(service).map { results =>
-      results
-        .map(_.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
-        .map(convertTagsToMap)
-        .foldLeft(Map.empty[String, LocalDateTime]) { case (acc, el) =>
-          acc ++ el
-        }
+      convertTagsToMap(results.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
     }
 
-  private def getTagsForService(service: Service): Future[Seq[Seq[Tag]]] = {
+  private def getTagsForService(service: Service): Future[Seq[Tag]] = {
     if (service.deploymentsRequiringUpdates.nonEmpty) {
-      service.repositories.map { r =>
-        tagsService.get(r.org, service.serviceName)
-      } sequence
+      tagsService.get(service.repository.org, service.serviceName)
     } else {
       Future.successful(Seq.empty)
     }
@@ -132,7 +125,7 @@ class DeploymentsService @Inject()(
 
 case class Service(
   serviceName: String,
-  repositories: Seq[Repository],
+  repository: Repository,
   deployments: Seq[ServiceDeployment],
   knownDeployments: Seq[Deployment]) {
 
@@ -165,18 +158,20 @@ case class Service(
 
 object Service {
   def apply(
-    serviceRepositories: (String, Seq[Repository]),
+    serviceRepositories: (String, Repository),
     knownDeployments: Map[String, Seq[ServiceDeployment]],
-    knownReleases: Map[String, Seq[Deployment]]): Service =
-    serviceRepositories match {
-      case (serviceName, repositories) =>
-        new Service(
-          serviceName,
-          repositories,
-          knownDeployments.getOrElse(serviceName, Seq()),
-          knownReleases.getOrElse(serviceName, Seq())
-        )
-    }
+    knownReleases: Map[String, Seq[Deployment]]
+  ): Service = {
+
+    val (serviceName, repo) = serviceRepositories
+
+    new Service(
+      serviceName,
+      repo,
+      knownDeployments.getOrElse(serviceName, Seq()),
+      knownReleases.getOrElse(serviceName, Seq())
+    )
+  }
 }
 
 object DeploymentOperation extends Enumeration {

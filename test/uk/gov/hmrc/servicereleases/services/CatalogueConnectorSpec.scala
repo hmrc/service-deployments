@@ -85,10 +85,9 @@ class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec wi
       catalogueClient.getAll().futureValue shouldBe List(
         Service(
           "serviceName",
-          List(
-            GithubUrl("github", "https://someGitHubHost/org1/serviceName"),
-            GithubUrl("github-open", "https://someOtherGitHubHost/org2/serviceName"))
-        ))
+          GithubUrl("github-open", "https://someOtherGitHubHost/org2/serviceName")
+        )
+      )
     }
   }
 }

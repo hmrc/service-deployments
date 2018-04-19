@@ -268,8 +268,8 @@ object ServiceTestFixture {
 
     val fixtures = fixturesToBuild(DeploymentsTestFixture.apply).map(build)
 
-    when(servicesService.getAll()).thenReturn(Future.successful(fixtures.map { sd =>
-      sd.serviceName -> List(Repository("hmrc"))
+    when(servicesService.getAll).thenReturn(Future.successful(fixtures.map { sd =>
+      sd.serviceName -> Repository("hmrc")
     } toMap))
 
     when(deploymentsService.getAll()).thenReturn(

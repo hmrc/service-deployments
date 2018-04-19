@@ -31,10 +31,10 @@ case class Repository(org: String)
 @Singleton
 class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnector, futureHelpers: FutureHelpers) {
 
-  def getAll(): Future[Map[String, Seq[Repository]]] =
+  def getAll: Future[Map[String, Repository]] =
     catalogueConnector.getAll().map { services =>
       services.map { service =>
-        service.name -> service.githubUrls.flatMap(u => toServiceRepo(service.name, u.url))
+        service.name -> toServiceRepo(service.name, service.githubUrl.url).get
       } toMap
     } map { result =>
       Logger.info(s"Found ${result.count(_ => true)} services")

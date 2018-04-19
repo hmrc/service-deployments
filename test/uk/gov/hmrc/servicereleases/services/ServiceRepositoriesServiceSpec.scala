@@ -71,25 +71,22 @@ class ServiceRepositoriesServiceSpec
       val data = List(
         Service(
           "service-frontend",
-          List(
-            GithubUrl("github", "https://github.some.host.url.gov.uk/org1-org/service-frontend"),
-            GithubUrl("github-open", "http://github.com/org2/service-frontend")
-          )
+          GithubUrl("github-open", "http://github.com/org2/service-frontend")
         ))
 
       when(mockedCatalogueConnector.getAll()).thenReturn(Future.successful(data))
 
-      service.getAll().futureValue shouldBe Map(
+      service.getAll.futureValue shouldBe Map(
         "service-frontend" -> List(Repository("org1-org"), Repository("org2")))
     }
 
     "convert to serviceInfo when no Git open source url" in {
       val data =
-        List(Service("service-frontend", List(GithubUrl("github-open", "http://github.com/org2/service-frontend"))))
+        List(Service("service-frontend", GithubUrl("github-open", "http://github.com/org2/service-frontend")))
 
       when(mockedCatalogueConnector.getAll()).thenReturn(Future.successful(data))
 
-      service.getAll().futureValue shouldBe Map("service-frontend" -> List(Repository("org2")))
+      service.getAll.futureValue shouldBe Map("service-frontend" -> List(Repository("org2")))
     }
   }
 
