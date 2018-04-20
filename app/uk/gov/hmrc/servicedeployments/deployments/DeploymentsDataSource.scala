@@ -161,8 +161,7 @@ trait DeploymentsDataSource {
 }
 
 @Singleton
-class ReleasesAppConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig)
-    extends DeploymentsDataSource {
+class ReleasesAppConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) extends DeploymentsDataSource {
 
   val deploymentsApiBase: String = serviceDeploymentsConfig.deploymentsApiBase
   def getAll: Future[List[EnvironmentalDeployment]] = {
