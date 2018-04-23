@@ -94,14 +94,16 @@ class DeploymentsService @Inject()(
     service: Service,
     tagDates: Map[String, LocalDateTime]
   ): Future[Seq[Boolean]] = {
-    new DeploymentAndOperation(service, tagDates).get.map {
+    val addFutures = new DeploymentAndOperation(service, tagDates).get.map {
       case (Add, r) =>
         Logger.info(s"Adding deployment : ${r.version} for service ${r.name}")
         repository.add(r)
       case (Update, r) =>
         Logger.info(s"Updating deployment : ${r.version} for service ${r.name}")
         repository.update(r)
-    } sequence
+    }
+
+    Future.sequence(addFutures)
   }
 
   private def log(serviceRepositoryDeployments: Service): Future[Unit] = {

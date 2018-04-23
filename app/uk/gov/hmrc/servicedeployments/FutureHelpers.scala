@@ -52,12 +52,6 @@ object FutureHelpers {
     }
   }
 
-  implicit class FutureHelper[M[X] <: TraversableOnce[X], T](val col: M[Future[T]]) extends AnyVal {
-    def sequence(
-      implicit cbf: CanBuildFrom[M[Future[T]], T, M[T]]
-    ): Future[M[T]] = Future.sequence(col)
-  }
-
   @deprecated("Can use traversables natively, we don't require more plumbing here", "1.0.0")
   object FutureIterable {
     def apply[A](listFuture: Iterable[Future[A]]) = Future.sequence(listFuture)
