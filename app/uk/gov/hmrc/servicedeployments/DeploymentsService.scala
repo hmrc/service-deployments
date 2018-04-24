@@ -56,8 +56,8 @@ class DeploymentsService @Inject()(
         serviceRepositories <- allServiceRepositoriesF
       } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases))
     )
-
   }
+
   private def tryGetTagDatesFor(service: Service): Future[Map[String, LocalDateTime]] =
     getTagsForService(service).map { results =>
       convertTagsToMap(results.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
