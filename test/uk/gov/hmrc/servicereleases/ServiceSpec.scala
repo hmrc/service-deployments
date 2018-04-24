@@ -20,9 +20,11 @@ import java.time.LocalDateTime
 
 import org.scalatest.{FunSuite, Matchers, WordSpec}
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
+import uk.gov.hmrc.servicedeployments.services.Repository
 
 class ServiceSpec extends WordSpec with Matchers {
 
+  val hmrcRepo = Repository("org.hmrc")
   val `31 July`   = LocalDateTime.of(2016, 7, 31, 0, 0)
   val `23 August` = LocalDateTime.of(2016, 8, 23, 0, 0)
   val `26 August` = LocalDateTime.of(2016, 8, 26, 0, 0)
@@ -42,7 +44,7 @@ class ServiceSpec extends WordSpec with Matchers {
         ServiceDeployment("2.0.0", `30 August`)
       )
 
-      val service = Service("name", Seq(), deployments = deploymemts, Seq())
+      val service = Service("name", hmrcRepo, deployments = deploymemts, Seq())
 
       service.deploymentInterval("0.0.1") shouldBe None
       service.deploymentInterval("0.1.0") shouldBe Some(3)
@@ -60,7 +62,7 @@ class ServiceSpec extends WordSpec with Matchers {
 
       val service = Service(
         "name",
-        Seq(),
+        Repository("org.hmrc"),
         deployments = deploymemts,
         Seq(Deployment("name", "1.0.0", None, `31 July`, Some(1), None)))
 
@@ -82,7 +84,7 @@ class ServiceSpec extends WordSpec with Matchers {
 
       val service = Service(
         "name",
-        Seq(),
+        hmrcRepo,
         deployments = deploymemts,
         Seq(Deployment("name", "1.0.0", None, oldDeploymentDate, Some(1), None)))
 
@@ -102,7 +104,7 @@ class ServiceSpec extends WordSpec with Matchers {
       val oldDeploymentDate: LocalDateTime = LocalDateTime.now().minusDays(60)
       val service = Service(
         "name",
-        Seq(),
+        hmrcRepo,
         deployments = deploymemts,
         Seq(Deployment("name", "0.1.0", None, oldDeploymentDate, Some(1), None)))
 

@@ -19,7 +19,6 @@ package uk.gov.hmrc.servicedeployments
 import javax.inject.{Inject, Provider, Singleton}
 import play.api.inject.Module
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.gitclient.{Git, GitClient}
 import uk.gov.hmrc.githubclient.GithubApiClient
 import uk.gov.hmrc.servicedeployments.tags.GitConnectorOpen
 
@@ -27,24 +26,12 @@ class ServiceDeploymentsModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration) =
     Seq(
-      bind[GitClient].toProvider[GitClientProvider],
       bind[GitConnectorOpen].toProvider[GitConnectorOpenProvider]
     )
 }
 @Singleton
-class GitClientProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GitClient] {
-
-  import config._
-
-  override def get() = Git(gitEnterpriseStorePath, gitEnterpriseToken, gitEnterpriseHost, withCleanUp = true)
-}
-@Singleton
 class GithubApiClientOpen @Inject()(config: ServiceDeploymentsConfig) extends AbstractGithubApiClient {
   override val client = GithubApiClient(config.gitOpenApiUrl, config.gitOpenToken)
-}
-@Singleton
-class GithubApiClientEnterprise @Inject()(config: ServiceDeploymentsConfig) extends AbstractGithubApiClient {
-  override val client = GithubApiClient(config.gitEnterpriseApiUrl, config.gitEnterpriseToken)
 }
 
 abstract class AbstractGithubApiClient() extends GithubApiClient {

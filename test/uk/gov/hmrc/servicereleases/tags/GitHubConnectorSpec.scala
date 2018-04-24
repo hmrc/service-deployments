@@ -44,9 +44,8 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.{GithubApiClientEnterprise, GithubApiClientOpen, ServiceDeploymentsConfig}
-import uk.gov.hmrc.servicedeployments.services.CatalogueConnector
+import uk.gov.hmrc.githubclient.GhRepoRelease
+import uk.gov.hmrc.servicedeployments.{GithubApiClientOpen, ServiceDeploymentsConfig}
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
@@ -61,16 +60,14 @@ class GitHubConnectorSpec
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
-  private val githubApiClientEnterprise = mock[GithubApiClientEnterprise]
-  private val githubApiClientOpen       = mock[GithubApiClientOpen]
-  private val mockedGitClient           = mock[GitClient]
+  private val githubApiClientOpen = mock[GithubApiClientOpen]
+  private val mockedGitClient     = mock[GitClient]
 
   override def newAppForTest(testData: TestData) =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
         bind[GitClient].toInstance(mockedGitClient),
-        bind[GithubApiClientEnterprise].toInstance(githubApiClientEnterprise),
         bind[GithubApiClientOpen].toInstance(githubApiClientOpen)
       )
       .build()
@@ -92,13 +89,8 @@ class GitHubConnectorSpec
       tags.futureValue shouldBe List(Tag("1.9.0", now))
     }
 
-    "get repo deployment tags from github enterprise deployments" in {
+    "get repo deployment tags from github open source deployments" in {
       val now: LocalDateTime = LocalDateTime.now()
-      val deployments =
-        List(GhRepoRelease(123, "deployments/1.9.0", Date.from(now.atZone(ZoneId.systemDefault()).toInstant)))
-
-      when(githubApiClientEnterprise.getReleases("OrgA", "repoA")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(deployments))
 
       when(mockedGitClient.getGitRepoTags("repoA", "OrgA")(BlockingIOExecutionContext.executionContext))
         .thenReturn(Future.successful(List(GitTag("1.9.0", Some(now.atZone(ZoneOffset.UTC))))))

@@ -125,7 +125,9 @@ trait WireMockSpec extends WordSpec with BeforeAndAfterAll with BeforeAndAfterEa
 object PortTester {
 
   def findPort(excluded: Int*): Int =
-    (6001 to 7000).find(port => !excluded.contains(port) && isFree(port)).getOrElse(throw new Exception("No free port"))
+    (6001 to 7000)
+      .find(port => !excluded.contains(port) && isFree(port))
+      .getOrElse(throw new Exception("No free port"))
 
   private def isFree(port: Int): Boolean = {
     val triedSocket = Try {

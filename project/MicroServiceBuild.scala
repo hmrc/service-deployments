@@ -20,23 +20,23 @@ private object AppDependencies {
   import play.sbt.PlayImport._
   import play.core.PlayVersion
 
-  private val domainVersion                = "4.1.0"
+  private val domainVersion                = "5.1.0"
   private val microserviceBootstrapVersion = "6.7.0"
   private val playUrlBindersVersion        = "2.1.0"
   private val playReactivemongoVersion     = "6.0.0"
-  private val githubClientVersion          = "1.14.0"
+  private val githubClientVersion          = "1.21.0"
   private val gitClientVersion             = "0.6.0"
 
   private val hmrcTestVersion = "2.4.0"
 
   val compile = Seq(
     ws,
-    "uk.gov.hmrc" %% "bootstrap-play-25"  % "0.10.0",
+    "uk.gov.hmrc" %% "bootstrap-play-25"  % "1.5.0",
     "uk.gov.hmrc" %% "git-client"         % gitClientVersion,
     "uk.gov.hmrc" %% "github-client"      % githubClientVersion,
-    "uk.gov.hmrc" %% "mongo-lock"         % "5.0.0",
+    "uk.gov.hmrc" %% "mongo-lock"         % "5.1.0",
     "uk.gov.hmrc" %% "domain"             % domainVersion,
-    "uk.gov.hmrc" %% "play-reactivemongo" % "6.1.0"
+    "uk.gov.hmrc" %% "play-reactivemongo" % "6.2.0"
   )
 
   trait TestDependencies {

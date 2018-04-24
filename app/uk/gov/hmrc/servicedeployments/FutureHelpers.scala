@@ -16,21 +16,21 @@
 
 package uk.gov.hmrc.servicedeployments
 
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
 
-import com.kenshoo.play.metrics.{Metrics, MetricsImpl}
-import play.api.Play
-
+import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class FutureHelpers @Inject()(metrics: Metrics) {
 
-  val defaultMetricsRegistry = metrics.defaultRegistry
+  val defaultMetricsRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def withTimerAndCounter[T](name: String)(f: Future[T]) = {
+  def withTimerAndCounter[T](name: String)(f: => Future[T]): Future[T] = {
     val t = defaultMetricsRegistry.timer(s"$name.timer").time()
     f.andThen {
       case Success(_) =>
@@ -44,13 +44,6 @@ class FutureHelpers @Inject()(metrics: Metrics) {
 }
 
 object FutureHelpers {
-  implicit class FutureExtender[A](f: Future[A]) {
-    def andAlso(fn: A => Unit): Future[A] =
-      f.flatMap { r =>
-        fn(r)
-        f
-      }
-  }
 
   implicit class FutureOfBoolean(f: Future[Boolean]) {
     def &&(f1: => Future[Boolean]): Future[Boolean] = f.flatMap { bv =>
@@ -76,14 +69,9 @@ object FutureHelpers {
         .map(_.flatten)
 
     def map[B](fn: A => B)(implicit ec: ExecutionContext): Future[Iterable[B]] =
-      futureList.map(_.map {
-        fn
-      })
+      futureList.map(_.map(fn))
 
     def filter[B](fn: A => Boolean)(implicit ec: ExecutionContext): Future[Iterable[A]] =
       futureList.map(_.filter(fn))
   }
-
-  def continueOnError[A](f: Future[A]) =
-    f.map(Success(_)).recover { case x => Failure(x) }
 }
