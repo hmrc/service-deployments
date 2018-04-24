@@ -17,9 +17,8 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.time.{LocalDateTime, ZoneOffset}
-import javax.inject.{Inject, Singleton}
 
-import org.eclipse.egit.github.core.client.RequestException
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.servicedeployments.DeploymentOperation.{Add, Update}
 import uk.gov.hmrc.servicedeployments.FutureHelpers.FutureIterable
@@ -29,8 +28,6 @@ import uk.gov.hmrc.servicedeployments.tags.{Tag, TagsService}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
-import FutureHelpers._
 
 @Singleton
 class DeploymentsService @Inject()(
@@ -48,15 +45,19 @@ class DeploymentsService @Inject()(
     } yield success
 
   private def getServiceRepositoryDeployments: FutureIterable[Service] = {
+    val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] = deploymentsService.getAll()
+    val allKnownReleasesF: Future[Map[String, Seq[Deployment]]]           = repository.allServicedeployments
+    val allServiceRepositoriesF: Future[Map[String, Repository]]     = serviceRepositoriesService.getAll
+
     FutureIterable(
       for {
-        knownDeployments    <- deploymentsService.getAll()
-        knownReleases       <- repository.allServicedeployments
-        serviceRepositories <- serviceRepositoriesService.getAll
+        knownDeployments    <- allKnownDeploymentsF
+        knownReleases       <- allKnownReleasesF
+        serviceRepositories <- allServiceRepositoriesF
       } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases))
     )
-  }
 
+  }
   private def tryGetTagDatesFor(service: Service): Future[Map[String, LocalDateTime]] =
     getTagsForService(service).map { results =>
       convertTagsToMap(results.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
