@@ -17,11 +17,10 @@
 package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
+
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
-import uk.gov.hmrc.servicedeployments.FutureHelpers._
+
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 @Singleton

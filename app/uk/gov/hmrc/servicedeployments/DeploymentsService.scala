@@ -77,16 +77,6 @@ class DeploymentsService @Inject()(
     service: Service,
     maybeTagDates: Map[String, LocalDateTime]
   ): Future[Seq[Boolean]] = {
-        /*
-      case Failure(ex: RequestException) if ex.getStatus == 404 =>
-        Logger.debug(
-          s"Could not find any tags for ${service.serviceName}, most likely caused by an app created in the open manually without our jenkins jobs")
-        Future.successful(Seq(false))
-      case Failure(ex) =>
-        Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}", ex)
-        Future.successful(Seq(false))
-    }*/
-
     createOrUpdateDeploymentsFromDeploymentsAndTags(service, maybeTagDates)
   }
 
