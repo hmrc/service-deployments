@@ -47,7 +47,13 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneAppPerTest with ScalaFutures with TryValues {
+class TagsServiceSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with OneAppPerTest
+    with ScalaFutures
+    with TryValues {
 
   implicit override def newAppForTest(testData: TestData): Application =
     new GuiceApplicationBuilder()
@@ -83,16 +89,5 @@ class TagsServiceSpec extends WordSpec with Matchers with MockitoSugar with OneA
 
       compositeTagsSource.get(org, repoName).failed.futureValue shouldBe ex
     }
-
-    "should fail if repo type is other than github.com" ignore new SetUp {
-      val repoType            = "unknown-repo-type"
-      val repoTags: List[Tag] = List(Tag("E", LocalDateTime.now()))
-      val ex                  = new RuntimeException(s"Unknown repo type: $repoType")
-
-      when(gitOpenTagDataSource.get(org, repoName)).thenReturn(Future.successful(repoTags))
-
-      compositeTagsSource.get(org, repoName).failed.futureValue.getMessage shouldBe ex.getMessage
-    }
-
   }
 }

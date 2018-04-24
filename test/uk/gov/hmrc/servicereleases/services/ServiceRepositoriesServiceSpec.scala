@@ -76,16 +76,6 @@ class ServiceRepositoriesServiceSpec
 
       when(mockedCatalogueConnector.getAll()).thenReturn(Future.successful(data))
 
-      service.getAll.futureValue shouldBe Map(
-        "service-frontend" -> Repository("org2"))
-    }
-
-    "convert to serviceInfo when no Git open source url" in {
-      val data =
-        List(Service("service-frontend", GithubUrl("github-open", "http://github.com/org2/service-frontend")))
-
-      when(mockedCatalogueConnector.getAll()).thenReturn(Future.successful(data))
-
       service.getAll.futureValue shouldBe Map("service-frontend" -> Repository("org2"))
     }
   }
