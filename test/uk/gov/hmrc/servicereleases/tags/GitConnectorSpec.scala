@@ -53,9 +53,14 @@ import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
 
-
-class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with ScalaFutures with OneAppPerSuite with IntegrationPatience {
-  val mockedGitClient = mock[GitClient]
+class GitConnectorSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with ScalaFutures
+    with OneAppPerSuite
+    with IntegrationPatience {
+  val mockedGitClient                 = mock[GitClient]
   val mockedGithubApiClientEnterprise = mock[GithubApiClientEnterprise]
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
@@ -63,22 +68,25 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
       bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig()),
       bind[GitClient].toInstance(mockedGitClient),
       bind[GithubApiClientEnterprise].toInstance(mockedGithubApiClientEnterprise)
-    ).build()
+    )
+    .build()
 
   val connector = app.injector.instanceOf[GitConnectorOpen]
 
   "getGitRepoTags" should {
 
-    "return tags form gitClient with normalized tag name (i.e just the numbers)" in  {
-      val now = ZonedDateTime.now()
+    "return tags form gitClient with normalized tag name (i.e just the numbers)" in {
+      val now      = ZonedDateTime.now()
       val repoName = "repoName"
-      val org = "HMRC"
+      val org      = "HMRC"
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(List(
-          GitTag("v1.0.0", Some(now)),
-          GitTag("deployment/9.101.0", Some(now)),
-          GitTag("someRandomtagName", Some(now)))))
+        .thenReturn(
+          Future.successful(
+            List(
+              GitTag("v1.0.0", Some(now)),
+              GitTag("deployment/9.101.0", Some(now)),
+              GitTag("someRandomtagName", Some(now)))))
 
       connector.get(org, repoName).futureValue shouldBe List(
         Tag("1.0.0", now.toLocalDateTime),
@@ -86,22 +94,26 @@ class GitConnectorSpec extends WordSpec with Matchers with MockitoSugar with Sca
         Tag("someRandomtagName", now.toLocalDateTime))
     }
 
-    "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in  {
-      val now = ZonedDateTime.now()
+    "try to lookup tag dates from the github deployments if tag date is missing and only return tags which have dates" in {
+      val now      = ZonedDateTime.now()
       val repoName = "repoName"
-      val org = "HMRC"
+      val org      = "HMRC"
 
-      when(mockedGithubApiClientEnterprise.getReleases("HMRC", "repoName")(BlockingIOExecutionContext.executionContext)).thenReturn(
-        Future.successful(List(
-          GhRepoRelease(123, "someRandomTagName", Date.from(now.toInstant)),
-          GhRepoRelease(124, "deployment/9.102.0", Date.from(now.toInstant)))))
+      when(mockedGithubApiClientEnterprise.getReleases("HMRC", "repoName")(BlockingIOExecutionContext.executionContext))
+        .thenReturn(
+          Future.successful(
+            List(
+              GhRepoRelease(123, "someRandomTagName", Date.from(now.toInstant)),
+              GhRepoRelease(124, "deployment/9.102.0", Date.from(now.toInstant)))))
 
       when(mockedGitClient.getGitRepoTags("repoName", "HMRC")(BlockingIOExecutionContext.executionContext))
-        .thenReturn(Future.successful(List(
-          GitTag("v1.0.0", None),
-          GitTag("deployment/9.101.0", Some(now)),
-          GitTag("deployment/9.102.0", None),
-          GitTag("someRandomTagName", None))))
+        .thenReturn(
+          Future.successful(
+            List(
+              GitTag("v1.0.0", None),
+              GitTag("deployment/9.101.0", Some(now)),
+              GitTag("deployment/9.102.0", None),
+              GitTag("someRandomTagName", None))))
 
       connector.get(org, repoName).futureValue shouldBe List(
         Tag("9.101.0", now.toLocalDateTime),

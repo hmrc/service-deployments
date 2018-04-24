@@ -29,7 +29,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
-
 trait FuturesCache[K, V] {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
 
@@ -39,7 +38,8 @@ trait FuturesCache[K, V] {
 
   lazy val cache = {
 
-    CacheBuilder.newBuilder()
+    CacheBuilder
+      .newBuilder()
       .refreshAfterWrite(refreshTimeInMillis.toMillis, TimeUnit.MILLISECONDS)
       .build(
         new CacheLoader[K, Future[V]] {

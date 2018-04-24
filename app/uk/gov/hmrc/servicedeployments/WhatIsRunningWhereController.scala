@@ -24,10 +24,11 @@ import play.api.mvc.Action
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.format
-
-
 @Singleton
-class WhatIsRunningWhereController @Inject() (whatIsRunningWhereRepository :WhatIsRunningWhereRepository, updateScheduler: UpdateScheduler) extends BaseController {
+class WhatIsRunningWhereController @Inject()(
+  whatIsRunningWhereRepository: WhatIsRunningWhereRepository,
+  updateScheduler: UpdateScheduler)
+    extends BaseController {
 
   private def fromWhatIsRunningWhereModel(w: WhatIsRunningWhereModel): ServiceDeploymentInformation =
     ServiceDeploymentInformation(w.serviceName, w.deployments)
@@ -44,7 +45,6 @@ class WhatIsRunningWhereController @Inject() (whatIsRunningWhereRepository :What
     }
   }
 
-
   def getAll() = Action.async { implicit request =>
     whatIsRunningWhereRepository.getAll.map { deployments =>
       val filteredDeployments = deployments.map(filterDcdFromData)
@@ -54,12 +54,11 @@ class WhatIsRunningWhereController @Inject() (whatIsRunningWhereRepository :What
 
   def update() = Action.async { implicit request =>
     updateScheduler.updateWhatIsRunningWhereModel.map {
-      case Info(message) => Ok(message)
-      case Warn(message) => Ok(message)
+      case Info(message)      => Ok(message)
+      case Warn(message)      => Ok(message)
       case Error(message, ex) => InternalServerError(message)
     }
   }
-
 
   def clear() = Action.async { implicit request =>
     whatIsRunningWhereRepository.clearAllData map { r =>

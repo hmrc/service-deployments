@@ -31,23 +31,27 @@ import scala.util.Try
 
 case class HttpRequest(method: RequestMethod, url: String, body: Option[String]) {
   {
-    body.foreach { b => Json.parse(b) }
+    body.foreach { b =>
+      Json.parse(b)
+    }
   }
 
   def req: RequestPatternBuilder = {
     val builder = new RequestPatternBuilder(method, urlEqualTo(url))
-    body.map { b =>
-      builder.withRequestBody(equalToJson(b))
-    }.getOrElse(builder)
+    body
+      .map { b =>
+        builder.withRequestBody(equalToJson(b))
+      }
+      .getOrElse(builder)
   }
 }
 
-trait WireMockSpec extends WordSpec with BeforeAndAfterAll with BeforeAndAfterEach{
+trait WireMockSpec extends WordSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   val host: String = "localhost"
-  val port: Int = PortTester.findPort()
+  val port: Int    = PortTester.findPort()
 
-  val endpointMock = new WireMock(host, port)
-  val endpointMockUrl = s"http://$host:$port"
+  val endpointMock                   = new WireMock(host, port)
+  val endpointMockUrl                = s"http://$host:$port"
   val endpointServer: WireMockServer = new WireMockServer(wireMockConfig().port(port))
 
   def startWireMock() = endpointServer.start()
@@ -59,38 +63,36 @@ trait WireMockSpec extends WordSpec with BeforeAndAfterAll with BeforeAndAfterEa
     endpointMock.resetScenarios()
   }
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     endpointServer.stop()
-  }
 
-  override def beforeAll(): Unit = {
+  override def beforeAll(): Unit =
     endpointServer.start()
-  }
 
-  def printMappings(): Unit = {
+  def printMappings(): Unit =
     endpointMock.allStubMappings().getMappings.toList.foreach { s =>
       println(s)
     }
-  }
 
   def givenRequestExpects(
-                           method: RequestMethod,
-                           url: String,
-                           extraHeaders: Map[String, String] = Map(),
-                           willRespondWith: (Int, Option[String]), headers : List[(String, String)] = List()): Unit = {
+    method: RequestMethod,
+    url: String,
+    extraHeaders: Map[String, String] = Map(),
+    willRespondWith: (Int, Option[String]),
+    headers: List[(String, String)] = List()): Unit = {
 
     val builder = new MappingBuilder(method, urlPathEqualTo(new URL(url).getPath))
 
-    headers.foreach(x=> builder.withHeader(x._1, equalTo(x._2)))
-
-
+    headers.foreach(x => builder.withHeader(x._1, equalTo(x._2)))
 
     val response: ResponseDefinitionBuilder = new ResponseDefinitionBuilder()
       .withStatus(willRespondWith._1)
 
-    val resp = willRespondWith._2.map { b =>
-      response.withBody(b)
-    }.getOrElse(response)
+    val resp = willRespondWith._2
+      .map { b =>
+        response.withBody(b)
+      }
+      .getOrElse(response)
 
     builder.willReturn(resp)
 
@@ -98,31 +100,32 @@ trait WireMockSpec extends WordSpec with BeforeAndAfterAll with BeforeAndAfterEa
   }
 
   def assertRequest(
-                     method: RequestMethod,
-                     url: String,
-                     extraHeaders: Map[String, String] = Map(),
-                     jsonBody: Option[String]): Unit = {
+    method: RequestMethod,
+    url: String,
+    extraHeaders: Map[String, String] = Map(),
+    jsonBody: Option[String]): Unit = {
     val builder = new RequestPatternBuilder(method, urlPathEqualTo(new URL(url).getPath))
-    extraHeaders.foreach { case (k, v) =>
-      builder.withHeader(k, equalTo(v))
+    extraHeaders.foreach {
+      case (k, v) =>
+        builder.withHeader(k, equalTo(v))
     }
 
-    jsonBody.map { b =>
-      builder.withRequestBody(equalToJson(b))
-    }.getOrElse(builder)
+    jsonBody
+      .map { b =>
+        builder.withRequestBody(equalToJson(b))
+      }
+      .getOrElse(builder)
     endpointMock.verifyThat(builder)
   }
 
-  def assertRequest(req: HttpRequest): Unit = {
+  def assertRequest(req: HttpRequest): Unit =
     endpointMock.verifyThat(req.req)
-  }
 }
 
 object PortTester {
 
-  def findPort(excluded: Int*): Int = {
+  def findPort(excluded: Int*): Int =
     (6001 to 7000).find(port => !excluded.contains(port) && isFree(port)).getOrElse(throw new Exception("No free port"))
-  }
 
   private def isFree(port: Int): Boolean = {
     val triedSocket = Try {

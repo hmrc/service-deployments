@@ -25,13 +25,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class WhatIsRunningWhereUpdateService @Inject()(whatIsRunningWhereDataSource: DeploymentsDataSource,
-                                                repository: WhatIsRunningWhereRepository) {
+class WhatIsRunningWhereUpdateService @Inject()(
+  whatIsRunningWhereDataSource: DeploymentsDataSource,
+  repository: WhatIsRunningWhereRepository) {
 
   def updateModel() =
     for {
       whatsRunningWhere <- whatIsRunningWhereDataSource.whatIsRunningWhere
-      success <- Future.sequence(whatsRunningWhere.map(repository.update))
+      success           <- Future.sequence(whatsRunningWhere.map(repository.update))
     } yield success
 
 }

@@ -21,12 +21,10 @@ import javax.inject.{Inject, Singleton}
 import akka.actor.ActorSystem
 
 import scala.concurrent.duration._
-
-
-
 @Singleton
-class DataReloadScheduler @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig,
-                                    updateScheduler: UpdateScheduler) {
+class DataReloadScheduler @Inject()(
+  serviceDeploymentsConfig: ServiceDeploymentsConfig,
+  updateScheduler: UpdateScheduler) {
 
   if (serviceDeploymentsConfig.schedulerEnabled) {
     updateScheduler.startUpdatingWhatIsRunningWhereModel(10 minutes)

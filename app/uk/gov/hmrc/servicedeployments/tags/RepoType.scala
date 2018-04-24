@@ -20,13 +20,12 @@ object RepoType {
   case object Enterprise extends RepoType
   case object Open extends RepoType
 
-  def from(st: String): RepoType = {
+  def from(st: String): RepoType =
     st match {
       case "github-enterprise" => throw new RuntimeException(s"We no longer support GitHub enterprise")
-      case "github-com" => Open
-      case _ => throw new RuntimeException(s"Unknown repo type $st")
+      case "github-com"        => Open
+      case _                   => throw new RuntimeException(s"Unknown repo type $st")
     }
-  }
 }
 
 sealed trait RepoType

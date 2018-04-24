@@ -30,10 +30,14 @@ import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSour
 import scala.concurrent.Future
 import scala.io.Source
 
-
-case class DeploymentResult(name: String, version: String,
-                         creationDate: Option[LocalDateTime], productionDate: LocalDateTime,
-                         interval: Option[Long], leadTime: Option[Long], deployers : Seq[Deployer])
+case class DeploymentResult(
+  name: String,
+  version: String,
+  creationDate: Option[LocalDateTime],
+  productionDate: LocalDateTime,
+  interval: Option[Long],
+  leadTime: Option[Long],
+  deployers: Seq[Deployer])
 
 object DeploymentResult {
 
@@ -41,7 +45,7 @@ object DeploymentResult {
 
   implicit val formats = Json.format[DeploymentResult]
 
-  def fromDeployment(deployment: Deployment): DeploymentResult = {
+  def fromDeployment(deployment: Deployment): DeploymentResult =
     DeploymentResult(
       deployment.name,
       deployment.version,
@@ -51,19 +55,19 @@ object DeploymentResult {
       deployment.leadTime,
       deployment.deployers
     )
-  }
 
 }
 
 @Singleton
-class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deploymentsRepository: DeploymentsRepository) extends BaseController {
+class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deploymentsRepository: DeploymentsRepository)
+    extends BaseController {
 
   import uk.gov.hmrc.JavaDateTimeJsonFormatter._
 
   def forService(serviceName: String) = Action.async { implicit request =>
     deploymentsRepository.getForService(serviceName).map {
       case Some(data) => Ok(Json.toJson(data.map(DeploymentResult.fromDeployment)))
-      case None => NotFound
+      case None       => NotFound
     }
   }
 
@@ -76,20 +80,19 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
 
   def update() = Action.async { implicit request =>
     updateScheduler.updateDeploymentServiceModel.map {
-      case Info(message) => Ok(message)
-      case Warn(message) => Ok(message)
+      case Info(message)      => Ok(message)
+      case Warn(message)      => Ok(message)
       case Error(message, ex) => InternalServerError(message)
     }
   }
 
   def importRaw() = Action.async(parse.temporaryFile) { request =>
-
     val deploymentsDataSource = new DeploymentsDataSource {
 
       import EnvironmentalDeployment._
 
       val source = Source.fromFile(request.body.file, "UTF-8")
-      val jsons = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
+      val jsons  = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
 
       override def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
 
@@ -98,8 +101,8 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
     }
 
     updateScheduler.copy(deploymentsDataSource = deploymentsDataSource).updateDeploymentServiceModel.map {
-      case Info(message) => Ok(message)
-      case Warn(message) => Ok(message)
+      case Info(message)      => Ok(message)
+      case Warn(message)      => Ok(message)
       case Error(message, ex) => InternalServerError(message)
     }
   }

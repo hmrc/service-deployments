@@ -32,32 +32,31 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class DeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositoriesService,
-                                   deploymentsService: ServiceDeploymentsService,
-                                   tagsService: TagsService,
-                                   repository: DeploymentsRepository) {
+class DeploymentsService @Inject()(
+  serviceRepositoriesService: ServiceRepositoriesService,
+  deploymentsService: ServiceDeploymentsService,
+  tagsService: TagsService,
+  repository: DeploymentsRepository) {
 
   def updateModel(): Future[Iterable[Boolean]] =
     for {
-      service <- getServiceRepositoryDeployments
-      _ <- log(service)
+      service       <- getServiceRepositoryDeployments
+      _             <- log(service)
       maybeTagDates <- tryGetTagDatesFor(service)
-      success <- processDeployments(service, maybeTagDates)
+      success       <- processDeployments(service, maybeTagDates)
     } yield success
-
 
   private def getServiceRepositoryDeployments = {
     val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] = deploymentsService.getAll()
-    val allKnownReleasesF: Future[Map[String, Seq[Deployment]]] = repository.allServicedeployments
-    val allServiceRepositoriesF: Future[Map[String, Seq[Repository]]] = serviceRepositoriesService.getAll()
+    val allKnownReleasesF: Future[Map[String, Seq[Deployment]]]           = repository.allServicedeployments
+    val allServiceRepositoriesF: Future[Map[String, Seq[Repository]]]     = serviceRepositoriesService.getAll()
 
     FutureIterable(
       for {
-        knownDeployments <- allKnownDeploymentsF
-        knownReleases <- allKnownReleasesF
+        knownDeployments    <- allKnownDeploymentsF
+        knownReleases       <- allKnownReleasesF
         serviceRepositories <- allServiceRepositoriesF
-      } yield
-        serviceRepositories.map(Service(_, knownDeployments, knownReleases))
+      } yield serviceRepositories.map(Service(_, knownDeployments, knownReleases))
     )
 
   }
@@ -73,28 +72,39 @@ class DeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositori
   private def getTagsForService(service: Service) =
     Future.sequence(service.deploymentsRequiringUpdates match {
       case Nil => Seq()
-      case _ => service.repositories.map { r => tagsService.get(r.org, service.serviceName, r.repoType) }
+      case _ =>
+        service.repositories.map { r =>
+          tagsService.get(r.org, service.serviceName, r.repoType)
+        }
     })
 
   private def combineResultsOrFailIfAnyTryDoesNotSucceed[T](xs: Seq[Try[T]]): Try[Seq[T]] =
-    (Try(Seq[T]()) /: xs) { (a, b) => a flatMap (c => b map (d => c :+ d)) }
+    (Try(Seq[T]()) /: xs) { (a, b) =>
+      a flatMap (c => b map (d => c :+ d))
+    }
 
   private def convertTagsToMap(tags: Seq[Tag]) =
-    tags.map { x => x.version -> x.createdAt } toMap
+    tags.map { x =>
+      x.version -> x.createdAt
+    } toMap
 
-  private def processDeployments(service: Service, maybeTagDates: Try[Map[String, LocalDateTime]]): Future[Iterable[Boolean]] =
+  private def processDeployments(
+    service: Service,
+    maybeTagDates: Try[Map[String, LocalDateTime]]): Future[Iterable[Boolean]] =
     maybeTagDates match {
       case Success(td) => createOrUpdateDeploymentsFromDeploymentsAndTags(service, td)
       case Failure(ex: RequestException) if ex.getStatus == 404 =>
-        Logger.debug(s"Could not find any tags for ${service.serviceName}, most likely caused by an app created in the open manually without our jenkins jobs")
+        Logger.debug(
+          s"Could not find any tags for ${service.serviceName}, most likely caused by an app created in the open manually without our jenkins jobs")
         FutureIterable(Seq(Future.successful(false)))
       case Failure(ex) =>
         Logger.error(s"Error processing tags for ${service.serviceName}: ${ex.getMessage}", ex)
         FutureIterable(Seq(Future.successful(false)))
     }
 
-  private def createOrUpdateDeploymentsFromDeploymentsAndTags(service: Service, tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] = {
-
+  private def createOrUpdateDeploymentsFromDeploymentsAndTags(
+    service: Service,
+    tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] =
     FutureIterable(
       new DeploymentAndOperation(service, tagDates).get.map {
         case (Add, r) =>
@@ -106,19 +116,18 @@ class DeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositori
       }
     )
 
-  }
-
-
   private def log(serviceRepositoryDeployments: Service): Future[Unit] = {
     Logger.debug(s"Checking deployments for service: ${serviceRepositoryDeployments.serviceName}")
-    Logger.debug(s"total deployments for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.deployments.size}")
-    Logger.debug(s"total known deployments for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.knownDeployments.size}")
-    Logger.debug(s"total deploymentsRequiringUpdates for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.deploymentsRequiringUpdates.size}")
+    Logger.debug(
+      s"total deployments for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.deployments.size}")
+    Logger.debug(
+      s"total known deployments for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.knownDeployments.size}")
+    Logger.debug(
+      s"total deploymentsRequiringUpdates for ${serviceRepositoryDeployments.serviceName} : ${serviceRepositoryDeployments.deploymentsRequiringUpdates.size}")
 
-    serviceRepositoryDeployments.deploymentsRequiringUpdates.foreach {
-      d =>
-        Logger.debug(
-          s"deployment ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.deploymentdAt} needs update")
+    serviceRepositoryDeployments.deploymentsRequiringUpdates.foreach { d =>
+      Logger.debug(
+        s"deployment ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.deploymentdAt} needs update")
     }
 
     Future.successful(Unit)
@@ -126,36 +135,44 @@ class DeploymentsService @Inject()(serviceRepositoriesService: ServiceRepositori
 
 }
 
-case class Service(serviceName: String, repositories: Seq[Repository], deployments: Seq[ServiceDeployment], knownDeployments: Seq[Deployment]) {
+case class Service(
+  serviceName: String,
+  repositories: Seq[Repository],
+  deployments: Seq[ServiceDeployment],
+  knownDeployments: Seq[Deployment]) {
 
   import uk.gov.hmrc.JavaDateTimeHelper._
 
-
   private lazy val newDeployments = deployments.filter(isNewDeployment)
 
-  private lazy val allDeployments = newDeployments ++ knownDeployments.map(x => ServiceDeployment(x.version, x.productionDate, x.deployers))
+  private lazy val allDeployments = newDeployments ++ knownDeployments.map(x =>
+    ServiceDeployment(x.version, x.productionDate, x.deployers))
 
   lazy val deploymentsRequiringUpdates = deployments.filter(x => isNewDeployment(x) || isRedeployment(x))
 
-  private lazy val deploymentsSortedByDeploymentdAt = allDeployments.sortBy(_.deploymentdAt.toEpochSecond(ZoneOffset.UTC))
+  private lazy val deploymentsSortedByDeploymentdAt =
+    allDeployments.sortBy(_.deploymentdAt.toEpochSecond(ZoneOffset.UTC))
 
   private lazy val serviceDeploymentIntervals: Seq[(String, Long)] =
-    (deploymentsSortedByDeploymentdAt, deploymentsSortedByDeploymentdAt drop 1).zipped.map { case (d1, d2) =>
-      (d2.version, daysBetween(d1.deploymentdAt, d2.deploymentdAt))
+    (deploymentsSortedByDeploymentdAt, deploymentsSortedByDeploymentdAt drop 1).zipped.map {
+      case (d1, d2) =>
+        (d2.version, daysBetween(d1.deploymentdAt, d2.deploymentdAt))
     }
 
   def deploymentInterval(version: String): Option[Long] = serviceDeploymentIntervals.find(_._1 == version).map(_._2)
 
-  private def isNewDeployment(deployment: ServiceDeployment): Boolean = !knownDeployments.exists(kr => kr.version == deployment.version)
+  private def isNewDeployment(deployment: ServiceDeployment): Boolean =
+    !knownDeployments.exists(kr => kr.version == deployment.version)
 
-  private def isRedeployment(deployment: ServiceDeployment): Boolean = knownDeployments.exists(kr => kr.version == deployment.version && kr.deployers != deployment.deployers)
+  private def isRedeployment(deployment: ServiceDeployment): Boolean =
+    knownDeployments.exists(kr => kr.version == deployment.version && kr.deployers != deployment.deployers)
 }
 
 object Service {
-  def apply(serviceRepositories: (String, Seq[Repository]),
-            knownDeployments: Map[String, Seq[ServiceDeployment]],
-            knownReleases: Map[String, Seq[Deployment]]): Service =
-
+  def apply(
+    serviceRepositories: (String, Seq[Repository]),
+    knownDeployments: Map[String, Seq[ServiceDeployment]],
+    knownReleases: Map[String, Seq[Deployment]]): Service =
     serviceRepositories match {
       case (serviceName, repositories) =>
         new Service(
@@ -175,22 +192,32 @@ class DeploymentAndOperation(service: Service, tagDates: Map[String, LocalDateTi
 
   import uk.gov.hmrc.JavaDateTimeHelper._
 
-  def get: Seq[(DeploymentOperation.Value, Deployment)] = {
-
+  def get: Seq[(DeploymentOperation.Value, Deployment)] =
     service.deploymentsRequiringUpdates.map { deploymentToUpdate =>
       val tagDate = tagDates.get(deploymentToUpdate.version)
 
-      service.knownDeployments.find(_.version == deploymentToUpdate.version).fold {
-        (Add, Deployment(service.serviceName, deploymentToUpdate.version, tagDate, deploymentToUpdate.deploymentdAt, service.deploymentInterval(deploymentToUpdate.version), leadTime(deploymentToUpdate, tagDate), deploymentToUpdate.deployers))
-      } { knownDeployment =>
-        (Update, knownDeployment.copy(deployers = (knownDeployment.deployers ++ deploymentToUpdate.deployers).distinct))
-      }
+      service.knownDeployments
+        .find(_.version == deploymentToUpdate.version)
+        .fold {
+          (
+            Add,
+            Deployment(
+              service.serviceName,
+              deploymentToUpdate.version,
+              tagDate,
+              deploymentToUpdate.deploymentdAt,
+              service.deploymentInterval(deploymentToUpdate.version),
+              leadTime(deploymentToUpdate, tagDate),
+              deploymentToUpdate.deployers
+            ))
+        } { knownDeployment =>
+          (
+            Update,
+            knownDeployment.copy(deployers = (knownDeployment.deployers ++ deploymentToUpdate.deployers).distinct))
+        }
     }
 
-  }
-
-  def leadTime(nd: ServiceDeployment, tagDate: Option[LocalDateTime]): Option[Long] = {
+  def leadTime(nd: ServiceDeployment, tagDate: Option[LocalDateTime]): Option[Long] =
     tagDate.map(daysBetween(_, nd.deploymentdAt))
-  }
 
 }

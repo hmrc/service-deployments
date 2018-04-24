@@ -30,23 +30,21 @@ import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-
-case class WhatIsRunningWhereModel(serviceName: String,
-                                   deployments: Set[ServiceDeploymentInformation.Deployment],
-                                   _id: Option[BSONObjectID] = None)
+case class WhatIsRunningWhereModel(
+  serviceName: String,
+  deployments: Set[ServiceDeploymentInformation.Deployment],
+  _id: Option[BSONObjectID] = None)
 
 object WhatIsRunningWhereModel {
   import play.api.libs.functional.syntax._
   import play.api.libs.json.Reads._
   import play.api.libs.json._
 
-
   val whatIsRunningWhereReads: Reads[WhatIsRunningWhereModel] = (
     (__ \ "serviceName").read[String] and
       (__ \ "deployments").read[Set[ServiceDeploymentInformation.Deployment]] and
       (__ \ "_id").readNullable[BSONObjectID](ReactiveMongoFormats.objectIdRead)
-    ) (WhatIsRunningWhereModel.apply _)
-
+  )(WhatIsRunningWhereModel.apply _)
 
   val whatIsRunningWhereWrites: OWrites[WhatIsRunningWhereModel] = {
     import ReactiveMongoFormats.objectIdWrite
@@ -63,11 +61,10 @@ object WhatIsRunningWhereModel {
 
 @Singleton
 class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpers: FutureHelpers)
-  extends ReactiveRepository[WhatIsRunningWhereModel, BSONObjectID](
-    collectionName = "WhatIsRunningWhere", //!@ rename to start lower case
-    mongo = mongo.mongoConnector.db,
-    domainFormat = WhatIsRunningWhereModel.format)  {
-
+    extends ReactiveRepository[WhatIsRunningWhereModel, BSONObjectID](
+      collectionName = "WhatIsRunningWhere", //!@ rename to start lower case
+      mongo          = mongo.mongoConnector.db,
+      domainFormat   = WhatIsRunningWhereModel.format) {
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
     Future.sequence(
@@ -76,44 +73,42 @@ class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futu
       )
     )
 
-
   //!@ change the type to be the WhatIsRunningWhereModel
-  def update(deployment: ServiceDeploymentInformation): Future[Boolean] = {
-
+  def update(deployment: ServiceDeploymentInformation): Future[Boolean] =
     futureHelpers.withTimerAndCounter("mongo.update") {
       for {
-        update <- collection.update(selector = Json.obj("serviceName" -> Json.toJson(deployment.serviceName)), update = deployment, upsert = true)
-      } yield update match {
-        case _ => true
-      }
+        update <- collection.update(
+                   selector = Json.obj("serviceName" -> Json.toJson(deployment.serviceName)),
+                   update   = deployment,
+                   upsert   = true)
+      } yield
+        update match {
+          case _ => true
+        }
     } recover {
       case lastError =>
         logger.error(s"Could not update WhatIsRunningWhereRepository with ${deployment.serviceName}")
         throw new RuntimeException(s"failed to persist $deployment")
     }
-  }
 
+  def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]] =
+    findAll().map { all =>
+      all.groupBy(_.serviceName)
+    }
 
-  def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]] = {
-    findAll().map { all => all.groupBy(_.serviceName) }
-  }
-
-  def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]] = {
-
+  def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]] =
     futureHelpers.withTimerAndCounter("mongo.read") {
       find("serviceName" -> BSONRegex("^" + serviceName + "$", "i")) map {
-        case Nil => None
+        case Nil  => None
         case data => data.headOption
       }
     }
-  }
 
   def clearAllData = super.removeAll().map(_.ok)
 
-  def getAll: Future[Seq[WhatIsRunningWhereModel]] = {
+  def getAll: Future[Seq[WhatIsRunningWhereModel]] =
     collection
       .find(BSONDocument.empty)
       .cursor[WhatIsRunningWhereModel]()
       .collect[List]()
-  }
 }

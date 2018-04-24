@@ -48,7 +48,10 @@ object Tag {
 }
 
 @Singleton
-class GitConnectorOpen @Inject()(futureHelpers: FutureHelpers, gitHubClientOpen: GithubApiClientOpen, identifier: String) {
+class GitConnectorOpen @Inject()(
+  futureHelpers: FutureHelpers,
+  gitHubClientOpen: GithubApiClientOpen,
+  identifier: String) {
 
   import BlockingIOExecutionContext.executionContext
   import futureHelpers._

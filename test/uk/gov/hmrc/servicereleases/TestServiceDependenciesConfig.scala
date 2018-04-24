@@ -19,31 +19,32 @@ package uk.gov.hmrc.servicereleases
 import play.api.Configuration
 import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 
-class TestServiceDependenciesConfig (overrides: Map[String, Any] = Map()) extends ServiceDeploymentsConfig(Configuration()) {
+class TestServiceDependenciesConfig(overrides: Map[String, Any] = Map())
+    extends ServiceDeploymentsConfig(Configuration()) {
 
-    val configMap = Map("scheduler.enabled" -> false,
-      "deployments.api.url" -> "deployments.api.url",
-      "catalogue.api.url" -> "catalogue.api.url",
-      "git.enterprise.host" -> "git.enterprise.host",
-      "git.enterprise.api.url" -> "http://git.enterprise.api.url",
-      "git.enterprise.api.token" -> "git.enterprise.token",
-      "git.open.host" -> "git.open.host",
-      "git.open.api.url" -> "http://something.com",
-      "git.open.api.token" -> "git.open.token") ++ overrides
+  val configMap = Map(
+    "scheduler.enabled"        -> false,
+    "deployments.api.url"      -> "deployments.api.url",
+    "catalogue.api.url"        -> "catalogue.api.url",
+    "git.enterprise.host"      -> "git.enterprise.host",
+    "git.enterprise.api.url"   -> "http://git.enterprise.api.url",
+    "git.enterprise.api.token" -> "git.enterprise.token",
+    "git.open.host"            -> "git.open.host",
+    "git.open.api.url"         -> "http://something.com",
+    "git.open.api.token"       -> "git.open.token"
+  ) ++ overrides
 
+  private def getForKey(key: String)         = configMap.getOrElse(key, throw new RuntimeException(s"$key is not defined"))
+  private def getForKeyAsString(key: String) = getForKey(key).asInstanceOf[String]
 
-    private def getForKey(key: String) = configMap.getOrElse(key, throw new RuntimeException(s"$key is not defined"))
-    private def getForKeyAsString(key: String) = getForKey(key).asInstanceOf[String]
+  override val schedulerEnabled: Boolean        = getForKey("scheduler.enabled").asInstanceOf[Boolean]
+  override lazy val deploymentsApiBase: String  = getForKeyAsString("deployments.api.url")
+  override lazy val catalogueBaseUrl: String    = getForKeyAsString("catalogue.api.url")
+  override lazy val gitEnterpriseHost: String   = getForKeyAsString("git.enterprise.host")
+  override lazy val gitEnterpriseApiUrl: String = getForKeyAsString("git.enterprise.api.url")
+  override lazy val gitEnterpriseToken: String  = getForKeyAsString("git.enterprise.api.token")
+  override lazy val gitOpenApiHost: String      = getForKeyAsString("git.open.host")
+  override lazy val gitOpenApiUrl: String       = getForKeyAsString("git.open.api.url")
+  override lazy val gitOpenToken: String        = getForKeyAsString("git.open.api.token")
 
-    override val schedulerEnabled: Boolean = getForKey("scheduler.enabled").asInstanceOf[Boolean]
-    override lazy val deploymentsApiBase: String = getForKeyAsString("deployments.api.url")
-    override lazy val catalogueBaseUrl: String = getForKeyAsString("catalogue.api.url")
-    override lazy val gitEnterpriseHost: String = getForKeyAsString("git.enterprise.host")
-    override lazy val gitEnterpriseApiUrl: String = getForKeyAsString("git.enterprise.api.url")
-    override lazy val gitEnterpriseToken: String = getForKeyAsString("git.enterprise.api.token")
-    override lazy val gitOpenApiHost: String = getForKeyAsString("git.open.host")
-    override lazy val gitOpenApiUrl: String = getForKeyAsString("git.open.api.url")
-    override lazy val gitOpenToken: String = getForKeyAsString("git.open.api.token")
-    
-
-  }
+}
