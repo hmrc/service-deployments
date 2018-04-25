@@ -68,16 +68,10 @@ class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec wi
           200,
           Some("""|[{
               |			"name": "serviceName",
-              |			"githubUrls": [
-              |				{
+              |			"githubUrl": {
               |					"name": "github",
               |					"url": "https://someGitHubHost/org1/serviceName"
-              |				},
-              |    {
-              |					"name": "github-open",
-              |					"url": "https://someOtherGitHubHost/org2/serviceName"
               |				}
-              |			]
               |		}]
             """.stripMargin))
       )
@@ -85,10 +79,9 @@ class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec wi
       catalogueClient.getAll().futureValue shouldBe List(
         Service(
           "serviceName",
-          List(
-            GithubUrl("github", "https://someGitHubHost/org1/serviceName"),
-            GithubUrl("github-open", "https://someOtherGitHubHost/org2/serviceName"))
-        ))
+          GithubUrl("github", "https://someGitHubHost/org1/serviceName")
+        )
+      )
     }
   }
 }

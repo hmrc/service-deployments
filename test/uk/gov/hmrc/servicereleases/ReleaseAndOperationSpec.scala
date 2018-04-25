@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 import org.scalatest.{LoneElement, Matchers, WordSpec}
 import uk.gov.hmrc.servicedeployments.DeploymentOperation._
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
+import uk.gov.hmrc.servicedeployments.services.Repository
 
 class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement {
 
@@ -47,7 +48,7 @@ class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement
         Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2))
       )
 
-      val service: Service = Service("sName", Seq(), deployments, knownDeployments)
+      val service: Service = Service("sName", Repository("org.hmrc"), deployments, knownDeployments)
 
       val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] =
         new DeploymentAndOperation(service, tagDates).get
@@ -76,7 +77,7 @@ class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement
         Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2), deployers = Seq(deployer1))
       )
 
-      val service: Service = Service("sName", Seq(), deployments, knownDeployments)
+      val service: Service = Service("sName", Repository("org.hmrc"), deployments, knownDeployments)
 
       val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] =
         new DeploymentAndOperation(service, tagDates).get

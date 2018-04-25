@@ -24,7 +24,7 @@ import uk.gov.hmrc.HttpClient._
 import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 
 case class GithubUrl(name: String, url: String)
-case class Service(name: String, githubUrls: List[GithubUrl])
+case class Service(name: String, githubUrl: GithubUrl)
 
 @Singleton
 class CatalogueConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) {
