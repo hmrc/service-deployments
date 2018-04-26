@@ -27,9 +27,9 @@ case class GithubUrl(name: String, url: String)
 case class Service(name: String, githubUrl: GithubUrl)
 
 @Singleton
-class CatalogueConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) {
+class TeamsAndRepositoriesConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) {
 
-  val apiBase: String = serviceDeploymentsConfig.catalogueBaseUrl
+  val apiBase: String = serviceDeploymentsConfig.teamsAndRepositoriesApiBaseUrl
 
   implicit val urlReads = Json.reads[GithubUrl]
   implicit val reads    = Json.reads[Service]

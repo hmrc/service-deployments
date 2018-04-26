@@ -19,23 +19,22 @@ package uk.gov.hmrc.servicedeployments.services
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.servicedeployments.FutureHelpers
-
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import FutureHelpers._
-
+import scala.concurrent.Future
 import scala.util.matching.Regex
 
 case class Repository(org: String)
 
 @Singleton
-class ServiceRepositoriesService @Inject()(catalogueConnector: CatalogueConnector, futureHelpers: FutureHelpers) {
+class ServiceRepositoriesService @Inject()(
+  teamsAndRepositoriesConnector: TeamsAndRepositoriesConnector,
+  futureHelpers: FutureHelpers) {
 
   def getAll: Future[Map[String, Repository]] =
-    catalogueConnector.getAll().map { services =>
+    teamsAndRepositoriesConnector.getAll().map { services =>
       services.map { service =>
         service.name -> toServiceRepo(service.name, service.githubUrl.url).get
-      } toMap
+      }.toMap
     } map { result =>
       Logger.info(s"Found ${result.count(_ => true)} services")
       result

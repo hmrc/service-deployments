@@ -43,23 +43,29 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.servicedeployments.{ServiceDeploymentsConfig, WireMockSpec}
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
-class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec with ScalaFutures with OneAppPerSuite {
+class TeamsAndRepositoriesConnectorSpec
+    extends WordSpec
+    with Matchers
+    with WireMockSpec
+    with ScalaFutures
+    with OneAppPerSuite {
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig(
-    Map("catalogue.api.url" -> endpointMockUrl))
+    Map("teams-and-repositories.api.url" -> endpointMockUrl))
 
   implicit override lazy val app: Application =
     new GuiceApplicationBuilder()
       .overrides(bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig))
       .build()
 
-  val catalogueClient = app.injector.instanceOf[CatalogueConnector]
+  val teamsAndrepositoriesConnector: TeamsAndRepositoriesConnector =
+    app.injector.instanceOf[TeamsAndRepositoriesConnector]
 
   "getService" should {
 
     "return all services with github urls" in {
 
-      implicit val patienceConfig = PatienceConfig(Span(4, Seconds), Span(100, Milliseconds))
+      implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(4, Seconds), Span(100, Milliseconds))
 
       givenRequestExpects(
         method = GET,
@@ -76,7 +82,7 @@ class CatalogueConnectorSpec extends WordSpec with Matchers with WireMockSpec wi
             """.stripMargin))
       )
 
-      catalogueClient.getAll().futureValue shouldBe List(
+      teamsAndrepositoriesConnector.getAll().futureValue shouldBe List(
         Service(
           "serviceName",
           GithubUrl("github", "https://someGitHubHost/org1/serviceName")

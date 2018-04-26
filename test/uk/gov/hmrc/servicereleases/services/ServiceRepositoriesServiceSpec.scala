@@ -55,12 +55,12 @@ class ServiceRepositoriesServiceSpec
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
-  val mockedCatalogueConnector = mock[CatalogueConnector]
+  val mockedTeamsAndRepositoriesConnector = mock[TeamsAndRepositoriesConnector]
   implicit override def newAppForTest(testData: TestData): Application =
     new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
-        bind[CatalogueConnector].toInstance(mockedCatalogueConnector)
+        bind[TeamsAndRepositoriesConnector].toInstance(mockedTeamsAndRepositoriesConnector)
       )
       .build()
 
@@ -74,7 +74,7 @@ class ServiceRepositoriesServiceSpec
           GithubUrl("github-open", "http://github.com/org2/service-frontend")
         ))
 
-      when(mockedCatalogueConnector.getAll()).thenReturn(Future.successful(data))
+      when(mockedTeamsAndRepositoriesConnector.getAll()).thenReturn(Future.successful(data))
 
       service.getAll.futureValue shouldBe Map("service-frontend" -> Repository("org2"))
     }
