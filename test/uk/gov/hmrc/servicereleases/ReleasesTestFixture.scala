@@ -282,7 +282,7 @@ object ServiceTestFixture {
           .toMap
       ))
 
-    when(repository.allServicedeployments).thenReturn(
+    when(repository.allServiceDeployments).thenReturn(
       Future.successful(
         fixtures
           .map { f =>

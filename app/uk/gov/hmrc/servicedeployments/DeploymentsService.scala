@@ -46,7 +46,7 @@ class DeploymentsService @Inject()(
     val allKnownDeploymentsF: Future[Map[String, Seq[ServiceDeployment]]] =
       deploymentsService.getAll()
     val allKnownReleasesF: Future[Map[String, Seq[Deployment]]] =
-      repository.allServicedeployments
+      repository.allServiceDeployments
     val allServiceRepositoriesF: Future[Map[String, Repository]] =
       serviceRepositoriesService.getAll
 

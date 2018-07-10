@@ -17,8 +17,9 @@
 package uk.gov.hmrc.servicedeployments
 
 import java.time.{LocalDateTime, ZoneOffset}
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
+import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.DB
@@ -127,17 +128,15 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
     }
   }
 
-  def allServicedeployments: Future[Map[String, Seq[Deployment]]] =
+  def allServiceDeployments: Future[Map[String, Seq[Deployment]]] =
     findAll().map { all =>
       all.groupBy(_.name)
     }
 
-  def getForService(serviceName: String): Future[Option[Seq[Deployment]]] =
+  def deploymentsForServices(serviceNames: Set[String]): Future[Seq[Deployment]] =
     futureHelpers.withTimerAndCounter("mongo.read") {
-      find("name" -> BSONRegex("^" + serviceName + "$", "i")) map {
-        case Nil  => None
-        case data => Some(data.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)
-      }
+      find("name" -> Json.obj("$in" -> Json.arr(serviceNames.map(_.toLowerCase).map(toJsFieldJsValueWrapper(_)).toSeq: _*)))
+        .map(_.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)
     }
 
   def clearAllData = super.removeAll().map(_.ok)

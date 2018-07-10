@@ -43,15 +43,16 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, LoneElement, OptionValues, TestData}
 import org.scalatestplus.play.OneAppPerTest
 import play.api.Application
+import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.mongo.{MongoConnector, MongoSpecSupport}
 import uk.gov.hmrc.play.test.UnitSpec
 import uk.gov.hmrc.servicedeployments.deployments.Deployer
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
-import play.api.inject.bind
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.implicitConversions
 
 class MongoDeploymentsRepositorySpec
     extends UnitSpec
@@ -148,7 +149,8 @@ class MongoDeploymentsRepositorySpec
     }
   }
 
-  "getForService" should {
+  "deploymentsForServices" should {
+
     "return deployments for a service sorted in descending order of productionDate" in {
       val now: LocalDateTime = LocalDateTime.now()
 
@@ -162,13 +164,29 @@ class MongoDeploymentsRepositorySpec
       await(mongoDeploymentsRepository.add(Deployment("test", "v3", None, productionDate = now.minusDays(5), Some(1))))
       await(mongoDeploymentsRepository.add(Deployment("test", "v4", None, productionDate = now.minusDays(2), Some(1))))
 
-      val deployments: Option[Seq[Deployment]] = await(mongoDeploymentsRepository.getForService("test"))
+      val deployments = await(mongoDeploymentsRepository.deploymentsForServices(Set("test")))
 
-      deployments.get.size shouldBe 4
-
-      deployments.get.map(_.version) shouldBe List("v4", "v3", "v2", "v1")
-
+      deployments.map(_.version) should contain theSameElementsAs List("v4", "v3", "v2", "v1")
     }
+
+    "return deployments for services sorted in descending order of productionDate" in {
+      val now: LocalDateTime = LocalDateTime.now()
+
+      await(mongoDeploymentsRepository.add(Deployment("randomservice", "vSomeOther1", None, now, Some(1))))
+      await(
+        mongoDeploymentsRepository.add(
+          Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
+      await(
+        mongoDeploymentsRepository.add(
+          Deployment("test", "v2", None, productionDate                                  = now.minusDays(6), interval = Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v3", None, productionDate = now.minusDays(5), Some(1))))
+      await(mongoDeploymentsRepository.add(Deployment("test", "v4", None, productionDate = now.minusDays(2), Some(1))))
+
+      val deployments = await(mongoDeploymentsRepository.deploymentsForServices(Set("test", "randomService")))
+
+      deployments.map(_.version) should contain theSameElementsAs List("vSomeOther1", "v4", "v3", "v2", "v1")
+    }
+
     "be case insensitive" in {
       val now: LocalDateTime = LocalDateTime.now()
 
@@ -177,10 +195,9 @@ class MongoDeploymentsRepositorySpec
         mongoDeploymentsRepository.add(
           Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
 
-      val deployments: Option[Seq[Deployment]] = await(mongoDeploymentsRepository.getForService("TEST"))
+      val deployments = await(mongoDeploymentsRepository.deploymentsForServices(Set("TEST")))
 
-      deployments shouldBe defined
-
+      deployments.map(_.version) should contain only "v1"
     }
   }
 
@@ -188,7 +205,7 @@ class MongoDeploymentsRepositorySpec
     "be able to insert a new record and update it as well" in {
       val now: LocalDateTime = LocalDateTime.now()
       await(mongoDeploymentsRepository.add(Deployment("test", "v", None, now, Some(1))))
-      val all = await(mongoDeploymentsRepository.allServicedeployments)
+      val all = await(mongoDeploymentsRepository.allServiceDeployments)
 
       all.values.flatten.size shouldBe 1
       val savedDeployment: Deployment = all.values.flatten.loneElement
@@ -199,7 +216,6 @@ class MongoDeploymentsRepositorySpec
       savedDeployment.productionDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) shouldBe now.format(
         DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
       savedDeployment.leadTime shouldBe None
-
     }
   }
 
@@ -208,13 +224,13 @@ class MongoDeploymentsRepositorySpec
       val now: LocalDateTime = LocalDateTime.now()
       await(mongoDeploymentsRepository.add(Deployment("test", "v", None, now)))
 
-      val all = await(mongoDeploymentsRepository.allServicedeployments)
+      val all = await(mongoDeploymentsRepository.allServiceDeployments)
 
       val savedDeployment: Deployment = all.values.flatten.loneElement
 
       await(mongoDeploymentsRepository.update(savedDeployment.copy(leadTime = Some(1))))
 
-      val allUpdated = await(mongoDeploymentsRepository.allServicedeployments)
+      val allUpdated = await(mongoDeploymentsRepository.allServiceDeployments)
       allUpdated.size shouldBe 1
       val updatedDeployment: Deployment = allUpdated.values.flatten.loneElement
 

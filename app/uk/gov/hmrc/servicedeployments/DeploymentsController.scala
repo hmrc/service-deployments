@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.servicedeployments
 
-import java.time.{LocalDateTime, Period}
-import javax.inject.{Inject, Singleton}
+import java.time.LocalDateTime
 
+import javax.inject.{Inject, Singleton}
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.functional.syntax._
+import play.api.libs.json.Json.toJson
 import play.api.libs.json._
 import play.api.mvc.Action
-import play.modules.reactivemongo.MongoDbConnection
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment, ServiceDeploymentInformation}
 
@@ -55,27 +54,27 @@ object DeploymentResult {
       deployment.leadTime,
       deployment.deployers
     )
-
 }
 
 @Singleton
 class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deploymentsRepository: DeploymentsRepository)
     extends BaseController {
 
-  import uk.gov.hmrc.JavaDateTimeJsonFormatter._
-
   def forService(serviceName: String) = Action.async { implicit request =>
-    deploymentsRepository.getForService(serviceName).map {
-      case Some(data) => Ok(Json.toJson(data.map(DeploymentResult.fromDeployment)))
-      case None       => NotFound
+    deploymentsRepository.deploymentsForServices(Set(serviceName)) map {
+      case Nil         => NotFound
+      case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
     }
   }
 
-  def getAll() = Action.async { implicit request =>
-    deploymentsRepository.getAllDeployments.map { deployments =>
-      Ok(Json.toJson(deployments.map(DeploymentResult.fromDeployment)))
+  def getAll(serviceNames: Seq[String]) = Action.async { implicit request =>
+    (serviceNames match {
+      case Nil   => deploymentsRepository.getAllDeployments
+      case names => deploymentsRepository.deploymentsForServices(names.toSet)
+    }) map {
+      case Nil         => NotFound
+      case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
     }
-
   }
 
   def update() = Action.async { implicit request =>

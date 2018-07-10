@@ -80,7 +80,7 @@ class DeploymentsServiceSpec
     reset(tagsService)
     reset(deploymentsRepository)
 
-    when(deploymentsRepository.allServicedeployments).thenReturn(Future.successful(Map.empty[String, Seq[Deployment]]))
+    when(deploymentsRepository.allServiceDeployments).thenReturn(Future.successful(Map.empty[String, Seq[Deployment]]))
     when(deploymentsRepository.add(any())).thenReturn(Future.successful(true))
     when(deploymentsRepository.update(any())).thenReturn(Future.successful(true))
   }
@@ -168,7 +168,7 @@ class DeploymentsServiceSpec
 
       testData("service").verifyDeploymentWasAddedToMongo("3.0.0")
 
-      verify(deploymentsRepository).allServicedeployments
+      verify(deploymentsRepository).allServiceDeployments
       verifyNoMoreInteractions(deploymentsRepository)
     }
 
