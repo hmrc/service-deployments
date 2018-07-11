@@ -193,7 +193,7 @@ class MongoDeploymentsRepositorySpec
       await(mongoDeploymentsRepository.add(Deployment("randomService", "vSomeOther1", None, now, Some(1))))
       await(
         mongoDeploymentsRepository.add(
-          Deployment("test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
+          Deployment("Test", "v1", None, productionDate = now.minusDays(10), interval = Some(1))))
 
       val deployments = await(mongoDeploymentsRepository.deploymentsForServices(Set("TEST")))
 

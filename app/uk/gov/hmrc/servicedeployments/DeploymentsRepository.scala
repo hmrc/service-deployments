@@ -135,7 +135,9 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
 
   def deploymentsForServices(serviceNames: Set[String]): Future[Seq[Deployment]] =
     futureHelpers.withTimerAndCounter("mongo.read") {
-      find("name" -> Json.obj("$in" -> Json.arr(serviceNames.map(_.toLowerCase).map(toJsFieldJsValueWrapper(_)).toSeq: _*)))
+      val serviceNamesJson =
+        serviceNames.map(serviceName => toJsFieldJsValueWrapper(BSONRegex("^" + serviceName + "$", "i"))).toSeq
+      find("name" -> Json.obj("$in" -> Json.arr(serviceNamesJson: _*)))
         .map(_.sortBy(_.productionDate.toEpochSecond(ZoneOffset.UTC)).reverse)
     }
 
