@@ -60,6 +60,13 @@ object DeploymentResult {
 class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deploymentsRepository: DeploymentsRepository)
     extends BaseController {
 
+  def getAll = Action.async { implicit request =>
+    deploymentsRepository.getAllDeployments map {
+      case Nil         => NotFound
+      case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
+    }
+  }
+
   def forService(serviceName: String) = Action.async { implicit request =>
     deploymentsRepository.deploymentsForServices(Set(serviceName)) map {
       case Nil         => NotFound
@@ -67,13 +74,15 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
     }
   }
 
-  def getAll(serviceNames: Seq[String]) = Action.async { implicit request =>
-    (serviceNames match {
-      case Nil   => deploymentsRepository.getAllDeployments
-      case names => deploymentsRepository.deploymentsForServices(names.toSet)
-    }) map {
-      case Nil         => NotFound
-      case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
+  def forServices = Action.async(parse.json) { implicit request =>
+    withJsonBody[Set[String]] {
+      case serviceNames if serviceNames.isEmpty =>
+        Future.successful(NotFound)
+      case serviceNames =>
+        deploymentsRepository.deploymentsForServices(serviceNames) map {
+          case Nil         => NotFound
+          case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
+        }
     }
   }
 

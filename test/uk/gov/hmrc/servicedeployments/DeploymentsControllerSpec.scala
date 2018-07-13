@@ -121,49 +121,17 @@ class DeploymentsControllerSpec extends PlaySpec with MockitoSugar with Results 
 
   "getAll" should {
 
-    "return OK with all deployments when no serviceNames are given" in new Setup {
-      when(deploymentsRepo.getAllDeployments)
-        .thenReturn(
-          Future.successful(
-            Seq(
-              Deployment(name = "name1", version = "version1", creationDate = None, productionDate = now),
-              Deployment(name = "name2", version = "version2", creationDate = None, productionDate = now)
-            ))
-        )
-
-      val result = controller.getAll(serviceNames = Seq.empty)(FakeRequest())
-
-      status(result)                          shouldBe OK
-      contentAsJson(result).as[Seq[JsObject]] should contain theSameElementsAs Seq(
-        Json.obj(
-          "name"           -> "name1",
-          "version"        -> "version1",
-          "productionDate" -> now.toEpochSecond(ZoneOffset.UTC),
-          "deployers"      -> JsArray(List.empty)
-        ),
-        Json.obj(
-          "name"           -> "name2",
-          "version"        -> "version2",
-          "productionDate" -> now.toEpochSecond(ZoneOffset.UTC),
-          "deployers"      -> JsArray(List.empty)
+    "return OK with all deployments" in new Setup {
+      when(deploymentsRepo.getAllDeployments).thenReturn(
+        Future.successful(
+          Seq(
+            Deployment(name = "name1", version = "version1", creationDate = None, productionDate = now),
+            Deployment(name = "name2", version = "version2", creationDate = None, productionDate = now)
+          )
         )
       )
-    }
 
-    "return OK with all deployments for given serviceNames" in new Setup {
-
-      val serviceNames = Set("service1", "service2")
-
-      when(deploymentsRepo.deploymentsForServices(serviceNames))
-        .thenReturn(
-          Future.successful(
-            Seq(
-              Deployment(name = "name1", version = "version1", creationDate = None, productionDate = now),
-              Deployment(name = "name2", version = "version2", creationDate = None, productionDate = now)
-            ))
-        )
-
-      val result = controller.getAll(serviceNames = serviceNames.toSeq)(FakeRequest())
+      val result = controller.getAll(FakeRequest())
 
       status(result)                          shouldBe OK
       contentAsJson(result).as[Seq[JsObject]] should contain theSameElementsAs Seq(
@@ -184,12 +152,61 @@ class DeploymentsControllerSpec extends PlaySpec with MockitoSugar with Results 
 
     "return NOT_FOUND when no deployments are found" in new Setup {
 
+      when(deploymentsRepo.getAllDeployments).thenReturn(Future.successful(Nil))
+
+      val result = controller.getAll(FakeRequest())
+
+      status(result) shouldBe NOT_FOUND
+    }
+  }
+
+  "forServices" should {
+
+    "return OK with all deployments for given serviceNames" in new Setup {
+
       val serviceNames = Set("service1", "service2")
 
-      when(deploymentsRepo.deploymentsForServices(serviceNames))
+      when(deploymentsRepo.deploymentsForServices(serviceNames)).thenReturn(
+        Future.successful(
+          Seq(
+            Deployment(name = "name1", version = "version1", creationDate = None, productionDate = now),
+            Deployment(name = "name2", version = "version2", creationDate = None, productionDate = now)
+          )
+        )
+      )
+
+      val result = controller.forServices(FakeRequest().withBody(Json.arr("service1", "service2")))
+
+      status(result)                          shouldBe OK
+      contentAsJson(result).as[Seq[JsObject]] should contain theSameElementsAs Seq(
+        Json.obj(
+          "name"           -> "name1",
+          "version"        -> "version1",
+          "productionDate" -> now.toEpochSecond(ZoneOffset.UTC),
+          "deployers"      -> JsArray(List.empty)
+        ),
+        Json.obj(
+          "name"           -> "name2",
+          "version"        -> "version2",
+          "productionDate" -> now.toEpochSecond(ZoneOffset.UTC),
+          "deployers"      -> JsArray(List.empty)
+        )
+      )
+    }
+
+    "return NOT_FOUND when no service names given" in new Setup {
+
+      val result = controller.forServices(FakeRequest().withBody(Json.arr()))
+
+      status(result) shouldBe NOT_FOUND
+    }
+
+    "return NOT_FOUND when no deployments are found" in new Setup {
+
+      when(deploymentsRepo.deploymentsForServices(Set("service1", "service2")))
         .thenReturn(Future.successful(Nil))
 
-      val result = controller.getAll(serviceNames = serviceNames.toSeq)(FakeRequest())
+      val result = controller.forServices(FakeRequest().withBody(Json.arr("service1", "service2")))
 
       status(result) shouldBe NOT_FOUND
     }
