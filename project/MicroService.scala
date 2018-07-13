@@ -1,3 +1,4 @@
+import play.sbt.PlayImport.PlayKeys._
 import sbt.Keys._
 import sbt.Tests.{Group, SubProcess}
 import sbt._
@@ -21,6 +22,7 @@ trait MicroService {
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(Seq(play.sbt.PlayScala) ++ plugins: _*)
     .settings(playSettings: _*)
+    .settings(devSettings := Seq("play.server.netty.maxInitialLineLength" -> "65536"))
     .settings(scalaSettings: _*)
     .settings(publishingSettings: _*)
     .settings(defaultSettings(): _*)
