@@ -50,12 +50,15 @@ class TeamsAndRepositoriesConnectorSpec
     with ScalaFutures
     with OneAppPerSuite {
 
-  private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig(
-    Map("teams-and-repositories.api.url" -> endpointMockUrl))
+  private val stubbedServiceDependenciesConfig =
+    Map(
+      "microservice.services.teams-and-repositories.host" -> host,
+      "microservice.services.teams-and-repositories.port" -> port
+    )
 
   implicit override lazy val app: Application =
     new GuiceApplicationBuilder()
-      .overrides(bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig))
+      .configure(stubbedServiceDependenciesConfig)
       .build()
 
   val teamsAndrepositoriesConnector: TeamsAndRepositoriesConnector =
@@ -69,7 +72,7 @@ class TeamsAndRepositoriesConnectorSpec
 
       givenRequestExpects(
         method = GET,
-        url    = s"$endpointMockUrl/services",
+        url    = s"$endpointMockUrl/api/services",
         willRespondWith = (
           200,
           Some("""|[{

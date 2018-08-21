@@ -24,7 +24,7 @@ import uk.gov.hmrc.servicedeployments.services.Repository
 
 class ServiceSpec extends WordSpec with Matchers {
 
-  val hmrcRepo = Repository("org.hmrc")
+  val hmrcRepo    = Repository("org.hmrc")
   val `31 July`   = LocalDateTime.of(2016, 7, 31, 0, 0)
   val `23 August` = LocalDateTime.of(2016, 8, 23, 0, 0)
   val `26 August` = LocalDateTime.of(2016, 8, 26, 0, 0)
