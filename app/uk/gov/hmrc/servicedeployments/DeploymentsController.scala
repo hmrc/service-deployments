@@ -62,7 +62,7 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
 
   def getAll = Action.async { implicit request =>
     deploymentsRepository.getAllDeployments map {
-      case Nil         => NotFound
+      case Nil         => Ok("{}")
       case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
     }
   }
@@ -77,10 +77,10 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
   def forServices = Action.async(parse.json) { implicit request =>
     withJsonBody[Set[String]] {
       case serviceNames if serviceNames.isEmpty =>
-        Future.successful(NotFound)
+        Future.successful(BadRequest("List of service names required"))
       case serviceNames =>
         deploymentsRepository.deploymentsForServices(serviceNames) map {
-          case Nil         => NotFound
+          case Nil         => Ok{"{}"}
           case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
         }
     }

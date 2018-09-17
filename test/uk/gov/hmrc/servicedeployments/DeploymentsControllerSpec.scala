@@ -150,13 +150,15 @@ class DeploymentsControllerSpec extends PlaySpec with MockitoSugar with Results 
       )
     }
 
-    "return NOT_FOUND when no deployments are found" in new Setup {
+    "return empty list when no deployments are found" in new Setup {
 
       when(deploymentsRepo.getAllDeployments).thenReturn(Future.successful(Nil))
 
       val result = controller.getAll(FakeRequest())
 
-      status(result) shouldBe NOT_FOUND
+      status(result) shouldBe OK
+
+      contentAsJson(result) should be(Json.parse("{}"))
     }
   }
 
@@ -198,17 +200,19 @@ class DeploymentsControllerSpec extends PlaySpec with MockitoSugar with Results 
 
       val result = controller.forServices(FakeRequest().withBody(Json.arr()))
 
-      status(result) shouldBe NOT_FOUND
+      status(result) shouldBe BAD_REQUEST
     }
 
-    "return NOT_FOUND when no deployments are found" in new Setup {
+    "return an empty list when no deployments are found for the service names supplied" in new Setup {
 
       when(deploymentsRepo.deploymentsForServices(Set("service1", "service2")))
         .thenReturn(Future.successful(Nil))
 
       val result = controller.forServices(FakeRequest().withBody(Json.arr("service1", "service2")))
 
-      status(result) shouldBe NOT_FOUND
+      status(result) shouldBe OK
+
+      contentAsJson(result) should be(Json.parse("{}"))
     }
   }
 
