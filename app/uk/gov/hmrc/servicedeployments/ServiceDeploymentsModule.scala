@@ -26,31 +26,24 @@ class ServiceDeploymentsModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration) =
     Seq(
-      bind[GitConnectorOpen].toProvider[GitConnectorOpenProvider]
+      bind[GitConnectorOpen].toProvider[GitConnectorOpenProvider],
+      bind[GithubApiClient].toProvider[GithubApiClientOpenProvider]
     )
 }
+
+
 @Singleton
-class GithubApiClientOpen @Inject()(config: ServiceDeploymentsConfig) extends AbstractGithubApiClient {
-  override val client = GithubApiClient(config.gitOpenApiUrl, config.gitOpenToken)
+class GithubApiClientOpenProvider @Inject()(config: ServiceDeploymentsConfig) extends Provider[GithubApiClient] {
+  override def get(): GithubApiClient = GithubApiClient(config.gitOpenApiUrl, config.gitOpenToken)
 }
 
-abstract class AbstractGithubApiClient() extends GithubApiClient {
-
-  val client: GithubApiClient
-
-  override lazy val orgService        = client.orgService
-  override lazy val teamService       = client.teamService
-  override lazy val repositoryService = client.repositoryService
-  override lazy val contentsService   = client.contentsService
-  override lazy val releaseService    = client.releaseService
-}
 @Singleton
 class GitConnectorOpenProvider @Inject()(
   config: ServiceDeploymentsConfig,
   futureHelpers: FutureHelpers,
-  githubApiClientOpen: GithubApiClientOpen
+  githubApiClient: GithubApiClient
 ) extends Provider[GitConnectorOpen] {
 
   override def get() =
-    new GitConnectorOpen(futureHelpers, githubApiClientOpen, "open")
+    new GitConnectorOpen(futureHelpers, githubApiClient, "open")
 }

@@ -36,15 +36,14 @@ import java.time.ZonedDateTime
 
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import org.scalatestplus.play.OneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.GhRepoRelease
 import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
@@ -55,7 +54,7 @@ class GitConnectorSpec
     with Matchers
     with MockitoSugar
     with ScalaFutures
-    with OneAppPerSuite
+    with GuiceOneAppPerSuite
     with IntegrationPatience {
   val mockedGitClient = mock[GitClient]
 

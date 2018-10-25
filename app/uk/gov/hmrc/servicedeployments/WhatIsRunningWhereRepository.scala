@@ -17,9 +17,9 @@
 package uk.gov.hmrc.servicedeployments
 
 import javax.inject.{Inject, Singleton}
-
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.Cursor
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID, BSONRegex}
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -110,5 +110,5 @@ class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futu
     collection
       .find(BSONDocument.empty)
       .cursor[WhatIsRunningWhereModel]()
-      .collect[List]()
+      .collect[List](Int.MaxValue, Cursor.FailOnError[List[WhatIsRunningWhereModel]]())
 }

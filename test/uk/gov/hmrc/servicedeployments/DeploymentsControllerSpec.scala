@@ -35,17 +35,20 @@ package uk.gov.hmrc.servicedeployments
 import java.time.{LocalDateTime, ZoneOffset}
 
 import org.mockito.Mockito._
+import org.scalatest.Matchers._
 import org.scalatest.OptionValues
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
-import play.api.mvc.{Result, Results}
+import play.api.mvc.Results
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 import uk.gov.hmrc.servicedeployments.deployments.Deployer
-import org.scalatest.Matchers._
+
 import scala.concurrent.Future
+
 
 class DeploymentsControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues {
 
@@ -221,7 +224,7 @@ class DeploymentsControllerSpec extends PlaySpec with MockitoSugar with Results 
     val now: LocalDateTime = LocalDateTime.now()
 
     val deploymentsRepo = mock[DeploymentsRepository]
-    val controller      = new DeploymentsController(mock[UpdateScheduler], deploymentsRepo)
+    val controller      = new DeploymentsController(mock[UpdateScheduler], deploymentsRepo, stubMessagesControllerComponents())
   }
 
 }

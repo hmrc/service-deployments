@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 
 import org.mockito.Mockito
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.Future

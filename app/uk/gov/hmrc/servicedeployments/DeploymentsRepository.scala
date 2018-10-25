@@ -22,7 +22,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.DB
+import reactivemongo.api.{Cursor, DB}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID, BSONRegex}
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -148,5 +148,5 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
       .find(BSONDocument.empty)
       .sort(Json.obj("productionDate" -> JsNumber(-1)))
       .cursor[Deployment]()
-      .collect[List]()
+      .collect[List](Int.MaxValue, Cursor.FailOnError[List[Deployment]]())
 }

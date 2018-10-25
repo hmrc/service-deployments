@@ -17,18 +17,20 @@
 package uk.gov.hmrc.servicedeployments
 
 import javax.inject.{Inject, Singleton}
-
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
-import play.api.mvc.Action
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import play.api.mvc.{Action, ControllerComponents}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.format
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.concurrent.ExecutionContext
 @Singleton
 class WhatIsRunningWhereController @Inject()(
   whatIsRunningWhereRepository: WhatIsRunningWhereRepository,
-  updateScheduler: UpdateScheduler)
-    extends BaseController {
+  updateScheduler: UpdateScheduler,
+  components: ControllerComponents)
+    extends BackendController(components) {
 
   private def fromWhatIsRunningWhereModel(w: WhatIsRunningWhereModel): ServiceDeploymentInformation =
     ServiceDeploymentInformation(w.serviceName, w.deployments)

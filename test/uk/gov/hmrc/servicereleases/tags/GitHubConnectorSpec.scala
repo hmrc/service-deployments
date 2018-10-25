@@ -37,15 +37,15 @@ import java.util.Date
 
 import org.mockito.Mockito._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, TestData, WordSpec}
-import org.scalatestplus.play.OneAppPerTest
+import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.{GitClient, GitTag}
-import uk.gov.hmrc.githubclient.GhRepoRelease
-import uk.gov.hmrc.servicedeployments.{GithubApiClientOpen, ServiceDeploymentsConfig}
+import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
+import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 import scala.concurrent.Future
@@ -55,12 +55,12 @@ class GitHubConnectorSpec
     with Matchers
     with MockitoSugar
     with ScalaFutures
-    with OneAppPerTest
+    with GuiceOneAppPerTest
     with IntegrationPatience {
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
-  private val githubApiClientOpen = mock[GithubApiClientOpen]
+  private val githubApiClientOpen = mock[GithubApiClient]
   private val mockedGitClient     = mock[GitClient]
 
   override def newAppForTest(testData: TestData) =
@@ -68,7 +68,7 @@ class GitHubConnectorSpec
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
         bind[GitClient].toInstance(mockedGitClient),
-        bind[GithubApiClientOpen].toInstance(githubApiClientOpen)
+        bind[GithubApiClient].toInstance(githubApiClientOpen)
       )
       .build()
 

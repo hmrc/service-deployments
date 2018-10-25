@@ -33,17 +33,19 @@
 package uk.gov.hmrc.servicereleases.tags
 
 import java.time.LocalDateTime
+
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, TestData, TryValues, WordSpec}
-import org.scalatestplus.play.OneAppPerTest
+import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 import uk.gov.hmrc.servicedeployments.tags.{GitConnectorOpen, Tag, TagsService}
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
+
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -51,7 +53,7 @@ class TagsServiceSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
-    with OneAppPerTest
+    with GuiceOneAppPerTest
     with ScalaFutures
     with TryValues {
 
