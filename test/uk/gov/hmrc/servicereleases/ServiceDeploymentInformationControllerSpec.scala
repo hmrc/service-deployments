@@ -35,7 +35,7 @@ class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSu
 
   val whatIsRunningWhereRepo = mock[WhatIsRunningWhereRepository]
 
-  val controller = new WhatIsRunningWhereController(whatIsRunningWhereRepo, mock[UpdateScheduler],stubMessagesControllerComponents())
+  val controller = new WhatIsRunningWhereController(whatIsRunningWhereRepo, mock[UpdateScheduler],stubControllerComponents())
 
   "WhatIsRunningWhereController.forApplication" should {
     "retrieve list of all WhatsRunningWhere for an application without datacentered" in {
