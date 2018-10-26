@@ -12,8 +12,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "git-client"         % "0.8.0",
     "uk.gov.hmrc" %% "github-client"      % "2.5.0",
     "uk.gov.hmrc" %% "mongo-lock"         % "6.1.0-play-26",
-    "uk.gov.hmrc" %% "domain"             % "5.2.0",
-    "uk.gov.hmrc" %% "play-reactivemongo" % "6.2.0"
+    "uk.gov.hmrc" %% "domain"             % "5.2.0"
   )
 
   val test = Seq(
