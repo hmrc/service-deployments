@@ -18,7 +18,7 @@ package uk.gov.hmrc.servicereleases
 
 import org.mockito.Mockito._
 import org.scalatest.OptionValues
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 import play.api.mvc.{Result, Results}
@@ -29,12 +29,13 @@ import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.D
 import uk.gov.hmrc.servicedeployments.{UpdateScheduler, WhatIsRunningWhereController, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
 
 import scala.concurrent.Future
+import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 
 class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues {
 
   val whatIsRunningWhereRepo = mock[WhatIsRunningWhereRepository]
 
-  val controller = new WhatIsRunningWhereController(whatIsRunningWhereRepo, mock[UpdateScheduler])
+  val controller = new WhatIsRunningWhereController(whatIsRunningWhereRepo, mock[UpdateScheduler],stubControllerComponents())
 
   "WhatIsRunningWhereController.forApplication" should {
     "retrieve list of all WhatsRunningWhere for an application without datacentered" in {

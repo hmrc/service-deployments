@@ -21,8 +21,8 @@ import java.time.{LocalDateTime, ZoneId}
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.BlockingIOExecutionContext
 import uk.gov.hmrc.gitclient.GitTag
-import uk.gov.hmrc.githubclient.GhRepoRelease
-import uk.gov.hmrc.servicedeployments.{FutureHelpers, GithubApiClientOpen}
+import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
+import uk.gov.hmrc.servicedeployments.FutureHelpers
 
 import scala.concurrent.Future
 
@@ -46,7 +46,7 @@ object Tag {
 @Singleton
 class GitConnectorOpen @Inject()(
   futureHelpers: FutureHelpers,
-  gitHubClientOpen: GithubApiClientOpen,
+  gitHubClientOpen: GithubApiClient,
   identifier: String) {
 
   import BlockingIOExecutionContext.executionContext

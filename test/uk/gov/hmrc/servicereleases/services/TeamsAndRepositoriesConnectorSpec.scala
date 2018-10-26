@@ -36,11 +36,10 @@ import com.github.tomakehurst.wiremock.http.RequestMethod.GET
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Milliseconds, Seconds, Span}
 import org.scalatest.{Matchers, WordSpec}
-import org.scalatestplus.play.OneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.servicedeployments.{ServiceDeploymentsConfig, WireMockSpec}
+import uk.gov.hmrc.servicedeployments.WireMockSpec
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 class TeamsAndRepositoriesConnectorSpec
@@ -48,7 +47,7 @@ class TeamsAndRepositoriesConnectorSpec
     with Matchers
     with WireMockSpec
     with ScalaFutures
-    with OneAppPerSuite {
+    with GuiceOneAppPerSuite {
 
   private val stubbedServiceDependenciesConfig =
     Map(

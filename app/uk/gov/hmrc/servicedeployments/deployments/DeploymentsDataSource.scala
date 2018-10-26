@@ -161,13 +161,13 @@ trait DeploymentsDataSource {
 }
 
 @Singleton
-class ReleasesAppConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig) extends DeploymentsDataSource {
+class ReleasesAppConnector @Inject()(serviceDeploymentsConfig: ServiceDeploymentsConfig, httpClient: HttpClient) extends DeploymentsDataSource {
 
   val deploymentsApiBase: String = serviceDeploymentsConfig.deploymentsApiBase
   def getAll: Future[List[EnvironmentalDeployment]] = {
 
     Logger.info("Getting all the deployments.")
-    HttpClient.getWithParsing(s"$deploymentsApiBase/apps?secondsago=31557600") {
+    httpClient.getWithParsing(s"$deploymentsApiBase/apps?secondsago=31557600") {
       case JsArray(x) =>
         val (validRecords, inValidRecords) = x.partition { jsv =>
           (jsv \ "fs").validate[LocalDateTime].isSuccess
@@ -183,7 +183,7 @@ class ReleasesAppConnector @Inject()(serviceDeploymentsConfig: ServiceDeployment
 
   override def whatIsRunningWhere: Future[List[ServiceDeploymentInformation]] = {
     Logger.info("Getting whatIsRunningWhere records.")
-    HttpClient.getWithParsing(s"$deploymentsApiBase/whats-running-where", List("Accept" -> "application/json")) {
+    httpClient.getWithParsing(s"$deploymentsApiBase/whats-running-where", List("Accept" -> "application/json")) {
       case JsArray(x) =>
         val (validRecords, inValidRecords) = x.partition { jsv =>
           jsv.validate[ServiceDeploymentInformation].isSuccess

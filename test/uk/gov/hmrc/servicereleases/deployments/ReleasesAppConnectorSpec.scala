@@ -16,17 +16,15 @@
 
 package uk.gov.hmrc.servicedeployments.deployments
 
-import java.io.File
 import java.time.{LocalDateTime, ZoneOffset}
 
 import com.github.tomakehurst.wiremock.http.RequestMethod
-import com.typesafe.config.ConfigFactory
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, TestData, WordSpec}
-import org.scalatestplus.play.{OneAppPerSuite, OneAppPerTest}
-import play.api.{Application, Configuration}
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.servicedeployments.{DefaultPatienceConfig, ServiceDeploymentsConfig, WireMockSpec}
 
@@ -34,15 +32,13 @@ import scala.concurrent.Future
 import play.api.inject.bind
 import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
-import scala.io.Source
-
 
 class ReleasesAppConnectorSpec
   extends WordSpec
     with Matchers
     with WireMockSpec
     with ScalaFutures
-    with OneAppPerSuite
+    with GuiceOneAppPerSuite
     with DefaultPatienceConfig
     with MockitoSugar {
 

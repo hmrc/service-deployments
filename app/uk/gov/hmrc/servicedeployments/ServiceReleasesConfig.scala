@@ -24,7 +24,7 @@ import play.api.{Configuration, Logger}
 @Singleton
 class ServiceDeploymentsConfig @Inject()(configuration: Configuration) {
 
-  val schedulerEnabled = configuration.getBoolean("scheduler.enabled").getOrElse(false)
+  val schedulerEnabled: Boolean = configuration.getOptional[Boolean]("scheduler.enabled").getOrElse(false)
 
   lazy val deploymentsApiBase: String = config("deployments.api.url").get
 
@@ -34,7 +34,7 @@ class ServiceDeploymentsConfig @Inject()(configuration: Configuration) {
 
   lazy val gitOpenStorePath: String = storePath("open-local-git-store")
 
-  private def config(path: String) = configuration.getString(s"$path")
+  private def config(path: String) = configuration.getOptional[String](s"$path")
 
   private def storePath(prefix: String) = {
     val path = config("git.client.store.path")

@@ -17,17 +17,18 @@
 package uk.gov.hmrc
 
 import _root_.play.{api => playapi}
-import playapi.libs.ws.WS
+import javax.inject.{Inject, Singleton}
+import playapi.libs.ws._
 import playapi.Logger
 import playapi.libs.ws.WSResponse
 import playapi.libs.json.{JsValue, Json, Reads}
-import playapi.Play.current
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-object HttpClient {
+@Singleton
+class HttpClient @Inject()(ws: WSClient) {
 
   def get[T](url: String, header: (String, String)*)(implicit r: Reads[T]): Future[T] =
     getResponseBody(url, header).map { rsp =>
@@ -75,10 +76,10 @@ object HttpClient {
     url: String,
     body: Option[JsValue]          = None,
     headers: Seq[(String, String)] = List()) = {
-    val req = WS.client
+    val req = ws
       .url(url)
       .withMethod(method)
-      .withHeaders(headers: _*)
+      .withHttpHeaders(headers: _*)
 
     body
       .map { b =>

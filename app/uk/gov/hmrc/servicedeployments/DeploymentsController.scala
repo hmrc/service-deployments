@@ -19,13 +19,13 @@ package uk.gov.hmrc.servicedeployments
 import java.time.LocalDateTime
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json.Json.toJson
 import play.api.libs.json._
-import play.api.mvc.Action
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import play.api.mvc.ControllerComponents
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, DeploymentsDataSource, EnvironmentalDeployment, ServiceDeploymentInformation}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.io.Source
 
@@ -57,8 +57,11 @@ object DeploymentResult {
 }
 
 @Singleton
-class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deploymentsRepository: DeploymentsRepository)
-    extends BaseController {
+class DeploymentsController @Inject()(
+  updateScheduler: UpdateScheduler,
+  deploymentsRepository: DeploymentsRepository,
+  components: ControllerComponents)
+    extends BackendController(components) {
 
   def getAll = Action.async { implicit request =>
     deploymentsRepository.getAllDeployments map {
@@ -80,7 +83,7 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
         Future.successful(BadRequest("List of service names required"))
       case serviceNames =>
         deploymentsRepository.deploymentsForServices(serviceNames) map {
-          case Nil         => Ok{"{}"}
+          case Nil         => Ok { "{}" }
           case deployments => Ok(toJson(deployments map DeploymentResult.fromDeployment))
         }
     }
@@ -99,7 +102,7 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
 
       import EnvironmentalDeployment._
 
-      val source = Source.fromFile(request.body.file, "UTF-8")
+      val source = Source.fromFile(request.body.path.toFile, "UTF-8")
       val jsons  = for (line <- source.getLines()) yield Json.fromJson[EnvironmentalDeployment](Json.parse(line))
 
       override def getAll: Future[List[EnvironmentalDeployment]] = Future.successful(jsons.map(_.get).toList)
@@ -116,8 +119,7 @@ class DeploymentsController @Inject()(updateScheduler: UpdateScheduler, deployme
   }
 
   def clear() = Action.async { implicit request =>
-    deploymentsRepository.clearAllData map { r =>
-      Ok(r.toString)
+    deploymentsRepository.clearAllData map { r => Ok(r.toString)
     }
   }
 }
