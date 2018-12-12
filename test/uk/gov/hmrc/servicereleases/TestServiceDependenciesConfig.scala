@@ -25,9 +25,7 @@ class TestServiceDependenciesConfig(overrides: Map[String, Any] = Map())
   val configMap = Map(
     "scheduler.enabled"   -> false,
     "deployments.api.url" -> "deployments.api.url",
-    "git.open.host"       -> "git.open.host",
-    "git.open.api.url"    -> "https://www.github.com",
-    "git.open.api.token"  -> "git.open.token"
+    "artifactory.uri"     -> "http://example.com"
   ) ++ overrides
 
   private def getForKey(key: String)         = configMap.getOrElse(key, throw new RuntimeException(s"$key is not defined"))
@@ -35,8 +33,6 @@ class TestServiceDependenciesConfig(overrides: Map[String, Any] = Map())
 
   override val schedulerEnabled: Boolean       = getForKey("scheduler.enabled").asInstanceOf[Boolean]
   override lazy val deploymentsApiBase: String = getForKeyAsString("deployments.api.url")
-  override lazy val gitOpenApiHost: String     = getForKeyAsString("git.open.host")
-  override lazy val gitOpenApiUrl: String      = getForKeyAsString("git.open.api.url")
-  override lazy val gitOpenToken: String       = getForKeyAsString("git.open.api.token")
+  override lazy val artifactoryBaseUri: String = getForKeyAsString("artifactory.uri")
 
 }

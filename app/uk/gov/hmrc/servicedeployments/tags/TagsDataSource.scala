@@ -18,42 +18,5 @@ package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.{LocalDateTime, ZoneId}
 
-import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.BlockingIOExecutionContext
-import uk.gov.hmrc.gitclient.GitTag
-import uk.gov.hmrc.githubclient.{GhRepoRelease, GithubApiClient}
-import uk.gov.hmrc.servicedeployments.FutureHelpers
-
-import scala.concurrent.Future
 
 case class Tag(version: String, createdAt: LocalDateTime)
-
-object Tag {
-  implicit def ghRepoDeploymentsToServiceDeploymentTags(gr: List[GhRepoRelease]): List[Tag] = gr.map(Tag.apply)
-
-  implicit def gitTagsToServiceDeploymentTags(gt: List[GitTag]): List[Tag] = gt.map(Tag.apply)
-
-  def apply(gt: GitTag): Tag = Tag(getVersionNumber(gt.name), gt.createdAt.get.toLocalDateTime)
-
-  def apply(ghr: GhRepoRelease): Tag =
-    Tag(getVersionNumber(ghr.tagName), ghr.createdAt.toInstant.atZone(ZoneId.systemDefault()).toLocalDateTime)
-
-  private val versionNumber = "(?:(\\d+)\\.)?(?:(\\d+)\\.)?(\\*|\\d+)$".r
-
-  private def getVersionNumber(tag: String): String = versionNumber.findFirstIn(tag).getOrElse(tag)
-}
-
-@Singleton
-class GitConnectorOpen @Inject()(
-  futureHelpers: FutureHelpers,
-  gitHubClientOpen: GithubApiClient,
-  identifier: String) {
-
-  import BlockingIOExecutionContext.executionContext
-  import futureHelpers._
-
-  def get(organisation: String, repoName: String): Future[List[Tag]] =
-    withTimerAndCounter(s"git.api.$identifier") {
-      gitHubClientOpen.getReleases(organisation, repoName).map(identity(_))
-    }
-}

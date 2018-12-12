@@ -18,12 +18,12 @@ package uk.gov.hmrc.servicedeployments.tags
 
 import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
+import uk.gov.hmrc.servicedeployments.connectors.ArtifactoryConnector
 import scala.concurrent.Future
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
-@Singleton
-class TagsService @Inject()(gitOpenTagDataSource: GitConnectorOpen) {
 
-  def get(org: String, name: String): Future[Seq[Tag]] = gitOpenTagDataSource.get(org, name)
 
+class TagsService @Inject()(artifactory: ArtifactoryConnector) {
+  def findVersion(artifactName: String, version: String) : Future[Tag] = artifactory.findVersion(artifactName, version)
 }

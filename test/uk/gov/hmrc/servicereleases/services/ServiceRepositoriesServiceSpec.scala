@@ -35,8 +35,8 @@ package uk.gov.hmrc.servicedeployments.services
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, TestData, WordSpec}
-import org.scalatestplus.play.guice.GuiceOneAppPerTest
+import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -50,19 +50,20 @@ class ServiceRepositoriesServiceSpec
     with Matchers
     with MockitoSugar
     with ScalaFutures
-    with GuiceOneAppPerTest
+    with GuiceOneAppPerSuite
     with DefaultPatienceConfig {
 
   private val stubbedServiceDependenciesConfig = new TestServiceDependenciesConfig()
 
   val mockedTeamsAndRepositoriesConnector = mock[TeamsAndRepositoriesConnector]
-  implicit override def newAppForTest(testData: TestData): Application =
-    new GuiceApplicationBuilder()
+
+  override def fakeApplication(): Application = new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(stubbedServiceDependenciesConfig),
         bind[TeamsAndRepositoriesConnector].toInstance(mockedTeamsAndRepositoriesConnector)
       )
-      .build()
+    .configure("metrics.jvm" -> false)
+    .build()
 
   "getAll" should {
     lazy val service = app.injector.instanceOf[ServiceRepositoriesService]

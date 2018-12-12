@@ -40,8 +40,8 @@ import com.kenshoo.play.metrics.Metrics
 import org.mockito.Mockito
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, LoneElement, OptionValues, TestData}
-import org.scalatestplus.play.guice.GuiceOneAppPerTest
+import org.scalatest.{BeforeAndAfterEach, LoneElement, OptionValues}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -61,12 +61,13 @@ class MongoDeploymentsRepositorySpec
     with ScalaFutures
     with OptionValues
     with BeforeAndAfterEach
-    with GuiceOneAppPerTest
+    with GuiceOneAppPerSuite
     with MockitoSugar {
 
-  implicit override def newAppForTest(testData: TestData): Application =
+  override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
       .overrides(bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig()))
+      .configure("metrics.jvm" -> false)
       .build()
 
   val mockedConnector = mock[MongoConnector]

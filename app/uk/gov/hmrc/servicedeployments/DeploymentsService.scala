@@ -24,8 +24,10 @@ import uk.gov.hmrc.servicedeployments.FutureHelpers.FutureIterable
 import uk.gov.hmrc.servicedeployments.deployments.{ServiceDeployment, ServiceDeploymentsService}
 import uk.gov.hmrc.servicedeployments.services.{Repository, ServiceRepositoriesService}
 import uk.gov.hmrc.servicedeployments.tags.{Tag, TagsService}
+
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 @Singleton
 class DeploymentsService @Inject()(
@@ -38,8 +40,7 @@ class DeploymentsService @Inject()(
     for {
       service  <- getServiceRepositoryDeployments
       _        <- log(service)
-      tagDates <- getTagDatesFor(service)
-      success  <- createOrUpdateDeploymentsFromDeploymentsAndTags(service, tagDates)
+      success  <- createOrUpdateDeploymentsFromDeploymentsAndTags(service)
     } yield success
 
   private def getServiceRepositoryDeployments = {
@@ -59,27 +60,13 @@ class DeploymentsService @Inject()(
     )
   }
 
-  private def getTagDatesFor(service: Service): Future[Map[String, LocalDateTime]] =
-    getTagsForService(service).map { results =>
-      convertTagsToMap(results.sortBy(-_.createdAt.toEpochSecond(ZoneOffset.UTC)))
-    }
+  private def lookupCreationDate(artifact: String)(version: String) : Future[Option[LocalDateTime]] =
+    tagsService.findVersion(artifact, version)
+      .map(t => Option(t.createdAt))
+      .recover{case _ => None}
 
-  private def getTagsForService(service: Service): Future[Seq[Tag]] =
-    if (service.deploymentsRequiringUpdates.nonEmpty) {
-      tagsService.get(service.repository.org, service.serviceName)
-    } else {
-      Future.successful(Seq.empty)
-    }
-
-  private def convertTagsToMap(tags: Seq[Tag]): Map[String, LocalDateTime] =
-    tags.map { x =>
-      x.version -> x.createdAt
-    }.toMap
-
-  private def createOrUpdateDeploymentsFromDeploymentsAndTags(
-    service: Service,
-    tagDates: Map[String, LocalDateTime]): Future[Iterable[Boolean]] =
-    FutureIterable(new DeploymentAndOperation(service, tagDates).get.map {
+  private def createOrUpdateDeploymentsFromDeploymentsAndTags(service: Service): Future[Iterable[Boolean]] =
+    FutureIterable(new DeploymentAndOperation(service, lookupCreationDate(service.serviceName)).get.map {
       case (Add, r) =>
         Logger.info(s"Adding deployment : ${r.version} for service ${r.name}")
         repository.add(r)
@@ -101,7 +88,6 @@ class DeploymentsService @Inject()(
       Logger.debug(
         s"deployment ${d.version} for ${serviceRepositoryDeployments.serviceName} on ${d.deploymentdAt} needs update")
     }
-
     Future.successful(Unit)
   }
 
@@ -165,13 +151,16 @@ object DeploymentOperation extends Enumeration {
   val Add, Update = Value
 }
 
-class DeploymentAndOperation(service: Service, tagDates: Map[String, LocalDateTime]) {
+class DeploymentAndOperation(service: Service, tagDates: String => Future[Option[LocalDateTime]]) {
 
   import uk.gov.hmrc.JavaDateTimeHelper._
 
+  private val timeout: Duration = Duration(5, "seconds")
+
   def get: Seq[(DeploymentOperation.Value, Deployment)] =
     service.deploymentsRequiringUpdates.map { deploymentToUpdate =>
-      val tagDate = tagDates.get(deploymentToUpdate.version)
+
+      val tagDate = Await.result(tagDates(deploymentToUpdate.version), timeout)
 
       service.knownDeployments
         .find(_.version == deploymentToUpdate.version)

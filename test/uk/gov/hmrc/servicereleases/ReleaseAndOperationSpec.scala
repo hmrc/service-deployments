@@ -22,6 +22,8 @@ import org.scalatest.{LoneElement, Matchers, WordSpec}
 import uk.gov.hmrc.servicedeployments.DeploymentOperation._
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
 import uk.gov.hmrc.servicedeployments.services.Repository
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement {
 
@@ -34,7 +36,7 @@ class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement
   "get" should {
     "return deployments with operation as add for new deployments" in {
 
-      val tagDates = Map(
+      val tagDates : Map[String, LocalDateTime] = Map(
         "1.0.0" -> `26 August`,
         "2.0.0" -> `28 August`
       )
@@ -48,10 +50,15 @@ class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement
         Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2))
       )
 
+      def dateLookup(version: String) : Future[Option[LocalDateTime]] = Future {
+         tagDates.get(version)
+      }
+
+
       val service: Service = Service("sName", Repository("org.hmrc"), deployments, knownDeployments)
 
       val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] =
-        new DeploymentAndOperation(service, tagDates).get
+        new DeploymentAndOperation(service, dateLookup ).get
 
       deploymentUpdates.loneElement._1         shouldBe Add //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
       deploymentUpdates.loneElement._2.version shouldBe "2.0.0" //(Add,Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
@@ -77,10 +84,14 @@ class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement
         Deployment("sName", "1.0.0", Some(`26 August`), `28 August`, None, Some(2), deployers = Seq(deployer1))
       )
 
+      def dateLookup(version: String) : Future[Option[LocalDateTime]] = Future {
+        tagDates.get(version)
+      }
+
       val service: Service = Service("sName", Repository("org.hmrc"), deployments, knownDeployments)
 
       val deploymentUpdates: Seq[(DeploymentOperation.Value, Deployment)] =
-        new DeploymentAndOperation(service, tagDates).get
+        new DeploymentAndOperation(service, dateLookup).get
 
       deploymentUpdates.size shouldBe 2
       deploymentUpdates contains (Add, Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
