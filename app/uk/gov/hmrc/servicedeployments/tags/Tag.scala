@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.servicedeployments.tags
 
-import java.time.{LocalDateTime, ZoneId}
+import java.time.LocalDateTime
 
 
 case class Tag(version: String, createdAt: LocalDateTime)

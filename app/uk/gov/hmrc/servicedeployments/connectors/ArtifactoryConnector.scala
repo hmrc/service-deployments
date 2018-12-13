@@ -51,9 +51,16 @@ class ArtifactoryConnector @Inject() (http:HttpClient, config: ServiceDeployment
 
   import ArtifactoryConnector._
 
+  private val headers : List[(String, String)] =
+    config.artifactoryApiKey
+      .map( key => List(("X-JFrog-Art-Api", key)))
+      .getOrElse(List.empty)
+
+
   def findVersion(artifactName: String, version: String, scalaVersion: String = "2.11") : Future[Tag] = {
-    val baseUri = s"${config.artifactoryBaseUri}/api/storage/hmrc-releases/uk/gov/hmrc/${artifactName}_$scalaVersion/$version"
-    http.get[RepositoryInfo](baseUri).map(r => Tag(version, ZonedDateTime.parse(r.created).toLocalDateTime))
+    val baseUri = s"${config.artifactoryBase}/api/storage/hmrc-releases/uk/gov/hmrc/${artifactName}_$scalaVersion/$version"
+    http.get[RepositoryInfo](baseUri, headers: _*)
+      .map(r => Tag(version, ZonedDateTime.parse(r.created).toLocalDateTime))
   }
 
 }

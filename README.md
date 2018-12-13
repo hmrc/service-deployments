@@ -13,14 +13,13 @@ Use the fully qualified url instead - check with platops if you do not know this
 Also, if the data is to be retrieved and inserted into Mongo the scheduler needs to be enabled. This can be done by adding a line to the application.conf file;
 > scheduler.enabled=true
 
-You will also need to use your own github user and access token.
+You will also need to specify the base url to the artifactory server 
 So all the changes required in application.conf are:
 
 ````
 deployments.api.url = "FULLY_QUALIFIED_RELEASES_URL"
+artifactory.url = "FULLY_QUALIFIED_ARTIFACTORY_URL"
 scheduler.enabled=true
-github.open.api.user="YOUR_GITHUB.COM_USER"
-git.open.api.token = "YOUR_GITHUB_DEVELOPER_PERSONAL_ACCESS_TOKEN"
 ````
 
 ### License

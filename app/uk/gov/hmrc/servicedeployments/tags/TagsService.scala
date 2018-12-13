@@ -23,7 +23,7 @@ import scala.concurrent.Future
 
 case class ServiceDeploymentTag(name: String, createdAt: LocalDateTime)
 
-
+@Singleton
 class TagsService @Inject()(artifactory: ArtifactoryConnector) {
   def findVersion(artifactName: String, version: String) : Future[Tag] = artifactory.findVersion(artifactName, version)
 }

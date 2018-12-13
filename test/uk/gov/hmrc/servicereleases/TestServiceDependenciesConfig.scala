@@ -25,7 +25,7 @@ class TestServiceDependenciesConfig(overrides: Map[String, Any] = Map())
   val configMap = Map(
     "scheduler.enabled"   -> false,
     "deployments.api.url" -> "deployments.api.url",
-    "artifactory.uri"     -> "http://example.com"
+    "artifactory.url"     -> "http://example.com"
   ) ++ overrides
 
   private def getForKey(key: String)         = configMap.getOrElse(key, throw new RuntimeException(s"$key is not defined"))
@@ -33,6 +33,7 @@ class TestServiceDependenciesConfig(overrides: Map[String, Any] = Map())
 
   override val schedulerEnabled: Boolean       = getForKey("scheduler.enabled").asInstanceOf[Boolean]
   override lazy val deploymentsApiBase: String = getForKeyAsString("deployments.api.url")
-  override lazy val artifactoryBaseUri: String = getForKeyAsString("artifactory.uri")
+  override lazy val artifactoryBase: String    = getForKeyAsString("artifactory.url")
+  override lazy val artifactoryApiKey: Option[String] = None
 
 }

@@ -15,11 +15,22 @@
  */
 
 package uk.gov.hmrc.servicedeployments.connectors
-import java.time.ZonedDateTime
+import java.time.{LocalDateTime, ZonedDateTime}
 
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
+import play.api.BuiltInComponentsFromContext
+import play.api.routing.Router
+import play.api.test.WsTestClient
+import play.filters.HttpFiltersComponents
+import uk.gov.hmrc.HttpClient
+import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
+import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
-class ArtifactoryConnectorSpec extends WordSpec with Matchers {
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+class ArtifactoryConnectorSpec extends WordSpec with Matchers with MockitoSugar with WsTestClient {
 
 
   "Date Format" should {
@@ -67,4 +78,93 @@ class ArtifactoryConnectorSpec extends WordSpec with Matchers {
 
   }
 
+  "ArtifactoryConnectory" should {
+
+    "read the version data from artifactory" in {
+      withArtifactoryConnector(None, { conn =>
+        val resp = conn.findVersion("test-artifact", "1.2.3")
+        val result = Await.result(resp, Duration(1, "seconds"))
+        assert(result.version == "1.2.3")
+        assert(result.createdAt == LocalDateTime.of(2018,7,16,16,19,36))
+      })
+    }
+
+    "send artifactory API key in header when configured" in {
+
+      withArtifactoryConnector(Some("validtoken"), { conn =>
+        val resp = conn.findVersion("test-artifact", "1.2.3")
+        val result = Await.result(resp, Duration(1, "seconds"))
+        assert(result.version == "1.2.3")
+        assert(result.createdAt == LocalDateTime.of(2018,7,16,16,19,36))
+      })
+    }
+
+    "fail gracefully when API token is required but invalid" in {
+      withArtifactoryConnector(Some("invalidtoken"), { conn =>
+        val resp = conn.findVersion("test-artifact", "1.2.3")
+        val result = Await.ready(resp, Duration(1, "seconds"))
+        assert(result.value.get.isFailure)
+      })
+    }
+  }
+
+
+  import play.api.mvc._
+  import play.api.routing.sird._
+  import play.api.test._
+  import play.core.server.Server
+
+  def withArtifactoryConnector[T](token: Option[String], block: ArtifactoryConnector => T): T = {
+
+    Server.withApplicationFromContext() { context =>
+      new BuiltInComponentsFromContext(context) with HttpFiltersComponents{
+        override def router: Router = Router.from {
+          case GET(_) =>
+            Action { req =>
+            req.headers.get("X-JFrog-Art-Api") match {
+              case None => Results.Ok(json)
+              case Some("validtoken") => Results.Ok(json)
+              case Some(_) => Results.Forbidden
+            }
+          }
+        }
+      }.application
+    } { implicit port =>
+      WsTestClient.withClient { client =>
+      {
+        val config: ServiceDeploymentsConfig = new TestServiceDependenciesConfig() {
+          override lazy val artifactoryApiKey: Option[String] = token
+          override lazy val artifactoryBase: String = s"http://localhost:$port/artifactory"
+        }
+        block(new ArtifactoryConnector(new HttpClient(client), config))
+      }
+
+      }
+    }
+  }
+
+
+  val json =
+    """
+      |{
+      |  "repo" : "test-releases-local",
+      |  "path" : "/uk/gov/hmrc/test-artifact_2.11/1.2.3",
+      |  "created" : "2018-07-16T16:19:36.0Z",
+      |  "createdBy" : "test",
+      |  "lastModified" : "2018-07-16T16:19:36.0Z",
+      |  "modifiedBy" : "admin",
+      |  "lastUpdated" : "2018-07-16T16:19:36.0Z",
+      |  "children" : [ {
+      |    "uri" : "/test-artifact_2.11-41.2.3.jar",
+      |    "folder" : false
+      |  }, {
+      |    "uri" : "/test-artifact_2.11-1.2.3.pom",
+      |    "folder" : false
+      |  }, {
+      |    "uri" : "/test-artifact_2.11-1.2.3.tgz",
+      |    "folder" : false
+      |  } ],
+      |  "uri" : "https://localhost/artifactory/api/storage/hmrc-releases-local/uk/gov/hmrc/test-artifact_2.11/1.2.3"
+      |}
+    """.stripMargin
 }

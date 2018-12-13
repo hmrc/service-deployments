@@ -24,7 +24,8 @@ class ServiceDeploymentsConfig @Inject()(configuration: Configuration) {
 
   val schedulerEnabled: Boolean = configuration.getOptional[Boolean]("scheduler.enabled").getOrElse(false)
 
-  lazy val artifactoryBaseUri: String = configuration.get[String]("artifactory.uri")
+  lazy val artifactoryBase: String = configuration.get[String]("artifactory.url")
+  lazy val artifactoryApiKey: Option[String] = configuration.getOptional[String]("artifactory.apikey")
   lazy val deploymentsApiBase: String = configuration.get[String]("deployments.api.url")
 
 }
