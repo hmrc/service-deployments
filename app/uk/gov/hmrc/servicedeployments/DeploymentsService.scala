@@ -63,7 +63,10 @@ class DeploymentsService @Inject()(
   private def lookupCreationDate(artifact: String)(version: String) : Future[Option[LocalDateTime]] =
     tagsService.findVersion(artifact, version)
       .map(t => Option(t.createdAt))
-      .recover{case _ => None}
+      .recover{case ex => {
+        Logger.error(s"Failed to lookup tag for $artifact, ${ex.getMessage}")
+        None
+      }}
 
   private def createOrUpdateDeploymentsFromDeploymentsAndTags(service: Service): Future[Iterable[Boolean]] =
     FutureIterable(new DeploymentAndOperation(service, lookupCreationDate(service.serviceName)).get.map {
