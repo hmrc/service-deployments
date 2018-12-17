@@ -62,6 +62,7 @@ class DeploymentsServiceSpec
         bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())
       )
     .disable(classOf[com.kenshoo.play.metrics.Metrics])
+    .configure("metrics.jvm" -> false)
     .build()
 
   val servicesService       = mock[ServiceRepositoriesService]
