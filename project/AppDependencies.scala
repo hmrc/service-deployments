@@ -10,7 +10,6 @@ private object AppDependencies {
     ws,
     "uk.gov.hmrc" %% "bootstrap-play-26"  % bootstrapPlayVersion,
     "uk.gov.hmrc" %% "git-client"         % "0.8.0",
-    "uk.gov.hmrc" %% "github-client"      % "2.5.0",
     "uk.gov.hmrc" %% "mongo-lock"         % "6.1.0-play-26",
     "uk.gov.hmrc" %% "domain"             % "5.2.0"
   )

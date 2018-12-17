@@ -42,11 +42,10 @@ class ReleasesAppConnectorSpec
     with DefaultPatienceConfig
     with MockitoSugar {
 
-  implicit override lazy val app: Application =
+  override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
       .overrides(bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig(Map("deployments.api.url" -> endpointMockUrl))))
-      .disable(classOf[com.kenshoo.play.metrics.Metrics])
-
+      .configure("metrics.jvm" -> false)
       .build()
 
   lazy val connector = app.injector.instanceOf[ReleasesAppConnector]

@@ -293,7 +293,10 @@ object ServiceTestFixture {
       ))
 
     fixtures.foreach { f =>
-      when(tagsService.get("hmrc", f.serviceName)).thenReturn(Future.successful(f.tags))
+      f.tags.foreach(tag => {
+        when(tagsService.findVersion(f.serviceName, tag.version)).thenReturn(Future.successful(tag))
+      })
+
     }
 
     fixtures.map { f =>

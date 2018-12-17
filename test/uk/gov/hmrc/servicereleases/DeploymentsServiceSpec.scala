@@ -37,7 +37,7 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, TestData, WordSpec}
-import org.scalatestplus.play.guice.GuiceOneAppPerTest
+import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneAppPerTest}
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -55,14 +55,15 @@ class DeploymentsServiceSpec
     with ScalaFutures
     with BeforeAndAfterEach
     with DefaultPatienceConfig
-    with GuiceOneAppPerTest {
+    with GuiceOneAppPerSuite {
 
-  implicit override def newAppForTest(testData: TestData): Application =
-    new GuiceApplicationBuilder()
+  override def fakeApplication(): Application = new GuiceApplicationBuilder()
       .overrides(
         bind[ServiceDeploymentsConfig].toInstance(new TestServiceDependenciesConfig())
       )
-      .build()
+    .disable(classOf[com.kenshoo.play.metrics.Metrics])
+    .configure("metrics.jvm" -> false)
+    .build()
 
   val servicesService       = mock[ServiceRepositoriesService]
   val deploymentsService    = mock[ServiceDeploymentsService]
@@ -121,19 +122,6 @@ class DeploymentsServiceSpec
       testData("service").verifyDeploymentWasAddedToMongo("1.0.0")
     }
 
-    "Add new deployments with a blank tag date if only a lightweight tag is available" in {
-      val testData = configureMocks(
-        forService =>
-          Seq(
-            forService("service")
-              .repositoryKnowsAbout()
-              .deploymentsKnowsAbout("1.0.0")
-              .tagsServiceKnowsAbout()))
-
-      val result = service.updateModel().futureValue
-
-      testData("service").verifyDeploymentWasAddedToMongoWithBlankCreatedDate("1.0.0")
-    }
 
     "Cope with a scenario where there are no deployments at all for a service" in {
       val testData = configureMocks(
@@ -146,7 +134,7 @@ class DeploymentsServiceSpec
 
       service.updateModel().futureValue
 
-      verify(tagsService, never).get(any(), any())
+      verify(tagsService, never).findVersion(any(), any())
       verify(deploymentsRepository, never).add(any())
     }
 
@@ -164,6 +152,7 @@ class DeploymentsServiceSpec
               .tagsServiceFailsWith("Error")
         ))
 
+      when(tagsService.findVersion("another", "1.1.0")).thenReturn(Future.failed(new Exception("Mock failure")))
       service.updateModel().futureValue
 
       testData("service").verifyDeploymentWasAddedToMongo("3.0.0")
@@ -193,7 +182,9 @@ class DeploymentsServiceSpec
             forService("service")
               .repositoryKnowsAbout()
               .deploymentsKnowsAbout(Map("1.0.0" -> "02-02-2016", "2.0.0" -> "04-02-2016"))
+              .tagsServiceKnowsAbout(Map("1.0.0" -> "30-01-2016", "2.0.0" -> "04-02-2016"))
         ))
+
 
       service.updateModel().futureValue
 
@@ -249,7 +240,7 @@ class DeploymentsServiceSpec
 
       service.updateModel().futureValue
 
-      verify(tagsService, never).get(any(), any())
+      verify(tagsService, never).findVersion(any(), any())
       verify(deploymentsRepository, never).add(any())
       verify(deploymentsRepository, never).update(any())
     }
