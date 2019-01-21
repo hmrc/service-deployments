@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@
 package uk.gov.hmrc.servicedeployments
 
 import javax.inject.{Inject, Singleton}
-
-import uk.gov.hmrc.servicedeployments.FutureHelpers._
 import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, ServiceDeploymentInformation}
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -29,9 +26,15 @@ class WhatIsRunningWhereUpdateService @Inject()(
   whatIsRunningWhereDataSource: DeploymentsDataSource,
   repository: WhatIsRunningWhereRepository) {
 
-  def updateModel() =
+  def updateModel(): Future[List[Boolean]] =
     for {
       whatsRunningWhere <- whatIsRunningWhereDataSource.whatIsRunningWhere
+      success           <- Future.sequence(whatsRunningWhere.map(repository.update))
+    } yield success
+
+
+  def updateModel(whatsRunningWhere: List[ServiceDeploymentInformation]): Future[List[Boolean]] =
+    for {
       success           <- Future.sequence(whatsRunningWhere.map(repository.update))
     } yield success
 

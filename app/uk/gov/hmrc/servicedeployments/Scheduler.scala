@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,13 @@ package uk.gov.hmrc.servicedeployments
 
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
-
 import akka.actor.ActorSystem
 import com.kenshoo.play.metrics.Metrics
 import org.joda.time.Duration
 import play.Logger
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.servicedeployments.deployments.DeploymentsDataSource
-
+import uk.gov.hmrc.servicedeployments.deployments.{DeploymentsDataSource, ServiceDeploymentInformation}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -112,6 +110,29 @@ case class UpdateScheduler @Inject()(
         .updateModel()
         .map { result =>
           val total = result.toList.length
+
+          defaultMetricsRegistry.counter("scheduler.success").inc(total)
+
+          Info(s"Added/updated $total WhatIsRunningWhere")
+        }
+        .recover {
+          case ex =>
+            Error(s"Something went wrong during the mongo update:", ex)
+        }
+    } map { resultOrLocked =>
+      resultOrLocked getOrElse {
+        Warn("Failed to obtain lock. Another process may have it.")
+      }
+    }
+
+  def updateWhatIsRunningWhereModel(whatsRunningWhere: List[ServiceDeploymentInformation]): Future[JobResult] =
+    whatsRunningWhereLock.tryLock {
+      Logger.info(s"Starting mongo update with provided data")
+
+      whatIsRunningWhereService
+        .updateModel(whatsRunningWhere)
+        .map { result =>
+          val total = result.length
 
           defaultMetricsRegistry.counter("scheduler.success").inc(total)
 
