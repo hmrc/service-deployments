@@ -66,39 +66,34 @@ class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futu
       mongo          = mongo.mongoConnector.db,
       domainFormat   = WhatIsRunningWhereModel.format) {
 
-  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
-    Future.sequence(
-      Seq(
-        collection.indexesManager.ensure(Index(Seq("serviceName" -> IndexType.Text), name = Some("serviceNameIdx")))
-      )
-    )
+  override def indexes: Seq[Index] =
+    Seq(
+      Index(
+        Seq("serviceName" -> IndexType.Text),
+        name = Some("serviceNameIdx")))
 
   //!@ change the type to be the WhatIsRunningWhereModel
   def update(deployment: ServiceDeploymentInformation): Future[Boolean] =
     futureHelpers.withTimerAndCounter("mongo.update") {
-      for {
-        update <- collection.update(
-                   selector = Json.obj("serviceName" -> Json.toJson(deployment.serviceName)),
-                   update   = deployment,
-                   upsert   = true)
-      } yield
-        update match {
-          case _ => true
-        }
-    } recover {
+      collection
+        .update(
+          selector = Json.obj("serviceName" -> Json.toJson(deployment.serviceName)),
+          update   = deployment,
+          upsert   = true)
+        .map(_ => true)
+    }.recover {
       case lastError =>
         logger.error(s"Could not update WhatIsRunningWhereRepository with ${deployment.serviceName}")
         throw new RuntimeException(s"failed to persist $deployment")
     }
 
   def allGroupedByName: Future[Map[String, Seq[WhatIsRunningWhereModel]]] =
-    findAll().map { all =>
-      all.groupBy(_.serviceName)
-    }
+    findAll()
+      .map(_.groupBy(_.serviceName))
 
   def getForService(serviceName: String): Future[Option[WhatIsRunningWhereModel]] =
     futureHelpers.withTimerAndCounter("mongo.read") {
-      find("serviceName" -> BSONRegex("^" + serviceName + "$", "i")) map {
+      find("serviceName" -> BSONRegex("^" + serviceName + "$", "i")).map {
         case Nil  => None
         case data => data.headOption
       }

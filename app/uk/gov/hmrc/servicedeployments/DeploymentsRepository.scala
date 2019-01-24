@@ -90,21 +90,20 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
       mongo          = mongo.mongoConnector.db,
       domainFormat   = Deployment.formats) {
 
-  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
-    Future.sequence(
-      Seq(
-        collection.indexesManager.ensure(
-          Index(Seq("productionDate"                      -> IndexType.Descending), name = Some("productionDateIdx"))),
-        collection.indexesManager.ensure(Index(Seq("name" -> IndexType.Hashed), name     = Some("nameIdx")))
-      )
-    )
+  override def indexes: Seq[Index] =
+    Seq(
+      Index(
+        Seq("productionDate" -> IndexType.Descending),
+        name = Some("productionDateIdx")),
+      Index(
+        Seq("name" -> IndexType.Hashed),
+        name = Some("nameIdx")))
 
   def add(deployment: Deployment): Future[Boolean] =
     futureHelpers.withTimerAndCounter("mongo.write") {
-      insert(deployment) map {
-        case _ => true
-      }
-    } recover {
+      insert(deployment)
+        .map(_ => true)
+    }.recover {
       case lastError =>
         logger.error(s"Could not insert ${deployment.name}", lastError)
         throw lastError
@@ -118,10 +117,8 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
           selector = Json.obj("_id" -> Json.toJson(deployment._id.get)(ReactiveMongoFormats.objectIdWrite)),
           update   = Deployment.formats.writes(deployment)
         )
-        .map {
-          case _ => true
-        }
-    } recover {
+        .map(_ => true)
+    }.recover {
       case lastError =>
         logger.error(s"Could not update ${deployment.name}", lastError)
         throw lastError
@@ -129,9 +126,8 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
   }
 
   def allServiceDeployments: Future[Map[String, Seq[Deployment]]] =
-    findAll().map { all =>
-      all.groupBy(_.name)
-    }
+    findAll()
+      .map(_.groupBy(_.name))
 
   def deploymentsForServices(serviceNames: Set[String]): Future[Seq[Deployment]] =
     futureHelpers.withTimerAndCounter("mongo.read") {
