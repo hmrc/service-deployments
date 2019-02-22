@@ -23,12 +23,14 @@ import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.servicedeployments.{Error, Info, UpdateScheduler, Warn, WhatIsRunningWhereRepository}
 import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
+import scala.concurrent.ExecutionContext
 
 @Singleton
-class WhatIsRunningWhereTestController @Inject()(whatIsRunningWhereRepository: WhatIsRunningWhereRepository,
-                                                 updateScheduler: UpdateScheduler,
-                                                 components: ControllerComponents)
-  extends BackendController(components) {
+class WhatIsRunningWhereTestController @Inject()(
+  whatIsRunningWhereRepository: WhatIsRunningWhereRepository,
+  updateScheduler: UpdateScheduler,
+  components: ControllerComponents)(implicit ec: ExecutionContext)
+    extends BackendController(components) {
 
   import ServiceDeploymentInformationReads.formatServiceDeploymentInformation
 
@@ -36,8 +38,8 @@ class WhatIsRunningWhereTestController @Inject()(whatIsRunningWhereRepository: W
     val whatsRunningWhere = Json.fromJson[List[ServiceDeploymentInformation]](request.body.asJson.get).get
 
     updateScheduler.updateWhatIsRunningWhereModel(whatsRunningWhere).map {
-      case Info(message) => Ok(message)
-      case Warn(message) => Ok(message)
+      case Info(message)      => Ok(message)
+      case Warn(message)      => Ok(message)
       case Error(message, ex) => InternalServerError(message)
     }
   }
@@ -47,7 +49,8 @@ class WhatIsRunningWhereTestController @Inject()(whatIsRunningWhereRepository: W
 object ServiceDeploymentInformationReads {
 
   implicit val formatEnvironmentMapping: Reads[EnvironmentMapping] = Json.reads[EnvironmentMapping]
-  implicit val formatDeployment: Reads[Deployment] = Json.reads[Deployment]
-  implicit val formatServiceDeploymentInformation: Reads[ServiceDeploymentInformation] = Json.reads[ServiceDeploymentInformation]
+  implicit val formatDeployment: Reads[Deployment]                 = Json.reads[Deployment]
+  implicit val formatServiceDeploymentInformation: Reads[ServiceDeploymentInformation] =
+    Json.reads[ServiceDeploymentInformation]
 
 }
