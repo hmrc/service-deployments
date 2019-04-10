@@ -40,7 +40,6 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.servicedeployments.WireMockSpec
-import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
 
 class TeamsAndRepositoriesConnectorSpec
     extends WordSpec
@@ -50,7 +49,7 @@ class TeamsAndRepositoriesConnectorSpec
     with GuiceOneAppPerSuite {
 
   private val stubbedServiceDependenciesConfig =
-    Map(
+    Map[String, Any](
       "microservice.services.teams-and-repositories.host" -> host,
       "microservice.services.teams-and-repositories.port" -> port
     )
