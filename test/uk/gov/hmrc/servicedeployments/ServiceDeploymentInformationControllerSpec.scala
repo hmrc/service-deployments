@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import org.mockito.Mockito._
 import org.scalatest.OptionValues
@@ -24,12 +24,9 @@ import play.api.libs.json._
 import play.api.mvc.{Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.servicedeployments.deployments.EnvironmentMapping
-import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
-import uk.gov.hmrc.servicedeployments.{UpdateScheduler, WhatIsRunningWhereController, WhatIsRunningWhereModel, WhatIsRunningWhereRepository}
+import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
 
 import scala.concurrent.Future
-import uk.gov.hmrc.play.bootstrap.tools.Stubs.stubMessagesControllerComponents
 
 class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSugar with Results with OptionValues {
 
@@ -41,9 +38,9 @@ class ServiceDeploymentInformationControllerSpec extends PlaySpec with MockitoSu
     "retrieve list of all WhatsRunningWhere for an application without datacentered" in {
 
       val deployments = Set(
-        Deployment(EnvironmentMapping("dev", "dev-app"), "aws", "0.1.0"),
-        Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"),
-        Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2")
+        ServiceDeploymentInformation.Deployment(EnvironmentMapping("dev", "dev-app"), "aws", "0.1.0"),
+        ServiceDeploymentInformation.Deployment(EnvironmentMapping("qa", "qa"), "datacentred", "0.0.1"),
+        ServiceDeploymentInformation.Deployment(EnvironmentMapping("production", "production"), "skyscape-farnborough", "0.0.2")
       )
 
       when(whatIsRunningWhereRepo.getForService("appName-1")).thenReturn(

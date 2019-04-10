@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases.deployments
+package uk.gov.hmrc.servicedeployments.deployments
 
 import org.scalatest.{FunSpec, Matchers}
 import play.api.libs.json.{JsError, Json}
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation.Deployment
-import uk.gov.hmrc.servicedeployments.deployments.{EnvironmentMapping, ServiceDeploymentInformation}
 
 class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
 

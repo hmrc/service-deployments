@@ -15,7 +15,6 @@
  */
 
 package uk.gov.hmrc.servicedeployments
-
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 

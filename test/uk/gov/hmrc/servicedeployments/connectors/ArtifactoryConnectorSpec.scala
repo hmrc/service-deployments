@@ -24,8 +24,7 @@ import play.api.routing.Router
 import play.api.test.WsTestClient
 import play.filters.HttpFiltersComponents
 import uk.gov.hmrc.HttpClient
-import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
-import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
+import uk.gov.hmrc.servicedeployments.{ServiceDeploymentsConfig, TestServiceDependenciesConfig}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
