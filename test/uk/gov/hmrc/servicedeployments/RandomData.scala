@@ -15,7 +15,6 @@
  */
 
 package uk.gov.hmrc.servicedeployments
-
 import java.time.{LocalDateTime, ZoneOffset}
 
 import scala.util.Random

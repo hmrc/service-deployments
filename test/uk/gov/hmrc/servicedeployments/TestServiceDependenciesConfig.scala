@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.servicereleases
+package uk.gov.hmrc.servicedeployments
 
 import play.api.Configuration
-import uk.gov.hmrc.servicedeployments.ServiceDeploymentsConfig
 
 class TestServiceDependenciesConfig(overrides: Map[String, Any] = Map())
     extends ServiceDeploymentsConfig(Configuration()) {

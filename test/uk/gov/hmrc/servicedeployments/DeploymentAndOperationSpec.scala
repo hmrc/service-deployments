@@ -22,6 +22,7 @@ import org.scalatest.{LoneElement, Matchers, WordSpec}
 import uk.gov.hmrc.servicedeployments.DeploymentOperation._
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
 import uk.gov.hmrc.servicedeployments.services.Repository
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -94,15 +95,15 @@ class DeploymentAndOperationSpec extends WordSpec with Matchers with LoneElement
         new DeploymentAndOperation(service, dateLookup).get
 
       deploymentUpdates.size shouldBe 2
-      deploymentUpdates contains (Add, Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2)))
-      deploymentUpdates contains (Update, Deployment(
+      deploymentUpdates contains ((Add, Deployment("sName", "2.0.0", Some(`28 August`), `30 August`, None, Some(2))))
+      deploymentUpdates contains ((Update, Deployment(
         "sName",
         "1.0.0",
         Some(`26 August`),
         `28 August`,
         None,
         Some(2),
-        Seq(deployer1, deployer2)))
+        Seq(deployer1, deployer2))))
 
     }
 

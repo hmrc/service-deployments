@@ -19,19 +19,16 @@ package uk.gov.hmrc.servicedeployments.deployments
 import java.time.{LocalDateTime, ZoneOffset}
 
 import com.github.tomakehurst.wiremock.http.RequestMethod
-import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
+import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.servicedeployments.{DefaultPatienceConfig, ServiceDeploymentsConfig, WireMockSpec}
+import uk.gov.hmrc.servicedeployments.{DefaultPatienceConfig, ServiceDeploymentsConfig, TestServiceDependenciesConfig, WireMockSpec}
 
 import scala.concurrent.Future
-import play.api.inject.bind
-import uk.gov.hmrc.servicereleases.TestServiceDependenciesConfig
-
 
 class ReleasesAppConnectorSpec
   extends WordSpec

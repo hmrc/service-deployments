@@ -28,7 +28,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.servicedeployments.deployments.ServiceDeploymentInformation
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 case class WhatIsRunningWhereModel(
   serviceName: String,
@@ -47,7 +47,6 @@ object WhatIsRunningWhereModel {
   )(WhatIsRunningWhereModel.apply _)
 
   val whatIsRunningWhereWrites: OWrites[WhatIsRunningWhereModel] = {
-    import ReactiveMongoFormats.objectIdWrite
     Json.writes[WhatIsRunningWhereModel]
   }
 
@@ -103,7 +102,7 @@ class WhatIsRunningWhereRepository @Inject()(mongo: ReactiveMongoComponent, futu
 
   def getAll: Future[Seq[WhatIsRunningWhereModel]] =
     collection
-      .find(BSONDocument.empty)
+      .find[BSONDocument, JsObject](BSONDocument.empty, None)
       .cursor[WhatIsRunningWhereModel]()
       .collect[List](Int.MaxValue, Cursor.FailOnError[List[WhatIsRunningWhereModel]]())
 }

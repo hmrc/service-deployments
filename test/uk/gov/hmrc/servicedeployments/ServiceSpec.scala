@@ -18,7 +18,7 @@ package uk.gov.hmrc.servicedeployments
 
 import java.time.LocalDateTime
 
-import org.scalatest.{FunSuite, Matchers, WordSpec}
+import org.scalatest.{Matchers, WordSpec}
 import uk.gov.hmrc.servicedeployments.deployments.{Deployer, ServiceDeployment}
 import uk.gov.hmrc.servicedeployments.services.Repository
 

@@ -22,7 +22,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.{Cursor, DB}
+import reactivemongo.api.Cursor
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID, BSONRegex}
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -31,7 +31,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import uk.gov.hmrc.servicedeployments.deployments.Deployer
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 case class Deployment(
   name: String,
@@ -70,7 +70,6 @@ object Deployment {
   )(Deployment.apply _)
 
   val deploymentWrites: Writes[Deployment] = {
-    import ReactiveMongoFormats.objectIdWrite
     implicit val localDateTimeWrite: Writes[LocalDateTime] = localDateTimeToEpochSecondsWrites
     Json.writes[Deployment]
   }
@@ -141,7 +140,7 @@ class DeploymentsRepository @Inject()(mongo: ReactiveMongoComponent, futureHelpe
 
   def getAllDeployments: Future[Seq[Deployment]] =
     collection
-      .find(BSONDocument.empty)
+      .find[BSONDocument, JsObject](BSONDocument.empty, None)
       .sort(Json.obj("productionDate" -> JsNumber(-1)))
       .cursor[Deployment]()
       .collect[List](Int.MaxValue, Cursor.FailOnError[List[Deployment]]())
