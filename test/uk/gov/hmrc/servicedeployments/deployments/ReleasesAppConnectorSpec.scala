@@ -182,7 +182,8 @@ class ReleasesAppConnectorSpec
                |    "production-skyscape-farnborough": "1.15.0",
                |    "qa-datacentred-sal01": "1.15.0",
                |    "production-datacentred-sal01": "1.15.0",
-               |    "externaltest-datacentred-sal01": "1.14.0"
+               |    "externaltest-datacentred-sal01": "1.14.0",
+               |    "integration-aws-london": "1.14.0"
                |  }, {
                |    "an": "app-2",
                |    "staging-datacentred-sal01": "1.15.0",
@@ -201,6 +202,7 @@ class ReleasesAppConnectorSpec
         EnvironmentMapping("staging", "staging"),
         EnvironmentMapping("production", "production"),
         EnvironmentMapping("qa", "qa"),
+        EnvironmentMapping("integration", "integration"),
         EnvironmentMapping("external test", "externaltest"))
 
 
