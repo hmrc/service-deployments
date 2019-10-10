@@ -33,6 +33,7 @@ class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
                     | "production-datacentred-sal01": "0.94.0",
                     | "an": "app123",
                     | "externaltest-datacentred-sal01": "0.95.0",
+                    | "integration-aws-london": "8.46.0-1-g223c499",
                     | "development-aws-london": "8.46.0-1-g223c499"
                     |}""".stripMargin
 
@@ -45,6 +46,7 @@ class ServiceDeploymentInformationSpec extends FunSpec with Matchers {
         Deployment(EnvironmentMapping("qa", "qa"), "datacentred-sal01", "0.93.0"),
         Deployment(EnvironmentMapping("production", "production"), "datacentred-sal01", "0.94.0"),
         Deployment(EnvironmentMapping("external test", "externaltest"), "datacentred-sal01", "0.95.0"),
+        Deployment(EnvironmentMapping("integration", "integration"), "aws-london", "8.46.0-1-g223c499"),
         Deployment(EnvironmentMapping("development", "development"), "aws-london", "8.46.0-1-g223c499")
       )
     }

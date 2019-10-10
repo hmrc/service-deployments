@@ -93,6 +93,7 @@ object EnvironmentMapping {
   implicit val environmentFormat = Json.format[EnvironmentMapping]
   val fullListOfEnvironments = Set(
     EnvironmentMapping("development", "development"),
+    EnvironmentMapping("integration", "integration"),
     EnvironmentMapping("qa", "qa"),
     EnvironmentMapping("staging", "staging"),
     EnvironmentMapping("external test", "externaltest"),
